@@ -13,6 +13,7 @@
 
     <div *ngIf="message" class="feedback success"><i class="pi pi-check-circle"></i>{{ message }}</div>
     <div *ngIf="error" class="feedback error"><i class="pi pi-exclamation-circle"></i>{{ error }}</div>
+    <div *ngIf="referenceDataError && !loading" class="feedback error"><i class="pi pi-exclamation-circle"></i><span>{{ referenceDataError }} <button type="button" class="inline-action" (click)="retryReferenceData()">Retry reference data</button></span></div>
     <div *ngIf="loading" class="loading"><i class="pi pi-spin pi-spinner"></i> Loading workflows…</div>
 
     <form *ngIf="createOpen && !loading" class="create-panel" (ngSubmit)="createDefinition()">

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, finalize } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { Permission, Role } from '../roles-permissions/role-permission.types';
 import { RolePermissionService } from '../roles-permissions/role-permission.service';
@@ -32,6 +32,7 @@ export class WorkflowBuilderPage implements OnInit {
     graph: WorkflowGraph = this.blankGraph();
     loading = true;
     referenceDataLoading = false;
+    referenceDataError = '';
     saving = false;
     dirty = false;
     message = '';
@@ -45,11 +46,9 @@ export class WorkflowBuilderPage implements OnInit {
 
     private referenceDataLoaded = false;
     private edgeLookup = new Map<string, WorkflowEdge>();
+    private loadSequence = 0;
 
-    ngOnInit() {
-        this.loadReferenceData();
-        this.load();
-    }
+    ngOnInit() { this.load(); }
 
     get canConfigure() { return this.auth.hasPermission('document-workflow.configure'); }
     get canPublish() { return this.auth.hasPermission('document-workflow.publish'); }
@@ -57,15 +56,30 @@ export class WorkflowBuilderPage implements OnInit {
     get approvalNodes() { return this.graph.nodes.filter((node) => node.type === 'APPROVAL'); }
 
     load(selectDefinitionId?: string, selectVersionId?: string) {
+        const sequence = ++this.loadSequence;
         this.loading = true;
+        this.error = '';
         this.loadReferenceData();
-        this.workflowsApi.list(true).subscribe({
+        this.workflowsApi.list(true).pipe(finalize(() => {
+            if (sequence === this.loadSequence) this.loading = false;
+        })).subscribe({
             next: (definitions) => {
-                this.applyDefinitions(definitions, selectDefinitionId, selectVersionId);
-                this.loading = false;
+                if (sequence !== this.loadSequence) return;
+                try {
+                    this.applyDefinitions(Array.isArray(definitions) ? definitions : [], selectDefinitionId, selectVersionId);
+                } catch (error) {
+                    this.error = this.errorText(error);
+                }
             },
-            error: (error) => { this.error = this.errorText(error); this.loading = false; }
+            error: (error) => {
+                if (sequence === this.loadSequence) this.error = this.errorText(error);
+            }
         });
+    }
+
+    retryReferenceData() {
+        this.referenceDataLoaded = false;
+        this.loadReferenceData();
     }
 
     selectDefinition(definition?: WorkflowDefinition, versionId?: string) {
@@ -243,21 +257,20 @@ export class WorkflowBuilderPage implements OnInit {
     private loadReferenceData() {
         if (this.referenceDataLoaded || this.referenceDataLoading) return;
         this.referenceDataLoading = true;
+        this.referenceDataError = '';
         forkJoin({
             users: this.usersApi.listUsers(1, 1000),
             roles: this.accessApi.listRoles(),
             permissions: this.accessApi.listPermissions()
-        }).subscribe({
+        }).pipe(finalize(() => this.referenceDataLoading = false)).subscribe({
             next: ({ users, roles, permissions }) => {
                 this.users = users.items || [];
                 this.roles = roles;
                 this.permissions = permissions;
                 this.referenceDataLoaded = true;
-                this.referenceDataLoading = false;
             },
             error: (error) => {
-                this.referenceDataLoading = false;
-                this.error = this.errorText(error);
+                this.referenceDataError = this.errorText(error);
             }
         });
     }
