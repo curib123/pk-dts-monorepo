@@ -1746,7 +1746,6 @@ export class DocumentsService {
           tx,
           toBigIntId(plannedStep.assigned_role_id, "workflow_assigned_role_id"),
           creatorId,
-          plannedStep.required_permission,
         );
         assignedUserId = fallback?.user_id ?? null;
         assignmentSource = "WORKFLOW_ROLE";
@@ -1845,7 +1844,8 @@ export class DocumentsService {
       const isRequesterLeaderNotedBy =
         step.stage === DocumentWorkflowStage.NOTED_BY &&
         step.assignmentSource === "REQUESTER_LEADER";
-      if (!isRequesterLeaderNotedBy && !step.required_permission) {
+      const isExplicitWorkflowAssignment = this.isExplicitWorkflowAssignment(step.assignment_type);
+      if (!isExplicitWorkflowAssignment && !isRequesterLeaderNotedBy) {
         this.assertApproverForStage(
           workflowUsersById,
           step.assignedUserId.toString(),
@@ -1855,7 +1855,7 @@ export class DocumentsService {
       const assignedUser = workflowUsersById.get(step.assignedUserId.toString());
       if (!assignedUser) throw new BadRequestException("The configured workflow approver no longer exists.");
       if (step.assignedUserId === creatorId) throw new BadRequestException(`${step.stage_label || this.workflowStageLabel(step.stage)} cannot be assigned to the request creator.`);
-      if (step.required_permission) {
+      if (step.required_permission && (!isExplicitWorkflowAssignment || step.assignment_type === "PERMISSION")) {
         const user = assignedUser;
         const permissions = user.role.role_permissions.map(
           ({ permission }) => permission.permission_name,
@@ -1883,7 +1883,11 @@ export class DocumentsService {
         assigned_role_id: step.assigned_role_id
           ? toBigIntId(step.assigned_role_id, "workflow_assigned_role_id")
           : null,
-        required_permission: step.required_permission ?? WORKFLOW_STAGE_POLICY[step.stage].permission ?? null,
+        required_permission: step.assignment_type === "PERMISSION"
+          ? step.required_permission ?? null
+          : step.assignment_type
+            ? null
+            : step.required_permission ?? WORKFLOW_STAGE_POLICY[step.stage].permission ?? null,
         condition_json: step.condition_json ?? undefined,
         on_approve_node_key: step.on_approve_node_key ?? null,
         on_reject_node_key: step.on_reject_node_key ?? null,
@@ -1913,9 +1917,9 @@ export class DocumentsService {
     });
   }
 
-  private async findUserByRoleId(tx: Prisma.TransactionClient, roleId: bigint, creatorId: bigint, permission?: string) {
+  private async findUserByRoleId(tx: Prisma.TransactionClient, roleId: bigint, creatorId: bigint) {
     return tx.user.findFirst({
-      where: { role_id: roleId, user_id: { not: creatorId }, ...(permission ? { role: { role_permissions: { some: { permission: { permission_name: permission } } } } } : {}) },
+      where: { role_id: roleId, user_id: { not: creatorId } },
       select: { user_id: true },
       orderBy: { user_id: "asc" },
     });
@@ -2014,7 +2018,7 @@ export class DocumentsService {
       assignment_type: node.assignment?.type,
       assigned_user_id: node.assignment?.type === "USER" ? node.assignment.user_id : undefined,
       assigned_role_id: node.assignment?.type === "ROLE" ? node.assignment.role_id : undefined,
-      required_permission: node.required_permission || node.assignment?.permission,
+      required_permission: node.assignment?.type === "PERMISSION" ? node.assignment.permission : undefined,
       on_approve_node_key: targetFor(node, "APPROVE"),
       on_reject_node_key: targetFor(node, "REJECT"),
       on_return_node_key: targetFor(node, "RETURN"),
@@ -2163,6 +2167,10 @@ export class DocumentsService {
 
   private workflowStageLabel(stage: DocumentWorkflowStage) {
     return WORKFLOW_STAGE_POLICY[stage]?.label ?? stage.replace(/_/g, " ");
+  }
+
+  private isExplicitWorkflowAssignment(assignmentType?: string) {
+    return !!assignmentType && assignmentType !== "LEGACY";
   }
 
   private workflowStatusForStage(stage: DocumentWorkflowStage) {
@@ -2672,7 +2680,12 @@ export class DocumentsService {
           pendingStep?.stage === DocumentWorkflowStage.NOTED_BY &&
           pendingStep.assignment_source === "REQUESTER_LEADER" &&
           pendingStep.required_permission === "document-requests.approve-noted-by";
-        const stagePermissions = pendingStep?.required_permission
+        const isExplicitWorkflowAssignment = this.isExplicitWorkflowAssignment(
+          pendingStep?.assignment_type ?? undefined,
+        );
+        const stagePermissions = isExplicitWorkflowAssignment && pendingStep?.assignment_type !== "PERMISSION"
+          ? []
+          : pendingStep?.required_permission
           ? [pendingStep.required_permission]
           : pendingStep?.stage === DocumentWorkflowStage.NOTED_BY
               ? [DOCUMENT_APPROVAL_PERMISSIONS[0]]
