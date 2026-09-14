@@ -61,14 +61,17 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
                     <input *ngIf="form.direct_create" pInputText [(ngModel)]="form.direct_creation_reason" maxlength="2000" placeholder="Required reason for direct creation" [disabled]="saving" />
                 </div>
 
-                <div class="field softcopy-upload" *ngIf="!isHardcopy() && mode === 'create' && form.direct_create">
-                    <label for="softcopy-file">Revision file</label>
+                <div class="field softcopy-upload md:col-span-2" *ngIf="reviewFileApplies()">
+                    <label for="softcopy-file">{{ reviewFileLabel() }}</label>
                     <input id="softcopy-file" type="file" class="file-field" [disabled]="saving" (change)="selectInitialFile($event)" />
-                    <small class="field-note" *ngIf="analyzingFile">Reading the document number from the file content…</small>
-                    <small class="field-note" *ngIf="!analyzingFile">{{ fileAnalysisMessage || 'Required for direct creation. DCR revision files are uploaded only after approval.' }}</small>
+                    <div class="attachment-selection" *ngIf="form.initial_file">
+                        <span><i class="pi pi-file"></i>{{ form.initial_file.name }}</span>
+                    </div>
+                    <small class="field-note" *ngIf="analyzingFile">Reading document information from the file…</small>
+                    <small class="field-note" *ngIf="!analyzingFile">{{ fileAnalysisMessage || reviewFileGuidance() }}</small>
                 </div>
 
-                <div class="field" *ngIf="!isHardcopy() && (isRevisionAction() || form.direct_create)">
+                <div class="field" *ngIf="!isHardcopy() && reviewFileApplies()">
                     <label for="initial-revision-number">{{ form.direct_create ? 'Initial revision number' : 'Revision number' }}</label>
                     <input id="initial-revision-number" pInputText [(ngModel)]="form.initial_revision_number" class="w-full" placeholder="000 (automatic when empty)" maxlength="50" />
                     <small class="field-note">Enter the revision number, or leave blank to use the next automatic number.</small>
@@ -94,7 +97,7 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
                 <div class="field softcopy-upload md:col-span-2" *ngIf="!isHardcopy()">
                     <label for="attached-scan-files">Attached scan documents</label>
                     <input id="attached-scan-files" type="file" class="file-field" multiple [disabled]="saving" (change)="selectScanFiles($event)" />
-                    <small class="field-note">Uploaded separately from the revision file. Softcopy only; these remain request attachments and never become the approved controlled file automatically.</small>
+                    <small class="field-note">Uploaded separately from the review Softcopy. These remain request/support attachments and never become the approved controlled file automatically.</small>
                     <div class="attachment-selection" *ngIf="form.attached_scan_files.length">
                         <span *ngFor="let file of form.attached_scan_files"><i class="pi pi-paperclip"></i>{{ file.name }}</span>
                     </div>
@@ -667,6 +670,22 @@ export class DocumentFormDialogComponent implements OnChanges {
         return this.form.document_type === 'HARDCOPY';
     }
 
+    reviewFileApplies() {
+        return !this.isHardcopy() && (this.form.direct_create || this.form.action_requested !== 'CANCELLATION');
+    }
+
+    reviewFileLabel() {
+        if (this.form.direct_create) return 'Controlled Softcopy file';
+        return this.isRevisionAction() ? 'Revised Softcopy for approver review' : 'New Softcopy for approver review';
+    }
+
+    reviewFileGuidance() {
+        if (this.form.direct_create) {
+            return 'Required for direct controlled-copy creation.';
+        }
+        return 'Attach the exact Softcopy file the selected approvers must review. After final approval, this same file becomes the approved/current revision; no second upload is required after Document Controller approval.';
+    }
+
     selectInitialFile(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0] ?? null;
@@ -710,6 +729,10 @@ export class DocumentFormDialogComponent implements OnChanges {
     }
 
     onActionRequestedChange() {
+        if (this.form.action_requested === 'CANCELLATION') {
+            this.form.initial_file = null;
+            this.fileAnalysisMessage = '';
+        }
         if (!this.isRevisionAction() && !this.form.direct_create) {
             this.form.initial_revision_number = '';
             this.form.reason_for_change = undefined;
