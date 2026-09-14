@@ -42,6 +42,8 @@ export interface SystemSettings {
     loginDescription: string;
     loginWelcomeTitle: string;
     loginWelcomeSubtitle: string;
+    backendApiUrl: string;
+    backupApiUrl: string;
     assistantEnabled: boolean;
     assistantTitle: string;
     assistantWelcomeText: string;
@@ -67,6 +69,8 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
     loginDescription: 'Manage the full document lifecycle from one secure workspace. This portal keeps records organized, routes access by role, and brings documents, storage, users, and permissions together in a clean panel experience.',
     loginWelcomeTitle: 'Welcome back',
     loginWelcomeSubtitle: 'Use your username and password to continue.',
+    backendApiUrl: BACKEND_API_BASE_URL,
+    backupApiUrl: `${BACKEND_API_BASE_URL}/backup-restore`,
     assistantEnabled: true,
     assistantTitle: 'Document Assistant',
     assistantWelcomeText: 'Available across the panel for faster document lookup and guided retrieval, with offline local search fallback when internet AI is unavailable.',
@@ -130,11 +134,7 @@ export class SystemSettingsService {
     save(settings: SystemSettings) {
         const normalized = this.normalizeSettings(settings);
 
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        } catch {
-            throw new Error('The uploaded branding images exceed this browser storage capacity. Choose smaller image files.');
-        }
+        this.persistLocalSettings(normalized);
         const pageSettings = this.withPageDocumentView(normalized);
         this.settingsState.set(pageSettings);
         this.applyBrowserBranding(pageSettings);
@@ -217,6 +217,8 @@ export class SystemSettingsService {
             loginDescription: this.text(settings.loginDescription, DEFAULT_SYSTEM_SETTINGS.loginDescription, 500),
             loginWelcomeTitle: this.text(settings.loginWelcomeTitle, DEFAULT_SYSTEM_SETTINGS.loginWelcomeTitle, 60),
             loginWelcomeSubtitle: this.text(settings.loginWelcomeSubtitle, DEFAULT_SYSTEM_SETTINGS.loginWelcomeSubtitle, 140),
+            backendApiUrl: this.connectionUrl(settings.backendApiUrl, DEFAULT_SYSTEM_SETTINGS.backendApiUrl),
+            backupApiUrl: this.connectionUrl(settings.backupApiUrl, DEFAULT_SYSTEM_SETTINGS.backupApiUrl),
             assistantEnabled: settings.assistantEnabled !== false,
             assistantTitle: this.text(settings.assistantTitle, DEFAULT_SYSTEM_SETTINGS.assistantTitle, 60),
             assistantWelcomeText: this.text(settings.assistantWelcomeText, DEFAULT_SYSTEM_SETTINGS.assistantWelcomeText, 300),
@@ -311,11 +313,7 @@ export class SystemSettingsService {
     private applyServerAppearance(appearance: AppearanceSettings & Partial<SystemSettings>) {
         const incoming = appearance.settings || appearance;
         const normalized = this.normalizeSettings({ ...this.settingsState(), ...incoming });
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        } catch {
-            // Keep synchronized settings in memory when browser storage is unavailable.
-        }
+        this.persistLocalSettings(normalized);
         const settings = this.withPageDocumentView(normalized);
         this.settingsState.set(settings);
         this.applyBrowserBranding(settings);
@@ -331,6 +329,38 @@ export class SystemSettingsService {
             return normalized.slice(0, 3_000_000);
         }
         return /^(\/|https?:\/\/)/i.test(normalized) ? normalized.slice(0, 500) : fallback;
+    }
+
+    private connectionUrl(value: unknown, fallback: string) {
+        const normalized = typeof value === 'string' ? value.trim() : '';
+        return /^(\/|https?:\/\/)/i.test(normalized) ? normalized.replace(/\/$/, '').slice(0, 500) : fallback;
+    }
+
+    private persistLocalSettings(settings: SystemSettings) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            return;
+        } catch {
+            // Large branding data URLs belong in the shared server setting. Keep a
+            // compact local copy so a browser quota cannot block the server save.
+        }
+
+        const compactSettings = {
+            ...settings,
+            logoUrl: this.localAssetUrl(settings.logoUrl),
+            faviconUrl: this.localAssetUrl(settings.faviconUrl),
+            loginCoverUrl: this.localAssetUrl(settings.loginCoverUrl)
+        };
+
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(compactSettings));
+        } catch {
+            // The in-memory signal remains authoritative until the shared API responds.
+        }
+    }
+
+    private localAssetUrl(value: string) {
+        return /^data:image\//i.test(value) ? '' : value;
     }
 
     private applyBrowserBranding(settings: SystemSettings) {

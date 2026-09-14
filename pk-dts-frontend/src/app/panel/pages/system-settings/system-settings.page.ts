@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
 import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '@/app/shared/services/system-settings.service';
 
 @Component({
@@ -91,14 +90,14 @@ import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '
                         <div class="card-icon"><i class="pi pi-server"></i></div>
                         <div>
                             <h2>System API</h2>
-                            <p>Read-only public endpoints currently compiled into this frontend.</p>
+                            <p>Set the API addresses used by this deployment. Values are saved with the system settings.</p>
                         </div>
                     </div>
                     <div class="form-grid">
-                        <div class="field"><label>Backend API base URL</label><input [value]="backendApiUrl" readonly /></div>
-                        <div class="field"><label>Backup and restore API</label><input [value]="backupApiUrl" readonly /></div>
+                        <div class="field"><label for="backend-api-url">Backend API base URL</label><input id="backend-api-url" type="url" [(ngModel)]="form.backendApiUrl" placeholder="/api/v1" /></div>
+                        <div class="field"><label for="backup-api-url">Backup and restore API</label><input id="backup-api-url" type="url" [(ngModel)]="form.backupApiUrl" placeholder="/api/v1/backup-restore" /></div>
                     </div>
-                    <div class="security-note"><i class="pi pi-info-circle"></i><span>Change public API routing through deployment configuration, then rebuild the frontend.</span></div>
+                    <div class="security-note"><i class="pi pi-info-circle"></i><span>Use a relative path when the API is behind the same domain. External API URLs must allow this frontend origin through CORS.</span></div>
                 </article>
             </div>
         </section>
@@ -126,7 +125,6 @@ import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '
             .field label { color: #374151; font-size: .7rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
             .field input, .field select, .field textarea { width: 100%; border: 1px solid #d1d5db; border-radius: .8rem; background: #fff; padding: .75rem .85rem; color: #111827; outline: none; resize: vertical; }
             .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--dts-accent, #800000); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dts-accent, #800000) 16%, transparent); }
-            .field input[readonly] { background: #f8fafc; color: #475569; }
             .image-upload { display: grid !important; grid-template-columns: 2.25rem minmax(0,1fr); align-items: center; gap: .15rem .7rem; border: 1px dashed #cbd5e1; border-radius: .85rem; background: #f8fafc; padding: .7rem .8rem !important; color: #334155 !important; cursor: pointer; text-transform: none !important; letter-spacing: normal !important; }
             .image-upload i { grid-row: 1/3; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: .65rem; background: var(--dts-accent, #800000); color: #fff; }
             .image-upload span { font-size: .75rem; font-weight: 850; }
@@ -163,8 +161,6 @@ export class SystemSettingsPage {
     imageMessage = signal('');
     imageError = signal(false);
     activeTab = signal<'branding' | 'login' | 'infrastructure'>('branding');
-    readonly backendApiUrl = BACKEND_API_BASE_URL;
-    readonly backupApiUrl = `${BACKEND_API_BASE_URL}/backup-restore`;
 
     coverPreviewImage() {
         const safeUrl = this.form.loginCoverUrl.replace(/["'()]/g, '');
@@ -177,7 +173,9 @@ export class SystemSettingsPage {
         input.value = '';
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        const imageExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'ico'];
+        if (!file.type.startsWith('image/') && !imageExtensions.includes(extension)) {
             this.showImageMessage('Choose a valid image file.', true);
             return;
         }
