@@ -18,7 +18,7 @@ let record = {
     document_number: 'DTS-QA-001', document_type: 'SOFTCOPY', status: 'PendingApproval',
     created_at: revision.created_at, creator: user, requester: user,
     workflow_steps: [step], approver_configuration: { workflow_name: 'Document approval', workflow_version: 6 },
-    softcopy: { current_revision: revision, category: { category_name: 'Quality / Procedures' }, attachments: [attachment] },
+    softcopy: { current_revision: revision, revisions: [revision], category: { category_name: 'Quality / Procedures' }, attachments: [attachment] },
     assignments: []
 };
 const server = http.createServer((req, res) => {
@@ -35,6 +35,7 @@ const server = http.createServer((req, res) => {
     const browser = await chromium.launch({ headless: true, ...(process.env.DTS_BROWSER_PATH ? { executablePath: process.env.DTS_BROWSER_PATH } : {}) });
     try {
         const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+        page.setDefaultTimeout(10_000);
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
         await page.addInitScript(user => {
@@ -65,6 +66,12 @@ const server = http.createServer((req, res) => {
             await page.locator('.document-details-dialog').waitFor();
         };
         const dialog = page.locator('.document-details-dialog');
+        const switchTab = async name => {
+            const tab = dialog.getByRole('tab', { name });
+            await tab.click();
+            const id = await tab.getAttribute('id');
+            await dialog.locator(`[role="tabpanel"][aria-labelledby="${id}"][data-p-active="true"]`).waitFor({ state: 'visible' });
+        };
         const noOverflow = async () => assert(await dialog.evaluate(el => {
             const content = el.querySelector('.p-dialog-content');
             return content.scrollWidth <= content.clientWidth + 1 && el.getBoundingClientRect().right <= innerWidth;
@@ -72,25 +79,36 @@ const server = http.createServer((req, res) => {
         await open();
         await noOverflow();
         assert.equal(await dialog.locator('h2').innerText(), record.document_title);
+        await switchTab(/^Files/);
         assert.equal(await dialog.locator('.attachment-row').count(), 1);
         assert.equal(await dialog.locator('a button').count(), 0, 'Delete must be separate from preview');
-        await dialog.locator('.metadata-section-heading').focus();
-        await page.keyboard.press('Enter');
+        await switchTab('Overview');
+        await dialog.locator('.metadata-section-heading').waitFor({ state: 'visible' });
+        await dialog.locator('.metadata-section-heading').press('Enter');
+        await dialog.locator('.softcopy-record-section[open]').waitFor({ state: 'visible' });
         assert.equal(await dialog.locator('.softcopy-record-section').getAttribute('open'), '');
+        await switchTab(/^Workflow/);
         await dialog.locator('.workflow-reassign-controls summary').click();
         await dialog.getByLabel('Replacement approver').selectOption('reviewer');
         await dialog.getByLabel('Reason for reassignment').fill('Covering the reviewer');
-        await dialog.getByRole('button', { name: 'Reassign', exact: true }).click();
+        await dialog.locator('.workflow-reassign-controls button').click();
         await dialog.getByRole('alert').filter({ hasText: 'Approver changed' }).waitFor();
+        await page.locator('.modern-alert-dialog').getByRole('button', { name: 'Close', exact: true }).click();
+        await page.locator('.modern-alert-dialog').waitFor({ state: 'hidden' });
         await dialog.locator('.workflow-reassign-controls summary').click();
+        await switchTab('Overview');
         await dialog.locator('.metadata-section-heading').click();
         await dialog.locator('.digital-file-actions').getByRole('button', { name: 'Preview file' }).click();
         await dialog.locator('.file-preview-panel [role=alert]').waitFor();
+        await page.locator('.modern-alert-dialog').getByRole('button', { name: 'Close', exact: true }).click();
+        await page.locator('.modern-alert-dialog').waitFor({ state: 'hidden' });
         await dialog.getByRole('button', { name: 'Close preview', exact: true }).click();
+        await dialog.locator('.file-preview-panel').waitFor({ state: 'detached' });
         assert.equal(await dialog.locator('.file-preview-panel').count(), 0);
         await dialog.locator('.revision-summary').click();
         assert(await dialog.locator('.revision-actions').getByRole('button', { name: 'Download controlled copy' }).isVisible());
         await dialog.locator('.revision-summary').click();
+        await switchTab('Overview');
         await dialog.locator('.p-dialog-content').evaluate(el => el.scrollTop = 0);
         await page.screenshot({ path: path.join(artifacts, 'softcopy-desktop.png') });
         await page.setViewportSize({ width: 390, height: 844 });
@@ -98,6 +116,7 @@ const server = http.createServer((req, res) => {
         await page.screenshot({ path: path.join(artifacts, 'softcopy-mobile.png') });
         await page.evaluate(() => document.documentElement.classList.add('app-dark'));
         await page.screenshot({ path: path.join(artifacts, 'softcopy-dark.png') });
+        await dialog.getByRole('tab', { name: 'Overview', exact: true }).focus();
         await page.keyboard.press('Escape');
         await dialog.waitFor({ state: 'hidden' });
         record = { ...record, document_type: 'HARDCOPY', softcopy: null, status: 'Completed', workflow_steps: [], hardcopy: { area: { area_name: 'Production' }, specific: { specific_name: 'Quality records' }, asset: { asset_number: 'CAB-04' }, location: { location_name: 'Shelf 2' }, sequence: { sequence_code: '001' }, attachments: [] } };
@@ -113,6 +132,14 @@ const server = http.createServer((req, res) => {
         assert.deepEqual(errors, []);
         console.log('PASS: desktop/mobile layout, keyboard disclosure, workflow error, preview error/close, revision actions, attachment targets, Escape and Close.');
         console.log('Screenshots: ' + artifacts);
+    } catch (error) {
+        const page = browser.contexts()[0]?.pages()[0];
+        if (page) {
+            await page.screenshot({ path: path.join(artifacts, 'failure.png') });
+            console.error(await page.locator('.document-details-dialog').innerText().catch(() => 'Modal is closed'));
+            console.error('Screenshots: ' + artifacts);
+        }
+        throw error;
     } finally {
         await browser.close();
         server.close();

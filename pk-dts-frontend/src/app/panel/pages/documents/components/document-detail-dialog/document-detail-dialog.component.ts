@@ -231,7 +231,10 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                 </div>
             </ng-container>
 
-            <ng-template pTemplate="footer"><p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" /></ng-template>
+            <ng-template pTemplate="footer">
+                <span class="detail-footer-hint"><kbd>Esc</kbd> to close</span>
+                <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+            </ng-template>
         </p-dialog>
     `,
     styles: [':host { display: block; }']

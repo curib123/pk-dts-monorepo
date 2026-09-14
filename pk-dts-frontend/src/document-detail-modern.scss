@@ -12,9 +12,9 @@
     --detail-faint: #98a2b3;
     --detail-border: #e4e7ec;
     --detail-border-strong: #d0d5dd;
-    --detail-accent: #9f1d20;
-    --detail-accent-strong: #7f1719;
-    --detail-accent-soft: #fff2f1;
+    --detail-accent: var(--brand-primary, #800000);
+    --detail-accent-strong: var(--brand-primary-hover, #700000);
+    --detail-accent-soft: var(--brand-soft, #fff5f5);
     --detail-success: #067647;
     --detail-success-soft: #ecfdf3;
     --detail-warning: #b54708;
@@ -23,11 +23,11 @@
     --detail-danger-soft: #fef3f2;
     --detail-shadow: 0 24px 64px rgba(16, 24, 40, 0.18), 0 4px 16px rgba(16, 24, 40, 0.08);
 
-    width: min(76rem, 96vw) !important;
-    height: min(880px, 92dvh);
+    width: min(68rem, 96vw) !important;
+    height: min(840px, 92dvh);
     max-height: 92dvh;
     border: 1px solid var(--detail-border);
-    border-radius: 18px;
+    border-radius: 22px;
     overflow: hidden;
     background: var(--detail-surface);
     color: var(--detail-text);
@@ -41,13 +41,13 @@
 
     .p-dialog-header {
         min-height: 60px;
-        padding: 14px 20px 14px 24px;
+        padding: 14px 24px 14px 28px;
         border-bottom: 1px solid var(--detail-border);
     }
 
     .p-dialog-title {
         color: var(--detail-heading);
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: -0.01em;
     }
@@ -70,7 +70,7 @@
 
     .p-dialog-content {
         padding: 0;
-        background: var(--detail-surface);
+        background: var(--detail-subtle);
         overflow-y: auto;
         overflow-x: hidden;
         flex: 1;
@@ -83,7 +83,7 @@
         border-top: 1px solid var(--detail-border);
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
 
         .p-button {
             min-width: 92px;
@@ -91,6 +91,22 @@
             border-radius: 9px;
             font-weight: 650;
         }
+    }
+
+    .detail-footer-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--detail-muted);
+        font-size: 12px;
+    }
+
+    kbd {
+        padding: 2px 6px;
+        border: 1px solid var(--detail-border);
+        border-radius: 5px;
+        background: var(--detail-subtle);
+        font: inherit;
     }
 }
 
@@ -209,23 +225,23 @@ html.app-dark .document-details-dialog.p-dialog {
     .document-hero {
         position: relative;
         display: grid;
-        grid-template-columns: 52px minmax(0, 1fr) auto;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
         align-items: start;
         gap: 16px;
-        padding: 24px 28px 20px;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--detail-accent-soft) 55%, var(--detail-surface)) 0%, var(--detail-surface) 100%);
-        border-bottom: 1px solid var(--detail-border);
+        padding: 28px;
+        background: var(--detail-accent-strong);
+        border-bottom: 0;
     }
 
     .hero-icon {
         display: grid;
         place-items: center;
-        width: 52px;
-        height: 52px;
-        border: 1px solid color-mix(in srgb, var(--detail-accent) 18%, var(--detail-border));
-        border-radius: 13px;
-        background: var(--detail-surface-raised);
-        color: var(--detail-accent);
+        width: 56px;
+        height: 56px;
+        border: 1px solid #ffffff40;
+        border-radius: 16px;
+        background: #ffffff14;
+        color: #ffffff;
         font-size: 22px;
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
     }
@@ -236,7 +252,7 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .hero-kicker {
         margin: 1px 0 5px;
-        color: var(--detail-muted);
+        color: #ffffffc9;
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.07em;
@@ -245,8 +261,8 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .hero-copy h2 {
         max-width: 860px;
-        color: var(--detail-heading);
-        font-size: clamp(19px, 2vw, 24px);
+        color: #ffffff;
+        font-size: clamp(21px, 2vw, 27px);
         font-weight: 740;
         letter-spacing: -0.025em;
         line-height: 1.28;
@@ -258,7 +274,7 @@ html.app-dark .document-details-dialog.p-dialog {
         flex-wrap: wrap;
         gap: 7px 16px;
         margin-top: 9px;
-        color: var(--detail-muted);
+        color: #ffffffd9;
         font-size: 12.5px;
     }
 
@@ -271,12 +287,12 @@ html.app-dark .document-details-dialog.p-dialog {
     }
 
     .hero-meta i {
-        color: var(--detail-faint);
+        color: #ffffffb3;
         font-size: 11px;
     }
 
     .hero-badges {
-        align-self: center;
+        align-self: start;
         max-width: 220px;
         text-align: right;
     }
@@ -317,9 +333,9 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .summary-strip {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-        padding: 16px 28px 18px;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 16px;
+        padding: 20px 28px;
         margin: 0;
         background: var(--detail-surface);
         border-bottom: 1px solid var(--detail-border);
@@ -331,11 +347,11 @@ html.app-dark .document-details-dialog.p-dialog {
         align-items: center;
         gap: 10px;
         min-width: 0;
-        padding: 11px 12px;
-        border: 1px solid var(--detail-border);
-        border-radius: 11px;
-        background: var(--detail-surface-raised);
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
     }
 
     .summary-card-icon {
@@ -376,21 +392,23 @@ html.app-dark .document-details-dialog.p-dialog {
     .summary-card strong {
         color: var(--detail-heading);
         font-size: 13px;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .summary-card small {
         margin-top: 2px;
         color: var(--detail-muted);
         font-size: 10.5px;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .detail-tabs {
         --p-tabs-tablist-background: transparent;
         --p-tabs-tablist-border-color: transparent;
         --p-tabs-tab-color: var(--detail-muted);
-        --p-tabs-tab-active-color: var(--detail-heading);
+        --p-tabs-tab-active-color: var(--detail-accent);
         --p-tabs-tab-active-border-color: transparent;
         --p-tabs-active-bar-background: transparent;
         --p-tabs-tab-hover-color: var(--detail-heading);
@@ -402,40 +420,39 @@ html.app-dark .document-details-dialog.p-dialog {
         top: 0;
         z-index: 4;
         padding: 10px 28px;
-        background: color-mix(in srgb, var(--detail-surface) 94%, transparent);
+        background: var(--detail-surface);
         border-bottom: 1px solid var(--detail-border);
-        backdrop-filter: blur(12px);
     }
 
     .p-tablist-tab-list {
-        width: fit-content;
+        width: 100%;
         max-width: 100%;
-        gap: 4px;
-        padding: 4px;
-        border: 1px solid var(--detail-border);
-        border-radius: 11px;
-        background: var(--detail-subtle);
+        gap: 8px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
     }
 
     .p-tab {
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        min-height: 36px;
-        padding: 7px 12px;
+        min-height: 44px;
+        padding: 10px 18px;
         border: 0 !important;
         border-radius: 8px;
         background: transparent;
         color: var(--detail-muted);
-        font-size: 12.5px;
+        font-size: 13px;
         font-weight: 650;
         transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
     }
 
     .p-tab[aria-selected='true'] {
-        background: var(--detail-surface-raised);
-        color: var(--detail-heading);
-        box-shadow: 0 1px 3px rgba(16, 24, 40, 0.10);
+        background: var(--detail-accent-soft);
+        color: var(--detail-accent);
+        box-shadow: inset 0 -2px var(--detail-accent);
     }
 
     .p-tab:hover {
@@ -468,7 +485,7 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .p-tabpanels {
         padding: 22px 28px 30px;
-        background: var(--detail-surface);
+        background: var(--detail-subtle);
         color: var(--detail-text);
     }
 
@@ -551,6 +568,38 @@ html.app-dark .document-details-dialog.p-dialog {
     .physical-visual,
     .route-content {
         min-width: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .physical-visual .storage-fields {
+        counter-reset: storage-position;
+        gap: 14px;
+    }
+
+    .physical-visual .storage-fields > div {
+        position: relative;
+        padding-top: 45px;
+        counter-increment: storage-position;
+        background: var(--detail-surface);
+    }
+
+    .physical-visual .storage-fields > div::before {
+        content: counter(storage-position, decimal-leading-zero);
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        color: var(--detail-accent);
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: .06em;
+    }
+
+    .physical-visual .storage-fields > div:last-child {
+        border-color: color-mix(in srgb, var(--detail-accent) 24%, var(--detail-border));
+        background: var(--detail-accent-soft);
     }
 
     .storage-fields {
@@ -564,8 +613,8 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .storage-fields > div {
         min-width: 0;
-        min-height: 67px;
-        padding: 11px 12px;
+        min-height: 74px;
+        padding: 13px 14px;
         border: 1px solid var(--detail-border);
         border-radius: 10px;
         background: var(--detail-subtle);
@@ -573,7 +622,7 @@ html.app-dark .document-details-dialog.p-dialog {
 
     dt {
         color: var(--detail-muted);
-        font-size: 10.5px;
+        font-size: 12px;
         font-weight: 650;
         line-height: 1.35;
     }
@@ -581,19 +630,19 @@ html.app-dark .document-details-dialog.p-dialog {
     dd {
         margin: 5px 0 0;
         color: var(--detail-heading);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         line-height: 1.4;
         overflow-wrap: anywhere;
     }
 
     .digital-file-actions {
-        display: grid;
-        grid-template-columns: minmax(220px, 1fr) repeat(3, auto);
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
         margin-top: 14px;
-        padding: 12px;
+        padding: 18px;
         border: 1px solid var(--detail-border);
         border-radius: 11px;
         background: var(--detail-subtle);
@@ -606,12 +655,14 @@ html.app-dark .document-details-dialog.p-dialog {
         gap: 10px;
         min-width: 0;
         overflow-wrap: anywhere;
+        flex: 1 0 100%;
+        margin-bottom: 8px;
     }
 
     .current-file-name strong {
         min-width: 0;
         color: var(--detail-heading);
-        font-size: 12.5px;
+        font-size: 14px;
         line-height: 1.35;
         white-space: normal;
         overflow-wrap: anywhere;
@@ -646,7 +697,8 @@ html.app-dark .document-details-dialog.p-dialog {
     .controlled-file-note,
     .download-error {
         grid-column: 1 / -1;
-        font-size: 11px;
+        flex-basis: 100%;
+        font-size: 12px;
     }
 
     .controlled-file-note {
@@ -768,7 +820,7 @@ html.app-dark .document-details-dialog.p-dialog {
     .revision-detail-item > span {
         display: block;
         color: var(--detail-muted);
-        font-size: 10.5px;
+        font-size: 12px;
         font-weight: 650;
     }
 
@@ -777,7 +829,7 @@ html.app-dark .document-details-dialog.p-dialog {
         display: block;
         margin-top: 4px;
         color: var(--detail-heading);
-        font-size: 12.5px;
+        font-size: 14px;
         line-height: 1.45;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
@@ -795,7 +847,9 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .approval-route-list {
         position: relative;
-        margin-top: 6px;
+        margin-top: 16px;
+        display: grid;
+        gap: 12px;
     }
 
     .approval-route-step {
@@ -804,7 +858,8 @@ html.app-dark .document-details-dialog.p-dialog {
         grid-template-columns: 34px minmax(0, 1fr) minmax(0, 270px);
         align-items: start;
         gap: 12px;
-        padding: 14px 8px;
+        padding: 18px 16px;
+        border: 1px solid var(--detail-border);
         border-radius: 10px;
     }
 
@@ -814,6 +869,8 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .approval-route-step.current {
         background: var(--detail-accent-soft);
+        border-color: color-mix(in srgb, var(--detail-accent) 28%, var(--detail-border));
+        box-shadow: inset 3px 0 var(--detail-accent);
     }
 
     .approval-step-number {
@@ -853,13 +910,13 @@ html.app-dark .document-details-dialog.p-dialog {
 
     .approval-step-copy > span {
         color: var(--detail-muted);
-        font-size: 10.5px;
+        font-size: 12px;
         font-weight: 650;
     }
 
     .approval-step-copy > strong {
         color: var(--detail-heading);
-        font-size: 13px;
+        font-size: 15px;
     }
 
     .approval-step-copy > small {
@@ -1115,7 +1172,7 @@ html.app-dark .document-details-dialog.p-dialog {
         align-items: center;
         gap: 11px;
         min-width: 0;
-        padding: 12px;
+        padding: 18px;
         cursor: pointer;
     }
 
@@ -1168,7 +1225,7 @@ html.app-dark .document-details-dialog.p-dialog {
     .revision-copy h4 {
         margin: 4px 0;
         color: var(--detail-heading);
-        font-size: 12.5px;
+        font-size: 14px;
         font-weight: 700;
         line-height: 1.4;
         overflow-wrap: anywhere;
@@ -1179,7 +1236,7 @@ html.app-dark .document-details-dialog.p-dialog {
         flex-wrap: wrap;
         gap: 4px 14px;
         color: var(--detail-muted);
-        font-size: 10.5px;
+        font-size: 12px;
     }
 
     .revision-meta i,
@@ -1224,7 +1281,7 @@ html.app-dark .document-details-dialog.p-dialog {
         justify-items: center;
         gap: 5px;
         margin-top: 12px;
-        padding: 28px 18px;
+        padding: 38px 20px;
         border: 1px dashed var(--detail-border-strong);
         border-radius: 11px;
         background: var(--detail-subtle);
@@ -1262,7 +1319,7 @@ html.app-dark .document-details-dialog.p-dialog {
         }
 
         .digital-file-actions {
-            grid-template-columns: minmax(0, 1fr) repeat(2, auto);
+            gap: 10px;
         }
 
         .digital-file-actions > button:last-of-type {
@@ -1343,13 +1400,16 @@ html.app-dark .document-details-dialog.p-dialog {
         }
 
         .p-tablist-tab-list {
-            width: max-content;
+            width: 100%;
+            gap: 4px;
         }
 
         .p-tab {
-            min-height: 34px;
-            padding: 6px 10px;
-            font-size: 11.5px;
+            flex: 1;
+            justify-content: center;
+            min-height: 44px;
+            padding: 8px 6px;
+            font-size: 12px;
         }
 
         .p-tabpanels {
@@ -1378,6 +1438,7 @@ html.app-dark .document-details-dialog.p-dialog {
         }
 
         .digital-file-actions {
+            display: grid;
             grid-template-columns: 1fr;
         }
 
@@ -1406,7 +1467,7 @@ html.app-dark .document-details-dialog.p-dialog {
         .approval-route-step {
             grid-template-columns: 32px minmax(0, 1fr);
             gap: 9px;
-            padding: 12px 4px;
+            padding: 14px 10px;
         }
 
         .workflow-reassign-controls {
@@ -1459,11 +1520,17 @@ html.app-dark .document-details-dialog.p-dialog {
 @media (max-width: 460px) {
     .document-details-dialog .document-detail-shell {
         .summary-strip {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
         }
 
         .summary-card {
-            grid-template-columns: 30px minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
+            padding: 0;
+        }
+
+        .summary-card-icon {
+            display: none;
         }
 
         .storage-fields {
