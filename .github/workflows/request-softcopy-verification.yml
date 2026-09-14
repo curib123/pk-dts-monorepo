@@ -1,0 +1,41 @@
+name: Request Softcopy Verification
+
+on:
+  push:
+    branches:
+      - feat/request-softcopy-before-approval
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pk-dts-backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pk_dts_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pk-dts-backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test -- request-time-documents.service.spec.ts
+      - run: npm run build
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pk-dts-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pk-dts-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
