@@ -33,6 +33,7 @@ export class DocumentRequestReviewFileController {
 
   @Post(":id/request-review-file")
   @RequirePermissions(
+    "document-requests.create",
     "document-requests.edit",
     "documents.manage-own",
     "documents.edit",
