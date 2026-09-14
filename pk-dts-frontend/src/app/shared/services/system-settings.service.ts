@@ -90,6 +90,7 @@ const GENERATED_BRAND_LOGO_URL = '/images/pk-dts-logo-v2.png';
 const LEGACY_FAVICON_URL = '/images/peanut_kisses_logo-removebg-preview.png';
 const PREVIOUS_FAVICON_URL = '/images/dts-logo.png';
 const APPEARANCE_API = `${BACKEND_API_BASE_URL}/system-settings/appearance`;
+const RUNTIME_API_CONNECTION_STORAGE_KEY = 'dts.api-connections.v1';
 
 interface AppearanceSettings {
     themeScope: ThemeScope;
@@ -112,6 +113,7 @@ export class SystemSettingsService {
 
     constructor() {
         this.applyBrowserBranding(this.settingsState());
+        this.persistRuntimeConnections(this.settingsState());
         this.refreshAppearance();
         if (typeof window !== 'undefined') {
             window.addEventListener('storage', (event) => {
@@ -316,6 +318,7 @@ export class SystemSettingsService {
         this.persistLocalSettings(normalized);
         const settings = this.withPageDocumentView(normalized);
         this.settingsState.set(settings);
+        this.persistRuntimeConnections(settings);
         this.applyBrowserBranding(settings);
     }
 
@@ -361,6 +364,17 @@ export class SystemSettingsService {
 
     private localAssetUrl(value: string) {
         return /^data:image\//i.test(value) ? '' : value;
+    }
+
+    private persistRuntimeConnections(settings: SystemSettings) {
+        try {
+            localStorage.setItem(RUNTIME_API_CONNECTION_STORAGE_KEY, JSON.stringify({
+                backendApiUrl: settings.backendApiUrl,
+                backupApiUrl: settings.backupApiUrl
+            }));
+        } catch {
+            // The compiled API base remains the fallback when browser storage is unavailable.
+        }
     }
 
     private applyBrowserBranding(settings: SystemSettings) {
