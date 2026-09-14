@@ -199,6 +199,11 @@ export class SystemSettingsService {
     }
 
     private normalizeSettings(settings: Partial<SystemSettings>): SystemSettings {
+        const backendApiUrl = this.connectionUrl(settings.backendApiUrl, DEFAULT_SYSTEM_SETTINGS.backendApiUrl);
+        const backupApiUrl = settings.backupApiUrl === DEFAULT_SYSTEM_SETTINGS.backupApiUrl
+            ? `${backendApiUrl}/backup-restore`
+            : this.connectionUrl(settings.backupApiUrl, `${backendApiUrl}/backup-restore`);
+
         return {
             // Retained in the API model for backward compatibility only. Actual document layouts are remembered per user and page.
             defaultDocumentView: DEFAULT_SYSTEM_SETTINGS.defaultDocumentView,
@@ -219,8 +224,8 @@ export class SystemSettingsService {
             loginDescription: this.text(settings.loginDescription, DEFAULT_SYSTEM_SETTINGS.loginDescription, 500),
             loginWelcomeTitle: this.text(settings.loginWelcomeTitle, DEFAULT_SYSTEM_SETTINGS.loginWelcomeTitle, 60),
             loginWelcomeSubtitle: this.text(settings.loginWelcomeSubtitle, DEFAULT_SYSTEM_SETTINGS.loginWelcomeSubtitle, 140),
-            backendApiUrl: this.connectionUrl(settings.backendApiUrl, DEFAULT_SYSTEM_SETTINGS.backendApiUrl),
-            backupApiUrl: this.connectionUrl(settings.backupApiUrl, DEFAULT_SYSTEM_SETTINGS.backupApiUrl),
+            backendApiUrl,
+            backupApiUrl,
             assistantEnabled: settings.assistantEnabled !== false,
             assistantTitle: this.text(settings.assistantTitle, DEFAULT_SYSTEM_SETTINGS.assistantTitle, 60),
             assistantWelcomeText: this.text(settings.assistantWelcomeText, DEFAULT_SYSTEM_SETTINGS.assistantWelcomeText, 300),
