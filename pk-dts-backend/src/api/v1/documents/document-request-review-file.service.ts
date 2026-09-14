@@ -110,7 +110,7 @@ export class DocumentRequestReviewFileService {
       storedFilePath = join(categoryRoot, file.filename);
       await rename(file.path, storedFilePath);
 
-      const revision = await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         await tx.documentRevision.updateMany({
           where: {
             softcopy_id: document.softcopy!.softcopy_id,
@@ -123,7 +123,7 @@ export class DocumentRequestReviewFileService {
         const effectiveDate = this.parseDate(
           dto.effective_date || dto.new_effective_date,
         );
-        const created = await tx.documentRevision.create({
+        await tx.documentRevision.create({
           data: {
             revision_number: revisionNumber,
             reason_of_revision: dto.reason_of_revision?.trim() || null,
@@ -158,7 +158,6 @@ export class DocumentRequestReviewFileService {
             data: { series_number: seriesNumber },
           });
         }
-        return created;
       });
 
       storedFilePath = "";
@@ -186,7 +185,7 @@ export class DocumentRequestReviewFileService {
       document.document_type === DocumentType.SOFTCOPY &&
       this.requiresReviewFile(document.action_requested)
     ) {
-      await this.assertReviewFileReady(documentId, false);
+      await this.assertReviewFileReady(documentId);
     }
 
     return this.documentsService.transition(
@@ -208,7 +207,7 @@ export class DocumentRequestReviewFileService {
       documentId,
     );
     if (finalSoftcopyApproval) {
-      await this.assertReviewFileReady(documentId, true);
+      await this.assertReviewFileReady(documentId);
     }
 
     const result = await this.documentsService.transition(
@@ -247,7 +246,7 @@ export class DocumentRequestReviewFileService {
       document.document_type === DocumentType.SOFTCOPY &&
       !document.softcopy?.current_revision_id
     ) {
-      await this.assertReviewFileReady(documentId, true);
+      await this.assertReviewFileReady(documentId);
       await this.finalizeApprovedReviewFile(documentId, actor);
     }
 
@@ -260,10 +259,7 @@ export class DocumentRequestReviewFileService {
     );
   }
 
-  private async assertReviewFileReady(
-    documentId: bigint,
-    requireControlMetadata: boolean,
-  ) {
+  private async assertReviewFileReady(documentId: bigint) {
     const document = await this.prisma.document.findUnique({
       where: { document_id: documentId },
       include: {
@@ -298,11 +294,6 @@ export class DocumentRequestReviewFileService {
     if (!revision.series_number?.trim()) {
       throw new ConflictException(
         "Series Number is required on the review Softcopy before submission.",
-      );
-    }
-    if (requireControlMetadata && !revision.page_number?.trim()) {
-      throw new ConflictException(
-        "Page Number is required on the reviewed Softcopy before final approval.",
       );
     }
     return revision;
@@ -379,11 +370,10 @@ export class DocumentRequestReviewFileService {
       if (
         !revision.file_path ||
         !revision.series_number?.trim() ||
-        !revision.page_number?.trim() ||
         !document.softcopy.document_number?.trim()
       ) {
         throw new ConflictException(
-          "Document Number, Revision Number, Series Number, Page Number, Document Title, and the reviewed Softcopy file are required before final approval.",
+          "Document Number, Revision Number, Series Number, Document Title, and the reviewed Softcopy file are required before final approval.",
         );
       }
 
