@@ -43,13 +43,27 @@ export class DocumentRequestReviewFileService {
     const documentId = toBigIntId(documentIdValue, "document_id");
     const actorId = toBigIntId(actor.user_id, "current_user_id");
     let storedFilePath = "";
+    let previousFilePath = "";
 
     try {
       const document = await this.prisma.document.findUnique({
         where: { document_id: documentId },
         include: {
           assignments: { select: { user_id: true } },
-          softcopy: { include: { category: true } },
+          softcopy: {
+            include: {
+              category: true,
+              revisions: {
+                where: {
+                  approved_at: null,
+                  is_current: false,
+                  is_historical: false,
+                },
+                orderBy: { created_at: "desc" },
+                take: 1,
+              },
+            },
+          },
         },
       });
       if (!document) throw new NotFoundException("Document request not found.");
@@ -100,9 +114,16 @@ export class DocumentRequestReviewFileService {
         );
       }
 
+      const activeCandidate = document.softcopy.revisions[0];
       const revisionNumber = await this.resolveRevisionNumber(
         document.softcopy.softcopy_id,
         dto.revision_number,
+        activeCandidate
+          ? {
+              revision_id: activeCandidate.revision_id,
+              revision_number: activeCandidate.revision_number,
+            }
+          : undefined,
       );
       const categoryRoot = ensureRevisionCategoryUploadsRoot(
         document.softcopy.category.folder_name,
@@ -111,46 +132,68 @@ export class DocumentRequestReviewFileService {
       await rename(file.path, storedFilePath);
 
       await this.prisma.$transaction(async (tx) => {
-        await tx.documentRevision.updateMany({
-          where: {
-            softcopy_id: document.softcopy!.softcopy_id,
-            approved_at: null,
-            is_current: false,
-          },
-          data: { is_historical: true },
-        });
-
         const effectiveDate = this.parseDate(
           dto.effective_date || dto.new_effective_date,
         );
-        await tx.documentRevision.create({
-          data: {
-            revision_number: revisionNumber,
-            reason_of_revision: dto.reason_of_revision?.trim() || null,
-            effective_date: effectiveDate,
-            page_number: dto.page_number?.trim() || null,
-            series_number: seriesNumber,
-            document_title: document.document_title,
-            revision_level_from: dto.revision_level_from?.trim() || null,
-            revision_level_to: dto.revision_level_to?.trim() || null,
-            previous_effective_date: this.parseDate(dto.previous_effective_date),
-            new_effective_date: this.parseDate(dto.new_effective_date),
-            date_received:
-              document.status === DocumentStatus.Draft
-                ? null
-                : document.date_received ?? new Date(),
-            date_released: null,
-            approval_date: null,
-            file_name: file.originalname,
-            file_path: storedFilePath,
-            file_size: BigInt(file.size),
-            mime_type: file.mimetype,
-            softcopy_id: document.softcopy!.softcopy_id,
-            uploaded_by: actorId,
-            is_current: false,
-            is_historical: false,
-          },
-        });
+        const revisionData = {
+          revision_number: revisionNumber,
+          reason_of_revision: dto.reason_of_revision?.trim() || null,
+          effective_date: effectiveDate,
+          page_number: dto.page_number?.trim() || null,
+          series_number: seriesNumber,
+          document_title: document.document_title,
+          revision_level_from: dto.revision_level_from?.trim() || null,
+          revision_level_to: dto.revision_level_to?.trim() || null,
+          previous_effective_date: this.parseDate(dto.previous_effective_date),
+          new_effective_date: this.parseDate(dto.new_effective_date),
+          date_received:
+            document.status === DocumentStatus.Draft
+              ? activeCandidate?.date_received ?? null
+              : document.date_received ?? activeCandidate?.date_received ?? new Date(),
+          date_released: null,
+          approval_date: null,
+          file_name: file.originalname,
+          file_path: storedFilePath,
+          file_size: BigInt(file.size),
+          mime_type: file.mimetype,
+          uploaded_by: actorId,
+          is_current: false,
+          is_historical: false,
+          approved_by_user_id: null,
+          approved_at: null,
+        };
+
+        if (activeCandidate) {
+          previousFilePath = activeCandidate.file_path;
+          await tx.documentRevision.updateMany({
+            where: {
+              softcopy_id: document.softcopy!.softcopy_id,
+              approved_at: null,
+              is_current: false,
+              revision_id: { not: activeCandidate.revision_id },
+            },
+            data: { is_historical: true },
+          });
+          await tx.documentRevision.update({
+            where: { revision_id: activeCandidate.revision_id },
+            data: revisionData,
+          });
+        } else {
+          await tx.documentRevision.updateMany({
+            where: {
+              softcopy_id: document.softcopy!.softcopy_id,
+              approved_at: null,
+              is_current: false,
+            },
+            data: { is_historical: true },
+          });
+          await tx.documentRevision.create({
+            data: {
+              ...revisionData,
+              softcopy_id: document.softcopy!.softcopy_id,
+            },
+          });
+        }
 
         if (document.softcopy!.series_number !== seriesNumber) {
           await tx.softcopyDocument.update({
@@ -160,11 +203,17 @@ export class DocumentRequestReviewFileService {
         }
       });
 
+      const newFilePath = storedFilePath;
       storedFilePath = "";
+      if (previousFilePath && previousFilePath !== newFilePath) {
+        await unlink(previousFilePath).catch(() => undefined);
+      }
       return this.documentsService.findOne(documentIdValue);
     } catch (error) {
-      const pathToRemove = storedFilePath || file.path;
-      await unlink(pathToRemove).catch(() => undefined);
+      if (storedFilePath) {
+        await unlink(storedFilePath).catch(() => undefined);
+      }
+      await unlink(file.path).catch(() => undefined);
       throw error;
     }
   }
@@ -188,13 +237,31 @@ export class DocumentRequestReviewFileService {
       await this.assertReviewFileReady(documentId);
     }
 
-    return this.documentsService.transition(
+    const result = await this.documentsService.transition(
       documentIdValue,
       actor.user_id,
       "submit",
       remarks,
       actor,
     );
+
+    if (
+      document.document_type === DocumentType.SOFTCOPY &&
+      this.requiresReviewFile(document.action_requested) &&
+      result?.date_received
+    ) {
+      await this.prisma.documentRevision.updateMany({
+        where: {
+          softcopy: { document_id: documentId },
+          approved_at: null,
+          is_current: false,
+          is_historical: false,
+        },
+        data: { date_received: result.date_received },
+      });
+    }
+
+    return result;
   }
 
   async approveReview(
@@ -384,7 +451,11 @@ export class DocumentRequestReviewFileService {
       ) {
         await tx.documentRevision.update({
           where: { revision_id: document.softcopy.current_revision_id },
-          data: { is_current: false, is_historical: true },
+          data: {
+            is_current: false,
+            is_historical: true,
+            superseded_by_revision_id: revision.revision_id,
+          },
         });
       }
       await tx.documentRevision.updateMany({
@@ -403,6 +474,7 @@ export class DocumentRequestReviewFileService {
           approved_by_user_id: actorId,
           approved_at: now,
           approval_date: now,
+          date_received: revision.date_received ?? document.date_received ?? now,
           effective_date:
             revision.effective_date ??
             revision.new_effective_date ??
@@ -420,14 +492,41 @@ export class DocumentRequestReviewFileService {
   private async resolveRevisionNumber(
     softcopyId: bigint,
     requested?: string,
+    activeCandidate?: { revision_id: bigint; revision_number: string },
   ) {
     const preferred = requested?.trim();
+
+    if (activeCandidate) {
+      if (!preferred || preferred === activeCandidate.revision_number) {
+        return activeCandidate.revision_number;
+      }
+      const duplicate = await this.prisma.documentRevision.findFirst({
+        where: {
+          softcopy_id: softcopyId,
+          revision_number: preferred,
+          revision_id: { not: activeCandidate.revision_id },
+        },
+        select: { revision_id: true },
+      });
+      if (duplicate) {
+        throw new ConflictException(
+          `Revision ${preferred} already exists for this Softcopy document.`,
+        );
+      }
+      return preferred;
+    }
+
     if (preferred) {
       const duplicate = await this.prisma.documentRevision.findFirst({
         where: { softcopy_id: softcopyId, revision_number: preferred },
         select: { revision_id: true },
       });
-      if (!duplicate) return preferred;
+      if (duplicate) {
+        throw new ConflictException(
+          `Revision ${preferred} already exists for this Softcopy document.`,
+        );
+      }
+      return preferred;
     }
 
     const latest = await this.prisma.documentRevision.findFirst({
@@ -435,7 +534,7 @@ export class DocumentRequestReviewFileService {
       orderBy: { revision_id: "desc" },
       select: { revision_number: true },
     });
-    if (!latest) return preferred || "000";
+    if (!latest) return "000";
     const numeric = Number(latest.revision_number);
     return (Number.isNaN(numeric) ? 0 : numeric + 1)
       .toString()
