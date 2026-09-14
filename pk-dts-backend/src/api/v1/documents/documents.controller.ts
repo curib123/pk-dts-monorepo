@@ -212,7 +212,7 @@ export class DocumentsController {
     @Body() dto: AssignUserDocumentsDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.documentsService.setUserAssignments(userId, dto.user_ids, user!);
+    return this.documentsService.setUserAssignments(userId, dto.document_ids, user!);
   }
 
   @Get(":id/approvers")
