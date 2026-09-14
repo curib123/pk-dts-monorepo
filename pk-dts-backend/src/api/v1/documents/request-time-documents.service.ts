@@ -11,8 +11,8 @@ import {
   DocumentType,
   WorkflowStepStatus,
 } from "@prisma/client";
-import { rename, rm } from "fs/promises";
-import { basename, join, relative } from "path";
+import { rename, rm, stat } from "fs/promises";
+import { basename, isAbsolute, join } from "path";
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
 import { isAdministrativeRole } from "../../../common/auth/administrative-role.util";
 import { toBigIntId } from "../../../common/utils/prisma-id.util";
@@ -92,10 +92,9 @@ export class RequestTimeDocumentsService extends DocumentsService {
       return super.createRequest(dto, actorUserId, undefined, actor);
     }
 
-    // The core service intentionally rejects a file on a normal DCR. Create the
-    // request as a draft first, persist the candidate revision, then enter the
-    // configured workflow. This keeps the existing workflow implementation and
-    // makes the exact reviewed file available before approval starts.
+    // The core service intentionally rejects a file on a normal DCR. Persist the
+    // request as a draft first, attach the candidate revision, then start the
+    // existing workflow so every approver sees the exact submitted file.
     const requestedAction = dto.action ?? "DRAFT";
     const draft = await super.createRequest(
       { ...dto, action: "DRAFT" },
@@ -106,31 +105,21 @@ export class RequestTimeDocumentsService extends DocumentsService {
     if (!draft) return draft;
 
     const documentId = String(draft.document_id);
-    await this.saveProposalRevision(
-      documentId,
-      actorUserId,
-      file,
-      {
-        revisionNumber: dto.initial_revision_number,
-        reason: dto.brief_description?.trim() || dto.proposed_change?.trim() || null,
-        effectiveDate: this.parseOptionalDate(dto.new_effective_date),
-        pageNumber: dto.page_number,
-        seriesNumber: dto.series_number,
-        revisionLevelFrom: dto.revision_level_from,
-        revisionLevelTo: dto.revision_level_to,
-        previousEffectiveDate: this.parseOptionalDate(dto.previous_effective_date),
-        newEffectiveDate: this.parseOptionalDate(dto.new_effective_date),
-      },
-    );
+    await this.saveProposalRevision(documentId, actorUserId, file, {
+      revisionNumber: dto.initial_revision_number,
+      reason: dto.brief_description?.trim() || dto.proposed_change?.trim() || null,
+      effectiveDate: this.parseOptionalDate(dto.new_effective_date),
+      pageNumber: dto.page_number,
+      seriesNumber: dto.series_number,
+      revisionLevelFrom: dto.revision_level_from,
+      revisionLevelTo: dto.revision_level_to,
+      previousEffectiveDate: this.parseOptionalDate(dto.previous_effective_date),
+      newEffectiveDate: this.parseOptionalDate(dto.new_effective_date),
+    });
 
     if (requestedAction === "SUBMIT") {
-      await super.transition(
-        documentId,
-        actorUserId,
-        "submit",
-        undefined,
-        actor,
-      );
+      await this.markProposalReceived(documentId);
+      await super.transition(documentId, actorUserId, "submit", undefined, actor);
     }
 
     return super.findOne(documentId, actor);
@@ -155,7 +144,6 @@ export class RequestTimeDocumentsService extends DocumentsService {
         },
       },
     });
-
     if (!document) return null;
 
     const requestEditingStatuses = new Set<DocumentStatus>([
@@ -166,7 +154,6 @@ export class RequestTimeDocumentsService extends DocumentsService {
     if (!requestEditingStatuses.has(document.status)) {
       return super.createRevision(documentIdValue, dto, file, actor);
     }
-
     if (!file) {
       throw new BadRequestException("A proposed Softcopy file is required.");
     }
@@ -225,6 +212,7 @@ export class RequestTimeDocumentsService extends DocumentsService {
   ) {
     if (action === "submit") {
       await this.assertProposalExistsBeforeSubmit(id);
+      await this.markProposalReceived(id);
     }
     if (action === "approve") {
       await this.preflightFinalSoftcopyApproval(id);
@@ -238,10 +226,7 @@ export class RequestTimeDocumentsService extends DocumentsService {
       actor,
     );
 
-    if (
-      action === "approve" &&
-      transitioned?.status === DocumentStatus.Approved
-    ) {
+    if (action === "approve" && transitioned?.status === DocumentStatus.Approved) {
       await this.promotePendingProposal(
         toBigIntId(id, "document_id"),
         toBigIntId(actorUserId, "current_user_id"),
@@ -252,9 +237,37 @@ export class RequestTimeDocumentsService extends DocumentsService {
     return transitioned;
   }
 
+  // The review dialog currently asks the controlled/uncontrolled endpoints for
+  // Office/PDF previews. Until the candidate is approved, return the original
+  // bytes so reviewers inspect the exact submitted proposal without a stamp.
+  override async getStampedRevision(
+    documentIdValue: string,
+    revisionIdValue: string,
+    user: AuthenticatedUser,
+  ) {
+    const pending = await this.pendingRawRevision(
+      documentIdValue,
+      revisionIdValue,
+      user,
+    );
+    return pending ?? super.getStampedRevision(documentIdValue, revisionIdValue, user);
+  }
+
+  override async getUncontrolledRevision(
+    documentIdValue: string,
+    revisionIdValue: string,
+    user: AuthenticatedUser,
+  ) {
+    const pending = await this.pendingRawRevision(
+      documentIdValue,
+      revisionIdValue,
+      user,
+    );
+    return pending ?? super.getUncontrolledRevision(documentIdValue, revisionIdValue, user);
+  }
+
   private actionNeedsProposal(action?: DocumentActionRequested | null) {
-    const requested = action ?? DocumentActionRequested.CREATE;
-    return requested !== DocumentActionRequested.CANCELLATION;
+    return (action ?? DocumentActionRequested.CREATE) !== DocumentActionRequested.CANCELLATION;
   }
 
   private assertProposalMetadata(input: {
@@ -280,9 +293,8 @@ export class RequestTimeDocumentsService extends DocumentsService {
   }
 
   private async assertProposalExistsBeforeSubmit(documentIdValue: string) {
-    const documentId = toBigIntId(documentIdValue, "document_id");
     const document = await this.requestPrisma.document.findUnique({
-      where: { document_id: documentId },
+      where: { document_id: toBigIntId(documentIdValue, "document_id") },
       include: {
         softcopy: {
           include: { revisions: { orderBy: { created_at: "desc" } } },
@@ -300,9 +312,8 @@ export class RequestTimeDocumentsService extends DocumentsService {
   }
 
   private async preflightFinalSoftcopyApproval(documentIdValue: string) {
-    const documentId = toBigIntId(documentIdValue, "document_id");
     const document = await this.requestPrisma.document.findUnique({
-      where: { document_id: documentId },
+      where: { document_id: toBigIntId(documentIdValue, "document_id") },
       include: {
         workflow_steps: { orderBy: { sequence: "asc" } },
         softcopy: {
@@ -340,13 +351,9 @@ export class RequestTimeDocumentsService extends DocumentsService {
       document.workflow_steps.find(
         (step) =>
           step.sequence > pending.sequence &&
-          [WorkflowStepStatus.QUEUED, WorkflowStepStatus.PENDING].includes(
-            step.status,
-          ),
+          [WorkflowStepStatus.QUEUED, WorkflowStepStatus.PENDING].includes(step.status),
       );
-    if (configuredNext || legacyNext) return;
-
-    this.assertReadyProposal(document);
+    if (!configuredNext && !legacyNext) this.assertReadyProposal(document);
   }
 
   private assertReadyProposal(document: any) {
@@ -401,12 +408,13 @@ export class RequestTimeDocumentsService extends DocumentsService {
   }
 
   private nextRevisionNumber(revisions: any[]) {
-    const numbers = revisions
+    const numeric = revisions
       .map((revision) => String(revision.revision_number ?? "").trim())
       .filter((value) => /^\d+$/.test(value))
-      .map((value) => Number(value));
-    if (!numbers.length) return "000";
-    return String(Math.max(...numbers) + 1).padStart(3, "0");
+      .map(Number);
+    return numeric.length
+      ? String(Math.max(...numeric) + 1).padStart(3, "0")
+      : "000";
   }
 
   private async saveProposalRevision(
@@ -415,9 +423,8 @@ export class RequestTimeDocumentsService extends DocumentsService {
     file: Express.Multer.File,
     input: ProposalRevisionInput,
   ) {
-    const documentId = toBigIntId(documentIdValue, "document_id");
     const document = await this.requestPrisma.document.findUnique({
-      where: { document_id: documentId },
+      where: { document_id: toBigIntId(documentIdValue, "document_id") },
       include: {
         softcopy: {
           include: {
@@ -439,19 +446,18 @@ export class RequestTimeDocumentsService extends DocumentsService {
       input.revisionNumber?.trim() ||
       pending?.revision_number ||
       this.nextRevisionNumber(document.softcopy.revisions);
-    const duplicate = document.softcopy.revisions.find(
-      (revision) =>
-        revision.revision_number === revisionNumber &&
-        revision.revision_id !== pending?.revision_id,
-    );
-    if (duplicate) {
+    if (
+      document.softcopy.revisions.some(
+        (revision) =>
+          revision.revision_number === revisionNumber &&
+          revision.revision_id !== pending?.revision_id,
+      )
+    ) {
       throw new ConflictException(
         `Revision ${revisionNumber} already exists for this document.`,
       );
     }
 
-    const seriesNumber =
-      input.seriesNumber?.trim() || document.softcopy.series_number;
     const storedFilePath = await this.moveProposalUpload(
       file,
       document.softcopy.category.folder_name,
@@ -461,7 +467,8 @@ export class RequestTimeDocumentsService extends DocumentsService {
       reason_of_revision: input.reason?.trim() || null,
       effective_date: input.effectiveDate ?? null,
       page_number: input.pageNumber?.trim() || null,
-      series_number: seriesNumber?.trim() || null,
+      series_number:
+        input.seriesNumber?.trim() || document.softcopy.series_number || null,
       document_title: document.document_title,
       revision_level_from: input.revisionLevelFrom?.trim() || null,
       revision_level_to: input.revisionLevelTo?.trim() || null,
@@ -495,31 +502,45 @@ export class RequestTimeDocumentsService extends DocumentsService {
     }
 
     return this.requestPrisma.documentRevision.create({
-      data: {
-        ...data,
-        softcopy_id: document.softcopy.softcopy_id,
-      },
+      data: { ...data, softcopy_id: document.softcopy.softcopy_id },
     });
   }
 
-  private async moveProposalUpload(
-    file: Express.Multer.File,
-    folderName: string,
-  ) {
-    const categoryRoot = ensureRevisionCategoryUploadsRoot(folderName);
-    const sourcePath = file.path;
-    const storedName = file.filename || basename(sourcePath || file.originalname);
-    const destinationPath = join(categoryRoot, storedName);
-    if (sourcePath && sourcePath !== destinationPath) {
-      await rename(sourcePath, destinationPath);
+  private async markProposalReceived(documentIdValue: string) {
+    const document = await this.requestPrisma.document.findUnique({
+      where: { document_id: toBigIntId(documentIdValue, "document_id") },
+      include: {
+        softcopy: {
+          include: { revisions: { orderBy: { created_at: "desc" } } },
+        },
+      },
+    });
+    const proposal = this.pendingProposal(document?.softcopy?.revisions ?? []);
+    if (proposal && !proposal.date_received) {
+      await this.requestPrisma.documentRevision.update({
+        where: { revision_id: proposal.revision_id },
+        data: { date_received: new Date() },
+      });
     }
-    return relative(revisionUploadsRoot, destinationPath).replace(/\\/g, "/");
+  }
+
+  private async moveProposalUpload(file: Express.Multer.File, folderName: string) {
+    const categoryRoot = ensureRevisionCategoryUploadsRoot(folderName);
+    const storedName = file.filename || basename(file.path || file.originalname);
+    const destinationPath = join(categoryRoot, storedName);
+    if (file.path && file.path !== destinationPath) {
+      await rename(file.path, destinationPath);
+    }
+    // Match the core revision storage convention: persist the absolute path so
+    // its URL serializer can retain the category folder.
+    return destinationPath;
   }
 
   private async removeProposalFile(storagePath: string) {
-    const normalized = storagePath.replace(/\\/g, "/");
-    if (normalized.includes("..")) return;
-    await rm(join(revisionUploadsRoot, normalized), { force: true }).catch(() => undefined);
+    const filePath = isAbsolute(storagePath)
+      ? storagePath
+      : join(revisionUploadsRoot, storagePath);
+    await rm(filePath, { force: true }).catch(() => undefined);
   }
 
   private async promotePendingProposal(documentId: bigint, approverId: bigint) {
@@ -569,6 +590,57 @@ export class RequestTimeDocumentsService extends DocumentsService {
     });
   }
 
+  private async pendingRawRevision(
+    documentIdValue: string,
+    revisionIdValue: string,
+    user: AuthenticatedUser,
+  ) {
+    const assignedDocument = await super.findOne(documentIdValue, user);
+    if (!assignedDocument) {
+      // Workflow assignees may review a request without being a permanent
+      // document assignment. Reuse the approval-queue authorization in that case.
+      await super.findApprovalDocument(documentIdValue, user);
+    }
+
+    const revision = await this.requestPrisma.documentRevision.findFirst({
+      where: {
+        revision_id: toBigIntId(revisionIdValue, "revision_id"),
+        softcopy: {
+          document_id: toBigIntId(documentIdValue, "document_id"),
+        },
+      },
+      select: {
+        revision_id: true,
+        file_name: true,
+        file_path: true,
+        file_size: true,
+        mime_type: true,
+        approved_at: true,
+        is_current: true,
+        is_historical: true,
+      },
+    });
+    if (
+      !revision ||
+      revision.approved_at ||
+      revision.is_current ||
+      revision.is_historical
+    ) {
+      return null;
+    }
+
+    const filePath = isAbsolute(revision.file_path)
+      ? revision.file_path
+      : join(revisionUploadsRoot, revision.file_path);
+    const fileStat = await stat(filePath);
+    return {
+      filePath,
+      filename: revision.file_name,
+      mimeType: revision.mime_type || "application/octet-stream",
+      fileSize: Number(revision.file_size ?? BigInt(fileStat.size)),
+    };
+  }
+
   private parseOptionalDate(value?: string | Date | null) {
     if (!value) return null;
     const date = value instanceof Date ? value : new Date(value);
@@ -576,11 +648,16 @@ export class RequestTimeDocumentsService extends DocumentsService {
   }
 
   private withProposalUrl<T extends { file_path?: string | null }>(revision: T) {
+    if (!revision.file_path) return revision;
+    const normalized = revision.file_path.replace(/\\/g, "/");
+    const marker = "/uploads/revisions/";
+    const markerIndex = normalized.toLowerCase().lastIndexOf(marker);
+    const storagePath = markerIndex >= 0
+      ? normalized.slice(markerIndex + marker.length)
+      : normalized;
     return {
       ...revision,
-      file_url: revision.file_path
-        ? buildRevisionPublicUrl(revision.file_path)
-        : undefined,
+      file_url: buildRevisionPublicUrl(storagePath),
     };
   }
 }
