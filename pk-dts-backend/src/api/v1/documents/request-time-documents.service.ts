@@ -231,7 +231,6 @@ export class RequestTimeDocumentsService extends DocumentsService {
         toBigIntId(id, "document_id"),
         toBigIntId(actorUserId, "current_user_id"),
       );
-      return super.findOne(id, actor);
     }
 
     return transitioned;
@@ -351,7 +350,7 @@ export class RequestTimeDocumentsService extends DocumentsService {
       document.workflow_steps.find(
         (step) =>
           step.sequence > pending.sequence &&
-          [WorkflowStepStatus.QUEUED, WorkflowStepStatus.PENDING].includes(step.status),
+          (step.status === WorkflowStepStatus.QUEUED || step.status === WorkflowStepStatus.PENDING),
       );
     if (!configuredNext && !legacyNext) this.assertReadyProposal(document);
   }
