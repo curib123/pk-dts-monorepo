@@ -110,6 +110,19 @@ describe("DocumentRequestReviewFileService", () => {
     );
   });
 
+  it("keeps the same revision number when a pending review file is replaced", async () => {
+    const resolveRevisionNumber = (service as any).resolveRevisionNumber.bind(service);
+
+    await expect(
+      resolveRevisionNumber(5n, undefined, {
+        revision_id: 11n,
+        revision_number: "000",
+      }),
+    ).resolves.toBe("000");
+
+    expect(prisma.documentRevision.findFirst).not.toHaveBeenCalled();
+  });
+
   it("promotes the same pending review file when the final approver approves", async () => {
     const pendingRevision = {
       revision_id: 11n,
@@ -142,6 +155,7 @@ describe("DocumentRequestReviewFileService", () => {
         },
       })
       .mockResolvedValueOnce({
+        date_received: new Date("2026-09-14T08:00:00.000Z"),
         new_effective_date: null,
         softcopy: {
           softcopy_id: 5n,
