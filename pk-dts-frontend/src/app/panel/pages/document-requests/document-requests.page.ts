@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import type { PaginatorState } from 'primeng/types/paginator';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer/loading-shimmer.component';
@@ -12,12 +12,14 @@ import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { DataViewMode, DataViewSwitchComponent } from '@/app/shared/components/data-view-switch/data-view-switch.component';
 import { RecordCardComponent, RecordGridComponent } from '@/app/shared/components/record-grid/record-grid.component';
+import { DocumentDetailDialogComponent } from '../documents/components/document-detail-dialog/document-detail-dialog.component';
 import { DocumentFormDialogComponent } from '../documents/components/document-form-dialog/document-form-dialog.component';
 import { RevisionUploadDialogComponent } from '../documents/components/revision-upload-dialog/revision-upload-dialog.component';
 import { DocumentsService } from '../documents/documents.service';
 import {
     AreaReference,
     AssetReference,
+    DocumentDetail,
     DocumentFormValue,
     DocumentSummary,
     LocationReference,
@@ -31,10 +33,9 @@ import {
 @Component({
     selector: 'app-document-requests-page',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, DocumentFormDialogComponent, RevisionUploadDialogComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent],
+    imports: [CommonModule, ButtonModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, DocumentDetailDialogComponent, DocumentFormDialogComponent, RevisionUploadDialogComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent],
     template: `
-        <app-loading-shimmer *ngIf="loading" label="Loading your document requests" [columns]="6" />
-        <section class="requests-page" [style.display]="loading ? 'none' : null">
+        <section class="requests-page">
             <div class="request-heading">
                 <div>
                     <span>PERSONAL WORKFLOW</span>
@@ -54,23 +55,31 @@ import {
 
             <div class="request-table">
                 <app-data-view-switch [(mode)]="viewMode" title="Request results" />
-                <p-table *ngIf="viewMode === 'list'" [value]="requests()" [loading]="loading" responsiveLayout="scroll">
+
+                <app-loading-shimmer *ngIf="loading()" label="Loading your document requests" [columns]="6" />
+
+                <p-table *ngIf="viewMode === 'list' && !loading()" [value]="requests()" responsiveLayout="scroll">
                     <ng-template pTemplate="header"><tr><th>Document</th><th>Requester</th><th>Status</th><th>Updated</th><th>Reviewer remarks</th><th>Actions</th></tr></ng-template>
                     <ng-template pTemplate="body" let-item><tr>
                         <td><strong>{{ item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number') }}</strong><small>{{ item.document_title }}</small></td>
                         <td>{{ requester(item) }}</td><td><span class="status">{{ statusLabel(item.status) }}</span></td>
                         <td>{{ item.updated_at || item.created_at | date:'medium' }}</td><td>{{ item.reviewer_remarks || 'None' }}</td>
-                        <td><div class="row-actions" *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
-                            <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openEditDialog(item)" />
-                            <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openRevisionDialog(item)" />
-                            <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving()" (onClick)="openSubmitConfirmation(item)" />
-                            <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openDeleteConfirmation(item)" />
-                        </div></td>
+                        <td>
+                            <div class="row-actions">
+                                <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
+                                <ng-container *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
+                                    <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openEditDialog(item)" />
+                                    <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openRevisionDialog(item)" />
+                                    <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving() || viewLoading()" (onClick)="openSubmitConfirmation(item)" />
+                                    <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openDeleteConfirmation(item)" />
+                                </ng-container>
+                            </div>
+                        </td>
                     </tr></ng-template>
                     <ng-template pTemplate="emptymessage"><tr><td colspan="6">No requests found.</td></tr></ng-template>
                 </p-table>
 
-                <app-record-grid *ngIf="viewMode === 'grid'" [empty]="!requests().length && !loading" emptyTitle="No requests found" emptyMessage="Create a document request to start your workflow.">
+                <app-record-grid *ngIf="viewMode === 'grid' && !loading()" [empty]="!requests().length" emptyTitle="No requests found" emptyMessage="Create a document request to start your workflow.">
                     <app-record-card *ngFor="let item of requests()" icon="pi pi-file-edit" eyebrow="Document request" [title]="item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number')" [subtitle]="item.document_title">
                         <div record-badges><span>{{ statusLabel(item.status) }}</span></div>
                         <div record-details>
@@ -78,17 +87,20 @@ import {
                             <div><span>Updated</span><strong>{{ requestUpdatedAt(item) | date:'medium' }}</strong></div>
                             <div class="wide"><span>Reviewer remarks</span><strong>{{ item.reviewer_remarks || 'None' }}</strong></div>
                         </div>
-                        <div record-actions *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
-                            <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openEditDialog(item)" />
-                            <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openRevisionDialog(item)" />
-                            <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving()" (onClick)="openSubmitConfirmation(item)" />
-                            <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openDeleteConfirmation(item)" />
+                        <div record-actions>
+                            <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
+                            <ng-container *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
+                                <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openEditDialog(item)" />
+                                <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openRevisionDialog(item)" />
+                                <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving() || viewLoading()" (onClick)="openSubmitConfirmation(item)" />
+                                <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openDeleteConfirmation(item)" />
+                            </ng-container>
                         </div>
                     </app-record-card>
                 </app-record-grid>
 
                 <app-pagination
-                    *ngIf="totalRecords() > 0"
+                    *ngIf="totalRecords() > 0 && !loading()"
                     [first]="(page - 1) * rows"
                     [rows]="rows"
                     [totalRecords]="totalRecords()"
@@ -98,6 +110,16 @@ import {
                 />
             </div>
         </section>
+
+        <app-document-detail-dialog
+            [(visible)]="detailDialogVisible"
+            [document]="selectedDocumentDetail()"
+            [revisions]="selectedRevisions()"
+            [users]="[]"
+            [canConfigureWorkflow]="false"
+            [canAccessFiles]="canViewRequestFiles()"
+            [canDeleteAttachments]="false"
+        />
 
         <app-document-form-dialog
             [(visible)]="createDialogVisible"
@@ -128,7 +150,7 @@ import {
         />
     `,
     styles: [`
-        .requests-page{display:grid;gap:1.25rem}.request-heading,.request-table{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:1.4rem}.request-heading{border-left:6px solid #dc2626;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}.request-heading span{color:#dc2626;font-size:.72rem;font-weight:800;letter-spacing:.14em}.request-heading h1{margin:.25rem 0;color:#111827}.request-heading p,.tab-copy{margin:0;color:#64748b}.request-table h2{margin:0 0 .35rem}.workflow-tabs{display:flex;gap:.65rem;flex-wrap:wrap;padding:.4rem;border-radius:16px;background:#f1f5f9;width:max-content;max-width:100%}.workflow-tabs button{border:0;background:transparent;border-radius:12px;padding:.8rem 1rem;font-weight:800;color:#64748b;cursor:pointer}.workflow-tabs button.active{background:#fff;color:#dc2626;box-shadow:0 4px 14px rgba(15,23,42,.09)}.workflow-tabs button span{margin-left:.45rem;padding:.15rem .45rem;border-radius:999px;background:#e2e8f0;color:#475569;font-size:.72rem}.status{display:inline-block;padding:.35rem .65rem;border-radius:999px;background:#111827;color:#fff;font-size:.75rem;font-weight:700}.disposal-status[data-status="Pending"]{background:#f59e0b}.disposal-status[data-status="Approved"]{background:#15803d}.disposal-status[data-status="Rejected"]{background:#b91c1c}td small{display:block;color:#64748b;margin-top:.25rem}.row-actions{display:flex;gap:.5rem;flex-wrap:wrap}.feedback{border-radius:12px;padding:.85rem 1rem;font-weight:600}.feedback.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.feedback.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+        .requests-page{display:grid;gap:1.25rem}.request-heading,.request-table{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:1.4rem}.request-heading{border-left:6px solid #dc2626;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}.request-heading span{color:#dc2626;font-size:.72rem;font-weight:800;letter-spacing:.14em}.request-heading h1{margin:.25rem 0;color:#111827}.request-heading p,.tab-copy{margin:0;color:#64748b}.request-table h2{margin:0 0 .35rem}.workflow-tabs{display:flex;gap:.65rem;flex-wrap:wrap;padding:.4rem;border-radius:16px;background:#f1f5f9;width:max-content;max-width:100%}.workflow-tabs button{border:0;background:transparent;border-radius:12px;padding:.8rem 1rem;font-weight:800;color:#64748b;cursor:pointer}.workflow-tabs button.active{background:#fff;color:#dc2626;box-shadow:0 4px 14px rgba(15,23,42,.09)}.workflow-tabs button span{margin-left:.45rem;padding:.15rem .45rem;border-radius:999px;background:#e2e8f0;color:#475569;font-size:.72rem}.status{display:inline-block;padding:.35rem .65rem;border-radius:999px;background:#111827;color:#fff;font-size:.75rem;font-weight:700}.disposal-status[data-status="Pending"]{background:#f59e0b}.disposal-status[data-status="Approved"]{background:#15803d}.disposal-status[data-status="Rejected"]{background:#b91c1c}td small{display:block;color:#64748b;margin-top:.25rem}.row-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.feedback{border-radius:12px;padding:.85rem 1rem;font-weight:600}.feedback.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.feedback.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
     `]
 })
 export class DocumentRequestsPage implements OnInit {
@@ -145,11 +167,16 @@ export class DocumentRequestsPage implements OnInit {
     locations = signal<LocationReference[]>([]);
     sequences = signal<SequenceReference[]>([]);
     softcopyCategories = signal<SoftcopyCategoryReference[]>([]);
+    selectedDocumentDetail = signal<DocumentDetail | null>(null);
+    selectedRevisions = signal<RevisionSummary[]>([]);
     referenceLoading = signal(false);
     saving = signal(false);
+    loading = signal(true);
+    viewLoading = signal(false);
     successMessage = signal('');
     errorMessage = signal('');
-    loading = true;
+    viewingDocumentId = '';
+    detailDialogVisible = false;
     createDialogVisible = false;
     submitConfirmationVisible = false;
     deleteConfirmationVisible = false;
@@ -172,22 +199,59 @@ export class DocumentRequestsPage implements OnInit {
     ngOnInit() { this.viewMode = this.systemSettings.defaultDataView(); this.rows = this.systemSettings.defaultRowsPerPage(); this.load(); }
 
     load() {
-        this.loading = true;
-        this.documents.listMyRequestsPage(this.page, this.rows).subscribe({
+        this.loading.set(true);
+        this.errorMessage.set('');
+        this.documents.listMyRequestsPage(this.page, this.rows).pipe(
+            finalize(() => this.loading.set(false))
+        ).subscribe({
             next: (response) => {
                 this.requests.set(response.items ?? []);
                 this.totalRecords.set(response.meta?.total ?? response.items?.length ?? 0);
                 this.page = response.meta?.page ?? this.page;
-                this.loading = false;
             },
-            error: (error) => { this.errorMessage.set(this.requestError(error, 'Unable to load your document requests.')); this.loading = false; }
+            error: (error) => {
+                this.requests.set([]);
+                this.totalRecords.set(0);
+                this.errorMessage.set(this.requestError(error, 'Unable to load your document requests.'));
+            }
         });
     }
 
     onPageChange(event: PaginatorState) {
+        if (this.loading()) return;
         this.page = (event.page ?? 0) + 1;
         this.rows = event.rows ?? this.rows;
         this.load();
+    }
+
+    openRequestDetails(item: DocumentSummary) {
+        if (this.viewLoading()) return;
+        this.viewingDocumentId = item.document_id;
+        this.viewLoading.set(true);
+        this.errorMessage.set('');
+        this.documents.getDocument(item.document_id).pipe(
+            finalize(() => {
+                this.viewLoading.set(false);
+                this.viewingDocumentId = '';
+            })
+        ).subscribe({
+            next: (document) => {
+                if (!document) {
+                    const message = 'This document request is no longer available.';
+                    this.errorMessage.set(message);
+                    this.alerts.error('Request unavailable', message);
+                    return;
+                }
+                this.selectedDocumentDetail.set(document);
+                this.selectedRevisions.set(document.softcopy?.revisions ?? []);
+                this.detailDialogVisible = true;
+            },
+            error: (error) => {
+                const message = this.requestError(error, 'Unable to load this document request and its approval workflow.');
+                this.errorMessage.set(message);
+                this.alerts.error('Unable to view request', message);
+            }
+        });
     }
 
     openCreateDialog() {
@@ -202,9 +266,10 @@ export class DocumentRequestsPage implements OnInit {
 
     openEditDialog(item: DocumentSummary) {
         this.saving.set(true);
-        this.documents.getDocument(item.document_id).subscribe({
+        this.documents.getDocument(item.document_id).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: (document) => {
-                this.saving.set(false);
                 if (!document) {
                     this.errorMessage.set('This document request is no longer available.');
                     this.alerts.error('Request unavailable', this.errorMessage());
@@ -213,7 +278,6 @@ export class DocumentRequestsPage implements OnInit {
                 this.openLoadedEditDialog(document);
             },
             error: (error) => {
-                this.saving.set(false);
                 this.errorMessage.set(this.requestError(error, 'Unable to load the saved document request.'));
                 this.alerts.error('Unable to edit request', this.errorMessage());
             }
@@ -286,9 +350,10 @@ export class DocumentRequestsPage implements OnInit {
         }
 
         this.saving.set(true);
-        this.documents.createDocument(form, currentUserId).subscribe({
+        this.documents.createDocument(form, currentUserId).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: () => {
-                this.saving.set(false);
                 this.createDialogVisible = false;
                 this.documentForm = this.emptyDocumentForm();
                 this.successMessage.set(form.action === 'DRAFT' ? 'Document request saved as draft.' : 'Document request submitted for approval.');
@@ -296,7 +361,6 @@ export class DocumentRequestsPage implements OnInit {
                 this.load();
             },
             error: (error) => {
-                this.saving.set(false);
                 this.errorMessage.set(this.requestError(error, 'Unable to create the document request. Please review the form and try again.'));
                 this.alerts.error('Unable to create request', this.errorMessage());
             }
@@ -306,9 +370,10 @@ export class DocumentRequestsPage implements OnInit {
     private updateRequest(form: DocumentFormValue) {
         const documentId = this.editingDocumentId;
         this.saving.set(true);
-        this.documents.updateDocument(documentId, form).subscribe({
+        this.documents.updateDocument(documentId, form).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: () => {
-                this.saving.set(false);
                 this.createDialogVisible = false;
                 this.editingDocumentId = '';
                 this.documentForm = this.emptyDocumentForm();
@@ -317,7 +382,6 @@ export class DocumentRequestsPage implements OnInit {
                 this.load();
             },
             error: (error) => {
-                this.saving.set(false);
                 const detail = typeof error?.error?.message === 'string'
                     ? error.error.message
                     : Array.isArray(error?.error?.message) ? error.error.message.join(' ') : '';
@@ -342,16 +406,17 @@ export class DocumentRequestsPage implements OnInit {
         const item = this.pendingSubmit;
         if (!item || this.submitting) return;
         this.submitting = true;
-        this.documents.workflowAction(item.document_id, 'submit').subscribe({
+        this.documents.workflowAction(item.document_id, 'submit').pipe(
+            finalize(() => { this.submitting = false; })
+        ).subscribe({
             next: () => {
                 this.requests.update((items) => items.map((request) => request.document_id === item.document_id ? { ...request, status: request.document_type === 'SOFTCOPY' ? 'ForNotedBy' : 'ForApproval' } : request));
-                this.submitting = false;
                 this.clearPendingSubmit();
                 this.successMessage.set('Document request submitted for approval.');
                 this.alerts.success('Document request submitted', this.successMessage());
                 this.load();
             },
-            error: (error) => { this.submitting = false; this.errorMessage.set(this.requestError(error, 'Unable to submit this document request.')); this.alerts.error('Unable to submit request', this.errorMessage()); }
+            error: (error) => { this.errorMessage.set(this.requestError(error, 'Unable to submit this document request.')); this.alerts.error('Unable to submit request', this.errorMessage()); }
         });
     }
 
@@ -372,16 +437,16 @@ export class DocumentRequestsPage implements OnInit {
         const item = this.pendingDelete;
         if (!item || this.saving()) return;
         this.saving.set(true);
-        this.documents.deleteDocument(item.document_id).subscribe({
+        this.documents.deleteDocument(item.document_id).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: () => {
-                this.saving.set(false);
                 this.clearPendingDelete();
                 this.successMessage.set('Draft document request removed.');
                 this.alerts.success('Draft removed', this.successMessage());
                 this.load();
             },
             error: (error) => {
-                this.saving.set(false);
                 this.errorMessage.set(this.requestError(error, 'Unable to remove this draft document request.'));
                 this.alerts.error('Unable to remove draft', this.errorMessage());
             }
@@ -405,7 +470,9 @@ export class DocumentRequestsPage implements OnInit {
         forkJoin({
             detail: this.documents.getDocument(item.document_id),
             revisions: this.documents.listRevisions(item.document_id)
-        }).subscribe({
+        }).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: ({ detail, revisions }) => {
                 this.revisionDocumentId = item.document_id;
                 this.revisionDocumentNumber = detail?.document_number || item.document_number || 'No document number';
@@ -420,10 +487,8 @@ export class DocumentRequestsPage implements OnInit {
                     softcopy_category_id: detail?.softcopy?.category?.softcopy_category_id || ''
                 };
                 this.revisionDialogVisible = true;
-                this.saving.set(false);
             },
             error: () => {
-                this.saving.set(false);
                 this.alerts.error('Unable to load revisions', 'The revision history could not be loaded.');
             }
         });
@@ -432,16 +497,16 @@ export class DocumentRequestsPage implements OnInit {
     uploadRequestedRevision(form: RevisionFormValue) {
         if (!this.revisionDocumentId) return;
         this.saving.set(true);
-        this.documents.uploadRevision(this.revisionDocumentId, form).subscribe({
+        this.documents.uploadRevision(this.revisionDocumentId, form).pipe(
+            finalize(() => this.saving.set(false))
+        ).subscribe({
             next: () => {
-                this.saving.set(false);
                 this.revisionDialogVisible = false;
                 this.successMessage.set('The revised file was uploaded. You can now resubmit the request for approval.');
                 this.alerts.success('Revision uploaded', this.successMessage());
                 this.load();
             },
             error: () => {
-                this.saving.set(false);
                 this.alerts.error('Unable to upload revision', 'Confirm the request is still marked For Revision and try again.');
             }
         });
@@ -450,6 +515,7 @@ export class DocumentRequestsPage implements OnInit {
     canCreateRequest() { return this.auth.hasPermission('document-requests.create'); }
     canEditRequest() { return this.auth.hasPermission('document-requests.edit'); }
     canSubmitRequest() { return this.auth.hasPermission('document-requests.submit'); }
+    canViewRequestFiles() { return this.auth.hasPermission('documents.download'); }
     canDeleteDraftRequest(item: DocumentSummary) {
         return item.status?.trim().toLowerCase() === 'draft'
             && this.auth.hasAnyPermission('documents.delete', 'document-requests.delete', 'documents.manage-own');
@@ -472,14 +538,15 @@ export class DocumentRequestsPage implements OnInit {
             locations: this.documents.listLocations().pipe(catchError(() => of([] as LocationReference[]))),
             sequences: this.documents.listSequences().pipe(catchError(() => of([] as SequenceReference[]))),
             softcopyCategories: this.documents.listSoftcopyCategories().pipe(catchError(() => of([] as SoftcopyCategoryReference[])))
-        }).subscribe(({ areas, assets, specifics, locations, sequences, softcopyCategories }) => {
+        }).pipe(
+            finalize(() => this.referenceLoading.set(false))
+        ).subscribe(({ areas, assets, specifics, locations, sequences, softcopyCategories }) => {
             this.areas.set(areas);
             this.assets.set(assets);
             this.specifics.set(specifics);
             this.locations.set(locations);
             this.sequences.set(sequences);
             this.softcopyCategories.set(softcopyCategories.filter((category) => category.is_active !== false));
-            this.referenceLoading.set(false);
         });
     }
 
