@@ -3,6 +3,7 @@ import {
   DocumentActionRequested,
   DocumentStatus,
   DocumentType,
+  WorkflowStepStatus,
 } from "@prisma/client";
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
 import { DocumentsService } from "./documents.service";
@@ -74,7 +75,9 @@ describe("RequestTimeDocumentsService", () => {
         undefined,
         staffUser,
       ),
-    ).rejects.toThrow("A proposed Softcopy file is required before submitting a create or revision request.");
+    ).rejects.toThrow(
+      "A proposed Softcopy file is required before submitting a create or revision request.",
+    );
   });
 
   it("stores the submitted request file as a non-current proposal before starting approvals", async () => {
@@ -107,7 +110,7 @@ describe("RequestTimeDocumentsService", () => {
     prisma.documentRevision.create.mockResolvedValue({ revision_id: 10n });
     jest
       .spyOn(service as any, "moveProposalUpload")
-      .mockResolvedValue("policies/proposed.pdf");
+      .mockResolvedValue("/uploads/revisions/policies/proposed.pdf");
 
     const file = {
       originalname: "proposed.pdf",
@@ -174,6 +177,16 @@ describe("RequestTimeDocumentsService", () => {
       document_id: 1n,
       document_type: DocumentType.SOFTCOPY,
       action_requested: DocumentActionRequested.REVISE,
+      workflow_version_id: 4n,
+      workflow_current_node_key: "document-controller",
+      workflow_steps: [
+        {
+          sequence: 3,
+          node_key: "document-controller",
+          on_approve_node_key: null,
+          status: WorkflowStepStatus.PENDING,
+        },
+      ],
       softcopy: {
         softcopy_id: 9n,
         document_number: "DOC-001",
@@ -182,7 +195,7 @@ describe("RequestTimeDocumentsService", () => {
           {
             revision_id: 10n,
             revision_number: "006",
-            file_path: "policies/proposed.docx",
+            file_path: "/uploads/revisions/policies/proposed.docx",
             document_title: "QUALITY MANUAL",
             series_number: "SERIES-002",
             page_number: "1-5",
