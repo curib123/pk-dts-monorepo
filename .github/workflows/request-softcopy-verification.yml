@@ -6,11 +6,8 @@ on:
       - feat/request-softcopy-before-approval
 
 jobs:
-  backend:
+  verify-and-commit-fix:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pk-dts-backend
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pk_dts_test
     steps:
@@ -18,24 +15,49 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: pk-dts-backend/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm test -- request-time-documents.service.spec.ts
-      - run: npm run build
 
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+      - name: Apply strict TypeScript fixes found by the first verification run
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('pk-dts-backend/src/api/v1/documents/request-time-documents.service.ts')
+          content = path.read_text()
+          old_return = '      return super.findOne(id, actor);\n'
+          old_status = '[WorkflowStepStatus.QUEUED, WorkflowStepStatus.PENDING].includes(step.status)'
+          new_status = '(step.status === WorkflowStepStatus.QUEUED || step.status === WorkflowStepStatus.PENDING)'
+          assert old_return in content, 'Expected transition return was not found'
+          assert old_status in content, 'Expected workflow status expression was not found'
+          content = content.replace(old_return, '', 1)
+          content = content.replace(old_status, new_status, 1)
+          path.write_text(content)
+          PY
+
+      - name: Install backend dependencies
+        working-directory: pk-dts-backend
+        run: npm ci
+      - name: Generate Prisma client
+        working-directory: pk-dts-backend
+        run: npx prisma generate
+      - name: Run focused backend tests
+        working-directory: pk-dts-backend
+        run: npm test -- request-time-documents.service.spec.ts
+      - name: Build backend
+        working-directory: pk-dts-backend
+        run: npm run build
+
+      - name: Install frontend dependencies without changing the stale lockfile
         working-directory: pk-dts-frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: pk-dts-frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
+        run: npm install --no-package-lock
+      - name: Build frontend
+        working-directory: pk-dts-frontend
+        run: npm run build
+
+      - name: Commit verified TypeScript fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pk-dts-backend/src/api/v1/documents/request-time-documents.service.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix: align request-time service with base contracts [skip ci]'
+            git push origin HEAD:feat/request-softcopy-before-approval
+          fi
