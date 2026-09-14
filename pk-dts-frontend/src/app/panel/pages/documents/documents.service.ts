@@ -106,6 +106,13 @@ export class DocumentsService {
     updateDocument(id: string, payload: DocumentFormValue) {
         return this.http.patch<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}`, this.cleanDocumentPayload(payload, '', true)).pipe(
             map((response) => this.unwrap(response)),
+            switchMap((document) => {
+                if (payload.document_type !== 'SOFTCOPY' || !payload.initial_file || payload.action_requested === 'CANCELLATION') return of(document);
+                return this.uploadRevision(id, this.proposalRevisionPayload(payload)).pipe(
+                    switchMap(() => this.getDocument(id)),
+                    map((updated) => updated || document)
+                );
+            }),
             switchMap((document) => this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file).length ? this.uploadAttachments(id, this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file)) : of(document)),
             switchMap((document) => payload.action === 'SUBMIT' ? this.workflowAction(id, 'submit') : of(document)),
             tap(() => this.invalidateListCache())
@@ -127,6 +134,24 @@ export class DocumentsService {
 
     private scanAttachmentsOnly(files: File[], revisionFile?: File | null) {
         return files.filter((file) => !revisionFile || file.name.trim().toLowerCase() !== revisionFile.name.trim().toLowerCase() || file.size !== revisionFile.size);
+    }
+
+    private proposalRevisionPayload(payload: DocumentFormValue): RevisionFormValue {
+        return {
+            uploaded_by: '',
+            revision_number: payload.initial_revision_number?.trim() || '',
+            reason_of_revision: payload.brief_description?.trim() || payload.proposed_change?.trim() || 'Proposed revision submitted with the Document Control Request.',
+            effective_date: payload.new_effective_date || '',
+            page_number: payload.page_number?.trim() || '',
+            set_as_current: false,
+            file: payload.initial_file,
+            series_number: payload.series_number?.trim() || '',
+            revision_level_from: payload.revision_level_from?.trim() || '',
+            revision_level_to: payload.revision_level_to?.trim() || '',
+            previous_effective_date: payload.previous_effective_date || '',
+            new_effective_date: payload.new_effective_date || '',
+            softcopy_category_id: payload.softcopy_category_id || undefined
+        };
     }
 
     deleteAttachment(documentId: string, attachmentId: string) {
