@@ -57,7 +57,14 @@ export class DocumentsService {
     listMyRequestsPage(page = 1, limit = 10) { return this.fetchPage<DocumentSummary>(`${DOCUMENTS_API}/requests/mine`, page, limit); }
     listPendingRequests() { return this.fetchAllPages<DocumentSummary>(`${DOCUMENTS_API}/requests/pending`); }
     workflowAction(id: string, action: 'submit' | 'approve' | 'request-revision' | 'reject' | 'cancel' | 'complete', remarks = '') {
-        return this.http.post<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}/${action}`, { remarks }).pipe(map((response) => this.unwrap(response)), tap(() => this.invalidateListCache()));
+        const reviewAwareAction = action === 'submit'
+            ? 'submit-review'
+            : action === 'approve'
+                ? 'approve-review'
+                : action === 'complete'
+                    ? 'complete-review'
+                    : action;
+        return this.http.post<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}/${reviewAwareAction}`, { remarks }).pipe(map((response) => this.unwrap(response)), tap(() => this.invalidateListCache()));
     }
 
     getApprovalDocument(id: string) {
@@ -88,17 +95,23 @@ export class DocumentsService {
     }
 
     createDocument(payload: DocumentFormValue, createdBy: string) {
+        const reviewFileFlow = this.usesRequestReviewFile(payload);
+        const createPayload: DocumentFormValue = reviewFileFlow
+            ? { ...payload, action: 'DRAFT' }
+            : payload;
         const formData = new FormData();
-        const cleanPayload = this.cleanDocumentPayload(payload, createdBy, false);
+        const cleanPayload = this.cleanDocumentPayload(createPayload, createdBy, false);
         Object.entries(cleanPayload).forEach(([key, value]) => {
             if (value !== undefined && value !== null) formData.append(key, String(value));
         });
-        if (payload.document_type === 'SOFTCOPY' && payload.initial_file) {
+        if (payload.document_type === 'SOFTCOPY' && payload.direct_create && payload.initial_file) {
             formData.append('file', payload.initial_file);
         }
         return this.http.post<ApiResponse<DocumentDetail>>(DOCUMENTS_API, formData).pipe(
             map((response) => this.unwrap(response)),
+            switchMap((document) => reviewFileFlow && payload.initial_file ? this.uploadRequestReviewFile(document.document_id, payload) : of(document)),
             switchMap((document) => payload.document_type === 'SOFTCOPY' && this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file).length ? this.uploadAttachments(document.document_id, this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file)) : of(document)),
+            switchMap((document) => reviewFileFlow && payload.action === 'SUBMIT' ? this.workflowAction(document.document_id, 'submit') : of(document)),
             tap(() => this.invalidateListCache())
         );
     }
@@ -106,10 +119,36 @@ export class DocumentsService {
     updateDocument(id: string, payload: DocumentFormValue) {
         return this.http.patch<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}`, this.cleanDocumentPayload(payload, '', true)).pipe(
             map((response) => this.unwrap(response)),
+            switchMap((document) => this.usesRequestReviewFile(payload) && payload.initial_file ? this.uploadRequestReviewFile(id, payload) : of(document)),
             switchMap((document) => this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file).length ? this.uploadAttachments(id, this.scanAttachmentsOnly(payload.attached_scan_files, payload.initial_file)) : of(document)),
             switchMap((document) => payload.action === 'SUBMIT' ? this.workflowAction(id, 'submit') : of(document)),
             tap(() => this.invalidateListCache())
         );
+    }
+
+    private uploadRequestReviewFile(documentId: string, payload: DocumentFormValue) {
+        if (!payload.initial_file) return throwError(() => new Error('A review Softcopy file is required.'));
+        const formData = new FormData();
+        if (payload.initial_revision_number.trim()) formData.append('revision_number', payload.initial_revision_number.trim());
+        const revisionReason = payload.proposed_change?.trim() || payload.brief_description?.trim() || payload.reason_for_change || '';
+        if (revisionReason) formData.append('reason_of_revision', revisionReason);
+        if (payload.new_effective_date) formData.append('effective_date', new Date(payload.new_effective_date).toISOString());
+        if (payload.page_number?.trim()) formData.append('page_number', payload.page_number.trim());
+        if (payload.series_number?.trim()) formData.append('series_number', payload.series_number.trim());
+        if (payload.softcopy_category_id) formData.append('softcopy_category_id', payload.softcopy_category_id);
+        if (payload.revision_level_from?.trim()) formData.append('revision_level_from', payload.revision_level_from.trim());
+        if (payload.revision_level_to?.trim()) formData.append('revision_level_to', payload.revision_level_to.trim());
+        if (payload.previous_effective_date) formData.append('previous_effective_date', new Date(payload.previous_effective_date).toISOString());
+        if (payload.new_effective_date) formData.append('new_effective_date', new Date(payload.new_effective_date).toISOString());
+        formData.append('file', payload.initial_file, payload.initial_file.name);
+        return this.http.post<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${documentId}/request-review-file`, formData).pipe(
+            map((response) => this.unwrap(response)),
+            tap(() => this.invalidateListCache())
+        );
+    }
+
+    private usesRequestReviewFile(payload: Pick<DocumentFormValue, 'document_type' | 'action_requested' | 'direct_create'>) {
+        return payload.document_type === 'SOFTCOPY' && !payload.direct_create && payload.action_requested !== 'CANCELLATION';
     }
 
     moveDocumentToFolder(id: string, softcopyCategoryId: string) {
