@@ -27,36 +27,44 @@ const sequentialGraph = {
   ],
 };
 
+const cloneGraph = () => JSON.parse(JSON.stringify(sequentialGraph));
+
 describe("assertSequentialWorkflowGraph", () => {
   it("accepts one ordered approval chain", () => {
     expect(() => assertSequentialWorkflowGraph(sequentialGraph)).not.toThrow();
   });
 
   it("rejects permission-based approver selection", () => {
-    const graph = structuredClone(sequentialGraph);
-    (graph.nodes[0] as any).assignment = {
+    const graph = cloneGraph();
+    graph.nodes[0].assignment = {
       type: "PERMISSION",
       permission: "document-requests.approve-noted-by",
     };
     expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
   });
 
+  it("rejects hidden required-permission metadata", () => {
+    const graph = cloneGraph();
+    graph.nodes[1].required_permission = "document-requests.approve-plant-manager";
+    expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
+  });
+
   it("rejects branching and non-approve decision routing", () => {
-    const graph = structuredClone(sequentialGraph);
+    const graph = cloneGraph();
     graph.edges.push({ key: "leader-reject", from: "leader", to: "approved", outcome: "REJECT" });
     expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
   });
 
   it("rejects conditional routing", () => {
-    const graph = structuredClone(sequentialGraph);
-    (graph.edges[0] as any).conditions = [
+    const graph = cloneGraph();
+    graph.edges[0].conditions = [
       { field: "document_type", operator: "EQUALS", value: "SOFTCOPY" },
     ];
     expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
   });
 
   it("rejects an out-of-order start node", () => {
-    const graph = structuredClone(sequentialGraph);
+    const graph = cloneGraph();
     graph.start_node_key = "plant-manager";
     expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
   });
