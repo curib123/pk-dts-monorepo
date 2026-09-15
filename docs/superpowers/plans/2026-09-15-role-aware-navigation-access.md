@@ -1,12 +1,12 @@
 # Role-Aware Navigation and Route Access Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make sidebar visibility, route access, and default landing behavior use one shared permission-driven policy so each PK-DTS role sees only relevant workspaces and tasks.
 
-**Architecture:** Add a focused `panel-access.config.ts` registry containing permission requirements and sidebar metadata. Routes and the panel layout consume exported access constants/helpers instead of maintaining separate hard-coded matrices. Existing mixed pages are reused with route modes for requester/reviewer/profile/folder-only experiences.
+**Architecture:** Use `panel-access.config.ts` as the single frontend registry for navigable workspace permissions and sidebar metadata. Routes and the panel layout consume the same definitions. Reuse DocumentAccessRequests with requester/reviewer modes, but use small dedicated MyProfile and SoftcopyFolders pages so ordinary users never enter the large administration workspaces.
 
-**Tech Stack:** Angular 21, TypeScript 5.9, RxJS, Jasmine/Karma.
+**Tech Stack:** Angular 21, TypeScript 5.9, RxJS, Jasmine/Karma; NestJS/Jest for the self-profile backend guard.
 
 **Spec:** `docs/superpowers/specs/2026-09-15-role-aware-navigation-access.md`
 
@@ -15,7 +15,7 @@
 - Authorization remains permission-driven; role checks are presentation-only when used to reduce Admin sidebar clutter.
 - Do not add a new authorization library.
 - Backend permissions remain authoritative.
-- Reuse existing pages instead of duplicating requester/admin/reviewer components.
+- Workspace-entry permissions are distinct from action permissions.
 - Preserve compatibility routes where practical.
 
 ---
@@ -26,84 +26,74 @@
 - Create: `pk-dts-frontend/src/app/panel/panel-access.config.ts`
 - Create: `pk-dts-frontend/src/app/panel/panel-access.config.spec.ts`
 
-**Interfaces:**
-- Produces `PANEL_NAVIGATION`, `PANEL_ROUTE_PERMISSIONS`, `canAccessPanelItem()`, `shouldShowPanelItem()`, `firstAuthorizedPanelUrl()`.
-- Consumes a lightweight `{ roleName, permissions, notificationCount? }` context rather than Angular services.
+- [x] Add typed navigation items/categories and shared permission helpers.
+- [x] Cover Staff, Plant Manager, Documentation Officer, Internal Audit, Admin presentation behavior.
+- [x] Ensure action-only permissions do not expose read workspaces.
+- [x] Use the registry for first-authorized landing behavior.
+- [ ] Execute focused frontend tests in a runnable checkout.
 
-- [ ] Write tests proving Staff does not see Administration/System items, Internal Audit sees audit/read-only items, Admin hides personal requester shortcuts, and first-authorized routing uses the same registry.
-- [ ] Run the focused test and confirm it fails before implementation.
-- [ ] Implement typed navigation items/categories and helpers with ANY-permission semantics.
-- [ ] Run the focused test and confirm it passes.
-- [ ] Commit the registry and tests.
-
-### Task 2: Make route guards consume shared access definitions
+### Task 2: Align routes and guard with the shared registry
 
 **Files:**
 - Modify: `pk-dts-frontend/src/app/auth/auth.guard.ts`
 - Modify: `pk-dts-frontend/src/app/panel/panel.routes.ts`
 
-**Interfaces:**
-- Imports `firstAuthorizedPanelUrl` and route permission constants from Task 1.
-- Adds requester/reviewer/profile/folder-only routes using existing components and route data modes.
-
-- [ ] Add/adjust tests if an existing guard test surface is available; otherwise rely on the pure helper tests from Task 1 plus route metadata audit.
-- [ ] Replace the duplicate `firstAuthorizedPanelUrl()` list in `auth.guard.ts` with the shared helper.
-- [ ] Guard `approval-review` with document review/approval permissions.
-- [ ] Guard `users` with user-management permissions.
-- [ ] Tighten `/storage` to storage/location administration permissions.
-- [ ] Add `/softcopy-folders` as a direct folder-only component route.
-- [ ] Add `/my-access-requests`, `/access-review`, and `/my-profile` modes while retaining `/document-access-requests` as compatibility mode.
-- [ ] Run frontend build/type-check command.
-- [ ] Commit route/guard changes.
+- [x] Remove duplicate first-authorized route matrix from the guard.
+- [x] Apply shared route permission constants.
+- [x] Guard Approval Review and User Management explicitly.
+- [x] Separate `/softcopy-folders` from `/storage`.
+- [x] Add `/my-access-requests`, `/access-review`, and `/my-profile`.
+- [x] Retain `/document-access-requests` as compatibility all-mode route.
+- [ ] Execute frontend build/type-check.
 
 ### Task 3: Make the sidebar consume the shared registry
 
-**Files:**
+**File:**
 - Modify: `pk-dts-frontend/src/app/panel/panel-layout.component.ts`
 
-**Interfaces:**
-- Consumes `PANEL_NAVIGATION` and `shouldShowPanelItem()` from Task 1.
-- Keeps existing notification-count behavior and empty-category removal.
+- [x] Remove duplicate local navigation matrices.
+- [x] Derive visible items/categories from current permissions and presentation rules.
+- [x] Hide empty categories.
+- [x] Preserve notification badges.
+- [x] Add metadata/title support for new routes.
+- [ ] Execute frontend build/type-check.
 
-- [ ] Remove local `PanelNavItem`/`PanelNavCategory` definitions and duplicate navigation arrays.
-- [ ] Derive visible primary items/categories from the shared registry using current role, permissions, and notification counts.
-- [ ] Preserve notification badges and contextual Approval Requests visibility.
-- [ ] Update URL-title fallback for new routes.
-- [ ] Run frontend build/type-check command.
-- [ ] Commit sidebar changes.
-
-### Task 4: Add role-appropriate route modes to existing mixed pages
+### Task 4: Separate requester/reviewer and ordinary/admin workspaces
 
 **Files:**
 - Modify: `pk-dts-frontend/src/app/panel/pages/document-access-requests/document-access-requests.page.ts`
-- Modify: `pk-dts-frontend/src/app/panel/pages/user-account/user-account.page.ts`
-- Modify: `pk-dts-frontend/src/app/panel/pages/storage-classification/storage-classification.page.ts`
+- Create: `pk-dts-frontend/src/app/panel/pages/my-profile/my-profile.page.ts`
+- Create: `pk-dts-frontend/src/app/panel/pages/my-profile/my-profile.page.spec.ts`
+- Create: `pk-dts-frontend/src/app/panel/pages/softcopy-folders/softcopy-folders.page.ts`
+- Create: `pk-dts-frontend/src/app/panel/pages/softcopy-folders/softcopy-folders.page.spec.ts`
 
-**Interfaces:**
-- `DocumentAccessRequestsPage`: route data `mode: 'requester' | 'reviewer' | 'all'`.
-- `UserAccountPage`: route data `mode: 'profile' | 'manage'`.
-- `StorageClassificationPage`: route data `folderOnly: boolean`.
+- [x] Requester mode does not load/show the reviewer queue.
+- [x] Reviewer mode does not load/show requester/catalog work.
+- [x] My Profile loads only the signed-in account and keeps role/leader read-only.
+- [x] Softcopy Folders exposes only folder hierarchy/actions.
+- [x] Folder create/edit/delete controls follow their individual permissions.
+- [x] Existing User Management and Storage & Classification pages remain administration workspaces.
+- [ ] Execute focused component tests and frontend build.
 
-- [ ] Update Document Access Requests so requester mode cannot display/load the approval queue and reviewer mode cannot display/load requester/catalog tabs.
-- [ ] Update User Account so profile mode does not load/display user management or registration review; management mode preserves existing behavior.
-- [ ] Update Storage & Classification so folder-only mode exposes only `softcopyCategories` regardless of broader role capabilities.
-- [ ] Run frontend build/type-check command.
-- [ ] Commit page-mode changes.
-
-### Task 5: Final permission/role UX audit
+### Task 5: Protect self-service workflow identity fields
 
 **Files:**
-- Review: `pk-dts-backend/src/common/constants/permission-catalog.ts`
-- Review: `pk-dts-frontend/src/app/panel/panel-access.config.ts`
-- Review: `pk-dts-frontend/src/app/panel/panel.routes.ts`
+- Create: `pk-dts-backend/src/api/v1/users/users.controller.spec.ts`
+- Modify: `pk-dts-backend/src/api/v1/users/users.controller.ts`
 
-**Interfaces:**
-- No new backend permissions required unless the audit finds a genuine gap.
+- [x] Add regression test that normal self-service cannot change role or leader assignment.
+- [x] Strip both `role_id` and `leader_id` for non-management self updates.
+- [x] Preserve full update capability for users with account-management permission.
+- [ ] Execute focused backend test and backend build.
 
-- [ ] Compare default permission bundles for Staff, Plant Manager, Documentation Officer, Internal Audit, and Admin against expected sidebar visibility.
-- [ ] Confirm each sidebar item has matching route permission metadata.
-- [ ] Confirm no route intended for administration has an empty permission list.
-- [ ] Confirm page action controls remain permission-driven.
-- [ ] Run `npm test -- --watch=false` if Chrome/Karma is available; otherwise run the focused tests if the repository environment supports them.
-- [ ] Run `npm run build`.
-- [ ] Report any verification commands that still require the user's Docker machine instead of claiming they passed.
+### Task 6: Final permission/role UX audit and verification
+
+- [x] Compare default Staff, Plant Manager, Documentation Officer, Internal Audit, and Admin permissions against navigation expectations.
+- [x] Confirm sidebar and route metadata share the same access definitions.
+- [x] Confirm administration routes are not left with empty permission lists.
+- [x] Confirm page actions remain permission-driven.
+- [x] Confirm accidental intermediate GitHub file was not retained in the final branch diff.
+- [ ] Frontend: run focused specs and `npm run build`.
+- [ ] Backend: run `users.controller.spec.ts` and `npm run build`.
+- [ ] Docker: rebuild and smoke-test all five roles before merge.
+- [ ] Do not claim green verification until those commands complete successfully.
