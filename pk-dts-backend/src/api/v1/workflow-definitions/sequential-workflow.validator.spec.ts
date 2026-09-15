@@ -34,10 +34,10 @@ describe("assertSequentialWorkflowGraph", () => {
 
   it("rejects permission-based approver selection", () => {
     const graph = structuredClone(sequentialGraph);
-    graph.nodes[0].assignment = {
+    (graph.nodes[0] as any).assignment = {
       type: "PERMISSION",
       permission: "document-requests.approve-noted-by",
-    } as never;
+    };
     expect(() => assertSequentialWorkflowGraph(graph)).toThrow(BadRequestException);
   });
 
