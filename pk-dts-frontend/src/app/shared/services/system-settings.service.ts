@@ -4,22 +4,21 @@ import { NavigationStart, Router } from '@angular/router';
 import { filter, map, tap } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
+import { BRAND_DEEP_RED, MAROON_PALETTE } from '@/app/theme/brand-preset';
 
 export type DocumentViewMode = 'list' | 'grid' | 'folder';
 export type OfficeOpenMode = 'desktop' | 'browser';
 export type ColorMode = 'light' | 'dark';
 export type ThemeScope = 'shared' | 'device';
 export const COLOR_THEME_OPTIONS = [
-    { id: 'default', name: 'Ruby Red', description: 'Classic document-control red', accent: '#dc2626', deep: '#991b1b', soft: '#fee2e2' },
-    { id: 'crimson', name: 'Deep Crimson', description: 'Dark professional crimson', accent: '#9f1239', deep: '#4c0519', soft: '#ffe4e6' },
-    { id: 'monochrome', name: 'Monochrome', description: 'Neutral black and white', accent: '#262626', deep: '#000000', soft: '#e5e5e5' },
-    { id: 'ocean', name: 'Ocean Blue', description: 'Clear corporate blue', accent: '#2563eb', deep: '#1e3a8a', soft: '#dbeafe' },
-    { id: 'emerald', name: 'Emerald', description: 'Calm operational green', accent: '#059669', deep: '#064e3b', soft: '#d1fae5' },
-    { id: 'violet', name: 'Violet', description: 'Modern creative violet', accent: '#7c3aed', deep: '#4c1d95', soft: '#ede9fe' },
-    { id: 'amber', name: 'Amber', description: 'Warm high-visibility amber', accent: '#d97706', deep: '#78350f', soft: '#fef3c7' },
-    { id: 'teal', name: 'Teal', description: 'Balanced records teal', accent: '#0d9488', deep: '#134e4a', soft: '#ccfbf1' },
-    { id: 'rose', name: 'Rose', description: 'Bright polished rose', accent: '#e11d48', deep: '#881337', soft: '#ffe4e6' },
-    { id: 'indigo', name: 'Indigo', description: 'Structured executive indigo', accent: '#4f46e5', deep: '#312e81', soft: '#e0e7ff' }
+    {
+        id: 'default',
+        name: 'Deep Maroon',
+        description: 'Centralized PK DTS maroon theme',
+        accent: BRAND_DEEP_RED,
+        deep: MAROON_PALETTE[800],
+        soft: MAROON_PALETTE[100]
+    }
 ] as const;
 export type ColorTheme = (typeof COLOR_THEME_OPTIONS)[number]['id'];
 
