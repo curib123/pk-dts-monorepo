@@ -6,17 +6,34 @@ on:
       - refactor/centralize-maroon-theme
   pull_request:
     paths:
-      - 'pk-dts-frontend/src/app/theme/**'
-      - 'pk-dts-frontend/src/assets/**'
-      - 'pk-dts-frontend/src/app/panel/**'
-      - 'pk-dts-frontend/src/app/shared/services/system-settings.service.ts'
-      - 'pk-dts-frontend/scripts/check-maroon-theme.cjs'
+      - 'pk-dts-frontend/**'
+      - '.github/workflows/maroon-theme-check.yml'
 
 jobs:
   centralized-theme:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pk-dts-frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pk-dts-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Check centralized deep-maroon theme
-        run: node pk-dts-frontend/scripts/check-maroon-theme.cjs
+        run: node scripts/check-maroon-theme.cjs
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run frontend tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
