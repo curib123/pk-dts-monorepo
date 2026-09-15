@@ -15,6 +15,8 @@ import { AuditLogsPage } from './pages/audit-logs/audit-logs.page';
 import { DocumentAccessRequestsPage } from './pages/document-access-requests/document-access-requests.page';
 import { WorkflowBuilderPage } from './pages/workflow-builder/workflow-builder.page';
 import { MyDisposalRequestsPage } from './pages/my-disposal-requests/my-disposal-requests.page';
+import { MyProfilePage } from './pages/my-profile/my-profile.page';
+import { SoftcopyFoldersPage } from './pages/softcopy-folders/softcopy-folders.page';
 
 export const panelRoutes: Routes = [
     {
@@ -26,7 +28,7 @@ export const panelRoutes: Routes = [
             { path: 'documents', component: DocumentsPage, data: { title: 'Document', subtitle: 'Manage document records, revisions, request states, and catalog mappings here.', permissions: PANEL_ROUTE_PERMISSIONS.documents } },
             { path: 'softcopy-documents', component: DocumentsPage, data: { documentType: 'SOFTCOPY', title: 'Softcopy Documents', subtitle: 'Browse digital documents by folder, table list, or card grid.', permissions: PANEL_ROUTE_PERMISSIONS.documents } },
             { path: 'hardcopy-documents', component: DocumentsPage, data: { documentType: 'HARDCOPY', title: 'Hardcopy Documents', subtitle: 'Browse physical records by area, location, asset number, table list, or card grid.', permissions: PANEL_ROUTE_PERMISSIONS.documents } },
-            { path: 'softcopy-folders', component: StorageClassificationPage, data: { folderOnly: true, title: 'Softcopy Folders', subtitle: 'Browse and manage the softcopy folder hierarchy available to your account.', permissions: PANEL_ROUTE_PERMISSIONS.softcopyFolders } },
+            { path: 'softcopy-folders', component: SoftcopyFoldersPage, data: { title: 'Softcopy Folders', subtitle: 'Browse and manage only the softcopy folder hierarchy available to your account.', permissions: PANEL_ROUTE_PERMISSIONS.softcopyFolders } },
             { path: 'my-document-requests', component: DocumentRequestsPage, data: { title: 'My Document Requests', subtitle: 'Create and track only the document requests submitted by your account.', permissions: PANEL_ROUTE_PERMISSIONS.myDocumentRequests } },
             { path: 'my-requests', pathMatch: 'full', redirectTo: 'my-document-requests' },
             { path: 'my-access-requests', component: DocumentAccessRequestsPage, data: { mode: 'requester', title: 'My Access Requests', subtitle: 'Find controlled documents and track only your own access requests.', permissions: PANEL_ROUTE_PERMISSIONS.myAccessRequests } },
@@ -39,15 +41,14 @@ export const panelRoutes: Routes = [
                 path: 'storage',
                 component: StorageClassificationPage,
                 data: {
-                    folderOnly: false,
                     title: 'Storage and Classification',
                     subtitle: 'Manage storage locations, filing structure, and classification catalogs.',
                     permissions: PANEL_ROUTE_PERMISSIONS.storageAdmin
                 }
             },
             { path: 'classification', pathMatch: 'full', redirectTo: 'storage' },
-            { path: 'my-profile', component: UserAccountPage, data: { mode: 'profile', title: 'My Profile', subtitle: 'Review and update your own account details.' } },
-            { path: 'users', component: UserAccountPage, data: { mode: 'manage', title: 'User Management', subtitle: 'Manage user accounts, roles, registrations, and document assignments when permitted.', permissions: PANEL_ROUTE_PERMISSIONS.userManagement } },
+            { path: 'my-profile', component: MyProfilePage, data: { title: 'My Profile', subtitle: 'Review and update only your own account details.' } },
+            { path: 'users', component: UserAccountPage, data: { title: 'User Management', subtitle: 'Manage user accounts, roles, registrations, and document assignments when permitted.', permissions: PANEL_ROUTE_PERMISSIONS.userManagement } },
             { path: 'roles-permissions', component: RolesPermissionsPage, data: { title: 'Roles and Permissions', subtitle: 'Manage the permission matrix for the five fixed system roles.', permissions: PANEL_ROUTE_PERMISSIONS.rolesPermissions } },
             { path: 'workflow-builder', component: WorkflowBuilderPage, data: { title: 'Workflow Builder', subtitle: 'Configure and publish ordered document approval routes.', permissions: PANEL_ROUTE_PERMISSIONS.workflowBuilder } },
             { path: 'backup-restore', component: BackupRestorePage, data: { title: 'Backup, Restore and Reset', subtitle: 'Create snapshots, restore history, and run guarded factory reset actions.', permissions: PANEL_ROUTE_PERMISSIONS.backupRestore } },
