@@ -94,17 +94,18 @@ export class SoftcopyFoldersPage implements OnInit {
     canCreate = computed(() => this.auth.hasAnyPermission('softcopy-folders.create', 'softcopy-folders.manage'));
     canEdit = computed(() => this.auth.hasAnyPermission('softcopy-folders.edit', 'softcopy-folders.manage'));
     canDelete = computed(() => this.auth.hasAnyPermission('softcopy-folders.delete', 'softcopy-folders.manage'));
-    filteredCategories = computed(() => {
+    parentOptions = computed(() => this.categories().filter((category) => category.softcopy_category_id !== this.editingId()));
+
+    ngOnInit() {
+        this.load();
+    }
+
+    filteredCategories() {
         const query = this.search.trim().toLowerCase();
         if (!query) return this.categories();
         return this.categories().filter((category) =>
             category.category_name.toLowerCase().includes(query) || category.folder_name.toLowerCase().includes(query)
         );
-    });
-    parentOptions = computed(() => this.categories().filter((category) => category.softcopy_category_id !== this.editingId()));
-
-    ngOnInit() {
-        this.load();
     }
 
     load() {
