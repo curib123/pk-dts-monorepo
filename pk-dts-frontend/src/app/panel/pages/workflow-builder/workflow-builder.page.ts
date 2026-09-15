@@ -8,7 +8,7 @@ import { RolePermissionService } from '../roles-permissions/role-permission.serv
 import { UserAccountSummary } from '../user-account/user-account.types';
 import { UserAccountService } from '../user-account/user-account.service';
 import { WorkflowBuilderService } from './workflow-builder.service';
-import { WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersion } from './workflow-builder.types';
+import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersion } from './workflow-builder.types';
 
 @Component({
     selector: 'app-workflow-builder-page',
@@ -133,7 +133,7 @@ export class WorkflowBuilderPage implements OnInit {
     newVersion() {
         if (!this.selectedDefinition || !this.selectedVersion) return;
         if (this.legacyComplex || this.unsupportedLegacyAssignment) {
-            this.error = 'This legacy workflow contains routing that cannot be converted safely. Create a new sequential workflow instead.';
+            this.error = 'This legacy workflow contains routing or assignment rules that cannot be converted safely. Create a new sequential workflow instead.';
             return;
         }
         const validationError = this.validateDraft();
@@ -218,7 +218,7 @@ export class WorkflowBuilderPage implements OnInit {
         this.markDirty();
     }
 
-    setAssignmentType(node: WorkflowNode, type: 'USER' | 'ROLE' | 'REQUESTER_LEADER') {
+    setAssignmentType(node: WorkflowNode, type: EditableWorkflowAssignmentType) {
         node.assignment = { type };
         node.required_permission = undefined;
         this.markDirty();
@@ -292,7 +292,7 @@ export class WorkflowBuilderPage implements OnInit {
         const ordered: WorkflowNode[] = [];
         const visited = new Set<string>();
         let currentKey = graph.start_node_key;
-        let valid = endNodes.length === 1 && approvalCount > 0;
+        let valid = endNodes.length === 1 && approvalCount > 0 && graph.edges.length === approvalCount;
 
         while (valid && currentKey) {
             if (visited.has(currentKey)) { valid = false; break; }
@@ -330,7 +330,15 @@ export class WorkflowBuilderPage implements OnInit {
         if (this.legacyComplex) return;
         let unresolved = false;
         for (const node of this.approvalNodes) {
-            if (node.assignment?.type !== 'PERMISSION') continue;
+            if (node.required_permission && node.assignment?.type !== 'PERMISSION') {
+                unresolved = true;
+                continue;
+            }
+            if (!node.assignment) {
+                unresolved = true;
+                continue;
+            }
+            if (node.assignment.type !== 'PERMISSION') continue;
             const replacement = this.replacementForLegacyPermission(node);
             if (replacement) {
                 node.assignment = replacement;
@@ -356,13 +364,14 @@ export class WorkflowBuilderPage implements OnInit {
 
     private validateDraft() {
         if (this.legacyComplex) return 'Legacy branching workflows are read-only. Create a new sequential workflow instead.';
-        if (this.unsupportedLegacyAssignment) return 'Replace the legacy permission-based approver before saving this workflow.';
+        if (this.unsupportedLegacyAssignment) return 'This legacy workflow contains an assignment rule that cannot be converted safely.';
         const approvals = this.approvalNodes;
         if (!approvals.length) return 'Add at least one approval step.';
         if (approvals.length > 15) return 'A workflow can contain at most 15 approval steps.';
         for (const node of approvals) {
             if (!node.label?.trim()) return 'Every approval step needs a name.';
             if (!node.assignment) return `${node.label || 'Approval step'} needs an approver.`;
+            if (node.required_permission) return `${node.label} contains legacy permission routing and cannot be saved as a sequential route.`;
             if (node.assignment.type === 'USER' && !node.assignment.user_id) return `${node.label} needs a selected person.`;
             if (node.assignment.type === 'ROLE' && !node.assignment.role_id) return `${node.label} needs a selected role.`;
             if (node.assignment.type === 'PERMISSION') return `${node.label} still uses an unsupported legacy permission assignment.`;
