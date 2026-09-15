@@ -1,81 +1,246 @@
 <section class="workflow-page">
     <header class="page-heading">
-        <div class="page-heading-copy"><span class="eyebrow">ADMINISTRATION · NO-CODE DESIGNER</span><h1>Workflow Builder</h1><p>Create and update approval routes using simple forms. No programming is required—choose who approves, arrange the steps, and publish the route for new requests.</p></div>
-        <button *ngIf="canConfigure" type="button" class="primary page-heading-action" (click)="createOpen = !createOpen"><i class="pi pi-plus"></i> Create workflow</button>
+        <div class="page-heading-copy">
+            <span class="eyebrow">ADMINISTRATION · APPROVAL ROUTES</span>
+            <h1>Workflow Builder</h1>
+            <p>Choose who approves a request and arrange the approval steps in order. Approve moves to the next step; reject and revision behavior is controlled consistently by the system.</p>
+        </div>
+        <button *ngIf="canConfigure" type="button" class="primary page-heading-action" (click)="createOpen = !createOpen">
+            <i class="pi pi-plus"></i> Create workflow
+        </button>
     </header>
 
     <section class="how-it-works" aria-label="How workflow builder works">
-        <div class="how-it-works-title"><span class="help-icon"><i class="pi pi-lightbulb"></i></span><div><strong>No-code workflow design</strong><small>Build flexible approval routes without editing code.</small></div></div>
-        <div class="how-step"><b>1</b><span><strong>Choose</strong><small>Select a workflow to edit.</small></span></div>
-        <div class="how-step"><b>2</b><span><strong>Arrange</strong><small>Add steps and choose approvers.</small></span></div>
+        <div class="how-it-works-title">
+            <span class="help-icon"><i class="pi pi-directions"></i></span>
+            <div><strong>Simple sequential approval</strong><small>Configure the approvers and their order. Routing rules are handled by the system.</small></div>
+        </div>
+        <div class="how-step"><b>1</b><span><strong>Choose approvers</strong><small>Leader, specific person, or role.</small></span></div>
+        <div class="how-step"><b>2</b><span><strong>Order steps</strong><small>Move approvals up or down.</small></span></div>
         <div class="how-step"><b>3</b><span><strong>Publish</strong><small>New requests use the published version.</small></span></div>
     </section>
 
     <div *ngIf="message" class="feedback success"><i class="pi pi-check-circle"></i>{{ message }}</div>
     <div *ngIf="error" class="feedback error"><i class="pi pi-exclamation-circle"></i>{{ error }}</div>
-    <div *ngIf="referenceDataError && !loading" class="feedback error"><i class="pi pi-exclamation-circle"></i><span>{{ referenceDataError }} <button type="button" class="inline-action" (click)="retryReferenceData()">Retry reference data</button></span></div>
+    <div *ngIf="referenceDataError && !loading" class="feedback error">
+        <i class="pi pi-exclamation-circle"></i>
+        <span>{{ referenceDataError }} <button type="button" class="inline-action" (click)="retryReferenceData()">Retry reference data</button></span>
+    </div>
     <div *ngIf="loading" class="loading"><i class="pi pi-spin pi-spinner"></i> Loading workflows…</div>
 
     <form *ngIf="createOpen && !loading" class="create-panel" (ngSubmit)="createDefinition()">
-        <div class="panel-heading"><span class="step-badge">NEW</span><div><h2>Start a new workflow</h2><p>Give this route a name and choose which documents can use it. You can design the approval steps next.</p></div></div>
-        <label><span>Workflow name <em>Required</em></span><input name="name" [(ngModel)]="createForm.name" maxlength="150" placeholder="Example: Engineering document approval" required /><small>A clear name helps requestors choose the right route.</small></label>
-        <label><span>Applies to</span><select name="documentType" [(ngModel)]="createForm.document_type"><option value="">All document types</option><option value="SOFTCOPY">Softcopy only</option><option value="HARDCOPY">Hardcopy only</option></select><small>Leave as all types when the route works for both.</small></label>
-        <label class="wide"><span>Description</span><textarea name="description" [(ngModel)]="createForm.description" rows="2" maxlength="2000" placeholder="Explain when this route should be used."></textarea></label>
-        <div class="form-actions"><button type="button" class="secondary" (click)="createOpen=false">Cancel</button><button type="submit" class="primary" [disabled]="saving"><i class="pi pi-arrow-right"></i> Create and design steps</button></div>
+        <div class="panel-heading">
+            <span class="step-badge">NEW</span>
+            <div><h2>Create an approval workflow</h2><p>Create a route, then add approvers in the order they should review the request.</p></div>
+        </div>
+        <label>
+            <span>Workflow name <em>Required</em></span>
+            <input name="name" [(ngModel)]="createForm.name" maxlength="150" placeholder="Example: Standard softcopy approval" required />
+            <small>Use a clear business name that administrators will recognize.</small>
+        </label>
+        <label>
+            <span>Applies to</span>
+            <select name="documentType" [(ngModel)]="createForm.document_type">
+                <option value="">All document types</option>
+                <option value="SOFTCOPY">Softcopy only</option>
+                <option value="HARDCOPY">Hardcopy only</option>
+            </select>
+            <small>Use separate workflows when different document types need different approval routes.</small>
+        </label>
+        <label class="wide">
+            <span>Description</span>
+            <textarea name="description" [(ngModel)]="createForm.description" rows="2" maxlength="2000" placeholder="Explain when this approval route is used."></textarea>
+        </label>
+        <div class="form-actions">
+            <button type="button" class="secondary" (click)="createOpen=false">Cancel</button>
+            <button type="submit" class="primary" [disabled]="saving"><i class="pi pi-arrow-right"></i> Create workflow</button>
+        </div>
     </form>
 
     <div *ngIf="!loading" class="builder-layout">
         <aside class="workflow-list">
-            <div class="aside-title"><div><span class="section-kicker">YOUR ROUTES</span><h2>Workflows</h2></div><strong>{{ definitions.length }}</strong></div>
-            <p class="aside-help">Select a route to view or edit its approval steps.</p>
-            <button *ngFor="let definition of definitions; trackBy: trackDefinition" type="button" class="definition" [class.selected]="definition.workflow_definition_id === selectedDefinition?.workflow_definition_id" (click)="selectDefinition(definition)">
-                <span class="definition-icon"><i class="pi" [ngClass]="definition.document_type === 'HARDCOPY' ? 'pi-file' : definition.document_type === 'SOFTCOPY' ? 'pi-cloud' : 'pi-sitemap'"></i></span>
-                <span class="definition-copy"><strong>{{ definition.name }}</strong><small>{{ definition.document_type === 'SOFTCOPY' ? 'Softcopy' : definition.document_type === 'HARDCOPY' ? 'Hardcopy' : 'All document types' }}</small></span>
+            <div class="aside-title">
+                <div><span class="section-kicker">APPROVAL ROUTES</span><h2>Workflows</h2></div>
+                <strong>{{ definitions.length }}</strong>
+            </div>
+            <p class="aside-help">Select a workflow to review its versions and approval order.</p>
+            <button *ngFor="let definition of definitions; trackBy: trackDefinition" type="button" class="definition"
+                [class.selected]="definition.workflow_definition_id === selectedDefinition?.workflow_definition_id"
+                (click)="selectDefinition(definition)">
+                <span class="definition-icon"><i class="pi" [ngClass]="definition.document_type === 'HARDCOPY' ? 'pi-file' : definition.document_type === 'SOFTCOPY' ? 'pi-cloud' : 'pi-list-check'"></i></span>
+                <span class="definition-copy">
+                    <strong>{{ definition.name }}</strong>
+                    <small>{{ definition.document_type === 'SOFTCOPY' ? 'Softcopy' : definition.document_type === 'HARDCOPY' ? 'Hardcopy' : 'All document types' }}</small>
+                </span>
                 <i class="pi pi-chevron-right definition-chevron"></i>
             </button>
-            <div *ngIf="!definitions.length" class="empty"><i class="pi pi-sitemap"></i><strong>No workflows yet</strong><span>Create your first route to begin.</span></div>
+            <div *ngIf="!definitions.length" class="empty"><i class="pi pi-list-check"></i><strong>No workflows yet</strong><span>Create the first approval route to begin.</span></div>
         </aside>
 
         <main *ngIf="selectedDefinition && selectedVersion; else selectPrompt" class="editor">
             <section class="editor-toolbar">
-                <div class="editor-title"><div class="status-line"><span class="status-dot" [class.inactive]="!selectedDefinition.is_active"></span>{{ selectedDefinition.is_active ? 'Active route' : 'Inactive route' }}<span class="version-chip">Version {{ selectedVersion.version_number }}</span></div><h2>{{ selectedDefinition.name }}</h2><p>{{ selectedDefinition.description || 'Add a description so administrators know when to use this route.' }}</p></div>
+                <div class="editor-title">
+                    <div class="status-line">
+                        <span class="status-dot" [class.inactive]="!selectedDefinition.is_active"></span>
+                        {{ selectedDefinition.is_active ? 'Active route' : 'Inactive route' }}
+                        <span class="version-chip">Version {{ selectedVersion.version_number }}</span>
+                    </div>
+                    <h2>{{ selectedDefinition.name }}</h2>
+                    <p>{{ selectedDefinition.description || 'No workflow description.' }}</p>
+                </div>
                 <div class="toolbar-actions">
-                    <label class="version-picker"><span>View version</span><select [ngModel]="selectedVersion.workflow_version_id" (ngModelChange)="selectVersionById($event)" aria-label="View workflow version"><option *ngFor="let version of selectedDefinition.versions; trackBy: trackVersion" [value]="version.workflow_version_id">{{ versionLabel(version) }}</option></select></label>
-                    <button *ngIf="canConfigure" type="button" class="secondary" (click)="newVersion()" [disabled]="saving"><i class="pi pi-copy"></i> New version</button>
-                    <button *ngIf="canConfigure" type="button" class="secondary" (click)="toggleActive()"><i class="pi" [ngClass]="selectedDefinition.is_active ? 'pi-pause' : 'pi-play'"></i> {{ selectedDefinition.is_active ? 'Deactivate' : 'Activate' }}</button>
-                    <button *ngIf="editable" type="button" class="primary" (click)="save()" [disabled]="saving || !dirty"><i class="pi pi-save"></i> Save draft</button>
-                    <button *ngIf="selectedVersion.status === 'DRAFT' && canPublish" type="button" class="publish" (click)="publish()" [disabled]="saving || dirty"><i class="pi pi-check"></i> Publish version</button>
+                    <label class="version-picker">
+                        <span>View version</span>
+                        <select [ngModel]="selectedVersion.workflow_version_id" (ngModelChange)="selectVersionById($event)" aria-label="View workflow version">
+                            <option *ngFor="let version of selectedDefinition.versions; trackBy: trackVersion" [value]="version.workflow_version_id">{{ versionLabel(version) }}</option>
+                        </select>
+                    </label>
+                    <button *ngIf="canConfigure" type="button" class="secondary" (click)="newVersion()" [disabled]="saving || legacyComplex || unsupportedLegacyAssignment">
+                        <i class="pi pi-copy"></i> New version
+                    </button>
+                    <button *ngIf="canConfigure" type="button" class="secondary" (click)="toggleActive()" [disabled]="saving">
+                        <i class="pi" [ngClass]="selectedDefinition.is_active ? 'pi-pause' : 'pi-play'"></i>
+                        {{ selectedDefinition.is_active ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button *ngIf="editable" type="button" class="primary" (click)="save()" [disabled]="saving || !dirty">
+                        <i class="pi pi-save"></i> Save draft
+                    </button>
+                    <button *ngIf="selectedVersion.status === 'DRAFT' && canPublish && !legacyComplex && !unsupportedLegacyAssignment" type="button" class="publish" (click)="publish()" [disabled]="saving || dirty">
+                        <i class="pi pi-check"></i> Publish version
+                    </button>
                 </div>
             </section>
 
-            <div *ngIf="selectedVersion.status !== 'DRAFT'" class="immutable"><i class="pi pi-lock"></i><div><strong>This published version is protected</strong><span>Published routes cannot be edited. Choose <b>New version</b> to make changes while keeping existing requests safe.</span></div></div>
-            <div *ngIf="dirty" class="unsaved"><i class="pi pi-exclamation-triangle"></i><div><strong>You have unsaved changes</strong><span>Save this draft before publishing it.</span></div></div>
+            <div *ngIf="selectedVersion.status !== 'DRAFT'" class="immutable">
+                <i class="pi pi-lock"></i>
+                <div><strong>Published versions are protected</strong><span>Create a new version to change the route. Existing requests stay on the version they started with.</span></div>
+            </div>
+            <div *ngIf="dirty" class="unsaved">
+                <i class="pi pi-exclamation-triangle"></i>
+                <div><strong>You have unsaved changes</strong><span>Save this draft before publishing it.</span></div>
+            </div>
+            <div *ngIf="legacyComplex" class="feedback error">
+                <i class="pi pi-shield"></i>
+                <span><strong>Legacy branching workflow.</strong> This version is preserved read-only because automatic conversion could change its business behavior. Create a new sequential workflow instead.</span>
+            </div>
+            <div *ngIf="unsupportedLegacyAssignment" class="feedback error">
+                <i class="pi pi-user-edit"></i>
+                <span>This legacy workflow uses a permission-based approver that cannot be mapped safely to a person, role, or requester leader.</span>
+            </div>
 
-            <section class="route-guide"><div class="route-guide-icon"><i class="pi pi-directions"></i></div><div><h3>Build the approval route</h3><p>Each card is one approval step. Drag cards to change their order, then choose the person or rule that should receive the request.</p></div><div class="route-guide-count"><strong>{{ approvalNodes.length }}</strong><small>approval<br />steps</small></div></section>
-
-            <section class="route-settings">
-                <div><span class="section-kicker">ROUTE SETTINGS</span><h3>Where does the request start?</h3><p>The first approval step receives every new request.</p></div>
-                <label><span>Starting approval step</span><select [(ngModel)]="graph.start_node_key" (ngModelChange)="markDirty()" [disabled]="!editable"><option *ngFor="let approval of approvalNodes; trackBy: trackNode" [value]="approval.key">{{ approval.label }}</option></select></label>
+            <section class="route-guide">
+                <div class="route-guide-icon"><i class="pi pi-sort-amount-down"></i></div>
+                <div>
+                    <h3>Approval order</h3>
+                    <p>Requests start at Step 1. Approve moves to the next step. Reject ends the request as rejected. Request revision returns the document to the requester.</p>
+                </div>
+                <div class="route-guide-count"><strong>{{ approvalNodes.length }}</strong><small>approval<br />steps</small></div>
             </section>
 
-            <section class="canvas-toolbar"><div><span class="section-kicker">APPROVAL STEPS</span><h3>Your route</h3></div><div><button type="button" (click)="addApproval()" [disabled]="!editable"><i class="pi pi-plus"></i> Add approval step</button><button type="button" class="secondary" (click)="addEnd()" [disabled]="!editable"><i class="pi pi-flag"></i> Add outcome</button></div></section>
+            <section class="canvas-toolbar">
+                <div><span class="section-kicker">ORDERED STEPS</span><h3>Who approves, and in what order?</h3></div>
+                <div>
+                    <button type="button" (click)="addApproval()" [disabled]="!editable || approvalNodes.length >= 15">
+                        <i class="pi pi-plus"></i> Add approval step
+                    </button>
+                </div>
+            </section>
 
             <div class="workflow-canvas">
-                <article *ngFor="let node of graph.nodes; let index = index; trackBy: trackNode" class="node-card" [class.end-node]="node.type === 'END'" draggable="true" (dragstart)="dragStart(index)" (dragover)="$event.preventDefault()" (drop)="drop(index)">
-                    <div class="node-rail"><span class="drag-handle"><i class="pi pi-bars"></i></span><span class="step-number">{{ node.type === 'END' ? '✓' : index + 1 }}</span></div>
+                <article *ngFor="let node of approvalNodes; let index = index; trackBy: trackNode" class="node-card"
+                    [attr.draggable]="editable ? 'true' : null"
+                    (dragstart)="dragStart(index)" (dragover)="$event.preventDefault()" (drop)="drop(index)">
+                    <div class="node-rail">
+                        <span class="drag-handle" title="Drag to reorder"><i class="pi pi-bars"></i></span>
+                        <span class="step-number">{{ index + 1 }}</span>
+                    </div>
                     <div class="node-body">
-                        <div class="node-heading"><div class="node-heading-title"><span class="node-type">{{ node.type === 'END' ? 'OUTCOME' : 'APPROVAL STEP ' + (index + 1) }}</span><h3>{{ node.type === 'END' ? 'Completion outcome' : 'Approval step' }}</h3></div><button type="button" class="icon danger" title="Remove this step" (click)="removeNode(node)" [disabled]="!editable || graph.nodes.length === 1"><i class="pi pi-trash"></i></button></div>
+                        <div class="node-heading">
+                            <div class="node-heading-title"><span class="node-type">APPROVAL STEP {{ index + 1 }}</span><h3>{{ node.label || 'Approval step' }}</h3></div>
+                            <div class="toolbar-actions">
+                                <button type="button" class="icon" title="Move up" (click)="moveStep(index, -1)" [disabled]="!editable || index === 0"><i class="pi pi-arrow-up"></i></button>
+                                <button type="button" class="icon" title="Move down" (click)="moveStep(index, 1)" [disabled]="!editable || index === approvalNodes.length - 1"><i class="pi pi-arrow-down"></i></button>
+                                <button type="button" class="icon danger" title="Remove this step" (click)="removeNode(node)" [disabled]="!editable || approvalNodes.length <= 1"><i class="pi pi-trash"></i></button>
+                            </div>
+                        </div>
 
-                        <ng-container *ngIf="node.type === 'APPROVAL'; else endNodeEditor">
-                            <label class="step-label"><span>What should this step be called? <em>Required</em></span><input [(ngModel)]="node.label" (ngModelChange)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" /><small>This name is shown to people reviewing the request.</small></label>
-                            <div class="assignment-box"><div class="assignment-box-heading"><span class="field-icon"><i class="pi pi-user"></i></span><div><strong>Who should approve this step?</strong><small>Choose one source. The selected person, role, or rule controls the approval.</small></div></div><div class="assignment-grid"><label><span>Approval source</span><select [ngModel]="node.assignment?.type" (ngModelChange)="setAssignmentType(node, $event)" [disabled]="!editable"><option value="USER">A specific person</option><option value="ROLE">A person in a role</option><option value="REQUESTER_LEADER">The requester's leader</option><option value="PERMISSION">Anyone with a permission</option></select></label><label *ngIf="node.assignment?.type === 'USER'"><span>Choose person</span><select [(ngModel)]="node.assignment!.user_id" (ngModelChange)="markDirty()" [disabled]="!editable"><option value="">Select a person</option><option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option></select></label><label *ngIf="node.assignment?.type === 'ROLE'"><span>Choose role</span><select [(ngModel)]="node.assignment!.role_id" (ngModelChange)="markDirty()" [disabled]="!editable"><option value="">Select a role</option><option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option></select></label><label *ngIf="node.assignment?.type === 'PERMISSION'"><span>Choose permission</span><select [(ngModel)]="node.assignment!.permission" (ngModelChange)="markDirty()" [disabled]="!editable"><option value="">Select a permission</option><option *ngFor="let permission of permissions; trackBy: trackPermission" [value]="permission.permission_name">{{ permission.module_label || permission.module_key }} · {{ permission.action_label || permission.permission_name }}</option></select></label></div><small class="assignment-help">Use a specific person when one named approver must act. Use a role or permission when the system should find the approver automatically.</small></div>
-                            <div class="paths"><div class="paths-heading"><div><span class="section-kicker">NEXT STEP RULES</span><strong>What happens after this decision?</strong></div><small>An empty path ends with that decision. Conditional approval paths need a matching rule or Default path.</small></div><section *ngFor="let outcome of outcomes; trackBy: trackOutcome" class="path" [attr.data-outcome]="outcome"><div class="path-row"><span class="outcome-icon"><i class="pi" [ngClass]="outcome === 'APPROVE' ? 'pi-check' : outcome === 'REJECT' ? 'pi-times' : 'pi-replay'"></i></span><strong>{{ outcomeLabel(outcome) }}</strong><span class="path-arrow">→</span><select [ngModel]="target(node, outcome)" (ngModelChange)="setTarget(node, outcome, $event)" [disabled]="!editable"><option value="">Finish route / system default</option><option *ngFor="let targetNode of graph.nodes; trackBy: trackNode" [value]="targetNode.key" [disabled]="targetNode.key === node.key">Go to: {{ targetNode.label }}</option></select><button type="button" class="condition-button" (click)="addCondition(node, outcome)" [disabled]="!editable || !target(node, outcome)"><i class="pi pi-filter"></i> Add rule</button></div><div *ngFor="let condition of conditions(node, outcome); let conditionIndex = index" class="condition-row"><span class="condition-label">Only when</span><select [(ngModel)]="condition.field" (ngModelChange)="markDirty()" [disabled]="!editable"><option *ngFor="let field of conditionFields; trackBy: trackConditionField" [value]="field">{{ field.replace('_', ' ') }}</option></select><select [ngModel]="condition.operator" (ngModelChange)="setConditionOperator(condition, $event)" [disabled]="!editable"><option value="EQUALS">equals</option><option value="NOT_EQUALS">does not equal</option><option value="IN">is one of</option></select><input [ngModel]="conditionValue(condition)" (ngModelChange)="setConditionValue(condition, $event)" [disabled]="!editable" placeholder="Enter a value" /><button type="button" class="icon" title="Remove rule" (click)="removeCondition(node, outcome, conditionIndex)" [disabled]="!editable"><i class="pi pi-times"></i></button></div></section></div>
-                        </ng-container>
-                        <ng-template #endNodeEditor><div class="end-node-message"><span class="outcome-icon"><i class="pi pi-flag"></i></span><div><strong>Approval route ends here</strong><p>The previous decision determines the request status. Approved requests proceed to file finalization and release.</p></div></div></ng-template>
+                        <label class="step-label">
+                            <span>Step name <em>Required</em></span>
+                            <input [(ngModel)]="node.label" (ngModelChange)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
+                            <small>This label appears in the request approval history.</small>
+                        </label>
+
+                        <div class="assignment-box">
+                            <div class="assignment-box-heading">
+                                <span class="field-icon"><i class="pi pi-user"></i></span>
+                                <div><strong>Who should approve?</strong><small>Assignment decides responsibility for this step.</small></div>
+                            </div>
+
+                            <div *ngIf="node.assignment?.type === 'PERMISSION'" class="feedback error">
+                                <i class="pi pi-info-circle"></i>
+                                <span>Legacy permission-based assignment. Create a new version to migrate this step to a person, role, or requester leader.</span>
+                            </div>
+
+                            <div class="assignment-grid" *ngIf="node.assignment?.type !== 'PERMISSION'">
+                                <label>
+                                    <span>Approver source</span>
+                                    <select [ngModel]="node.assignment?.type" (ngModelChange)="setAssignmentType(node, $event)" [disabled]="!editable">
+                                        <option value="REQUESTER_LEADER">Requester's leader</option>
+                                        <option value="USER">Specific person</option>
+                                        <option value="ROLE">Role</option>
+                                    </select>
+                                </label>
+
+                                <label *ngIf="node.assignment?.type === 'USER'">
+                                    <span>Person</span>
+                                    <select [(ngModel)]="node.assignment!.user_id" (ngModelChange)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                        <option value="">Select a person</option>
+                                        <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
+                                    </select>
+                                </label>
+
+                                <label *ngIf="node.assignment?.type === 'ROLE'">
+                                    <span>Role</span>
+                                    <select [(ngModel)]="node.assignment!.role_id" (ngModelChange)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                        <option value="">Select a role</option>
+                                        <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <small class="assignment-help">Requester's leader follows the user's configured leader. A role resolves to an eligible user in that role when the request starts. The resolved user is stored in the request workflow history.</small>
+                        </div>
+
+                        <div class="paths">
+                            <div class="paths-heading">
+                                <div><span class="section-kicker">FIXED BEHAVIOR</span><strong>What happens after this step?</strong></div>
+                            </div>
+                            <section class="path" data-outcome="APPROVE">
+                                <div class="path-row"><span class="outcome-icon"><i class="pi pi-check"></i></span><strong>Approve</strong><span class="path-arrow">→</span><span>{{ index < approvalNodes.length - 1 ? 'Next approval step' : 'Document approved' }}</span></div>
+                            </section>
+                            <section class="path" data-outcome="REJECT">
+                                <div class="path-row"><span class="outcome-icon"><i class="pi pi-times"></i></span><strong>Reject</strong><span class="path-arrow">→</span><span>Request rejected and workflow stops</span></div>
+                            </section>
+                            <section class="path" data-outcome="RETURN">
+                                <div class="path-row"><span class="outcome-icon"><i class="pi pi-replay"></i></span><strong>Request revision</strong><span class="path-arrow">→</span><span>Return to requester for revision</span></div>
+                            </section>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="node-card end-node">
+                    <div class="node-rail"><span class="step-number">✓</span></div>
+                    <div class="node-body">
+                        <div class="end-node-message">
+                            <span class="outcome-icon"><i class="pi pi-check-circle"></i></span>
+                            <div><strong>Approved</strong><p>When the final approval step is approved, the document request reaches the system's approved state.</p></div>
+                        </div>
                     </div>
                 </article>
             </div>
         </main>
-        <ng-template #selectPrompt><main class="editor empty"><i class="pi pi-arrow-left"></i><strong>Select a workflow to begin</strong><span>Choose a route from the left, or create a new workflow.</span></main></ng-template>
+
+        <ng-template #selectPrompt>
+            <main class="editor empty"><i class="pi pi-arrow-left"></i><strong>Select a workflow to begin</strong><span>Choose an approval route from the left, or create a new workflow.</span></main>
+        </ng-template>
     </div>
 </section>
