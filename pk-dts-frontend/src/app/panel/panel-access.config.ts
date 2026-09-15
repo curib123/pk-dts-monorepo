@@ -25,63 +25,22 @@ export interface PanelAccessContext {
     permissions: readonly string[];
 }
 
+// Route/sidebar permissions answer only whether the user can enter and read a workspace.
+// Create/edit/delete/publish permissions remain page-action permissions and do not by themselves expose a workspace.
 const DOCUMENT_VIEW_PERMISSIONS = ['documents.view', 'document-requests.view'];
-const SOFTCOPY_FOLDER_PERMISSIONS = [
-    'softcopy-folders.view',
-    'softcopy-folders.create',
-    'softcopy-folders.edit',
-    'softcopy-folders.delete',
-    'softcopy-folders.manage'
-];
-const MY_DOCUMENT_REQUEST_PERMISSIONS = ['document-requests.view-own', 'document-requests.create'];
-const MY_ACCESS_REQUEST_PERMISSIONS = [
-    'document-access-requests.catalog',
-    'document-access-requests.create',
-    'document-access-requests.view-own',
-    'document-access-requests.cancel-own'
-];
-const ACCESS_REVIEW_PERMISSIONS = [
-    'document-access-requests.review',
-    'document-access-requests.approve',
-    'document-access-requests.reject',
-    'document-access-requests.grant',
-    'document-access-requests.revoke',
-    'document-access-requests.expire'
-];
-const APPROVAL_REVIEW_PERMISSIONS = [
-    'document-requests.review',
-    'document-requests.approve-noted-by',
-    'document-requests.approve-plant-manager',
-    'document-requests.approve-document-controller',
-    'document-requests.approve-hardcopy'
-];
-const DISPOSAL_WORKSPACE_PERMISSIONS = [
-    'document-disposal.view',
-    'document-disposal.review',
-    'document-disposal.manage',
-    'document-disposal.restore',
-    'document-disposal.dispose'
-];
+const SOFTCOPY_FOLDER_PERMISSIONS = ['softcopy-folders.view', 'softcopy-folders.manage'];
+const MY_DOCUMENT_REQUEST_PERMISSIONS = ['document-requests.view-own'];
+const MY_ACCESS_REQUEST_PERMISSIONS = ['document-access-requests.catalog', 'document-access-requests.view-own'];
+const ACCESS_REVIEW_PERMISSIONS = ['document-access-requests.review'];
+const APPROVAL_REVIEW_PERMISSIONS = ['document-requests.review'];
+const DISPOSAL_WORKSPACE_PERMISSIONS = ['document-disposal.view', 'document-disposal.review', 'document-disposal.manage'];
 const STORAGE_ADMIN_PERMISSIONS = [
     'storage-classification.view',
-    'storage-classification.create',
-    'storage-classification.edit',
-    'storage-classification.delete',
     'storage-classification.manage',
     'location-management.view',
-    'location-management.create',
-    'location-management.edit',
-    'location-management.archive',
     'location-management.manage'
 ];
-const USER_MANAGEMENT_PERMISSIONS = [
-    'user-accounts.view',
-    'user-accounts.create',
-    'user-accounts.edit',
-    'user-accounts.delete',
-    'user-accounts.manage',
-    'user-accounts.approve'
-];
+const USER_MANAGEMENT_PERMISSIONS = ['user-accounts.view', 'user-accounts.manage', 'user-accounts.approve'];
 
 export const PANEL_ROUTE_PERMISSIONS = {
     dashboard: ['dashboard.view'],
@@ -97,7 +56,7 @@ export const PANEL_ROUTE_PERMISSIONS = {
     storageAdmin: STORAGE_ADMIN_PERMISSIONS,
     userManagement: USER_MANAGEMENT_PERMISSIONS,
     rolesPermissions: ['roles-permissions.view', 'roles-permissions.manage'],
-    workflowBuilder: ['document-workflow.view', 'document-workflow.configure', 'document-workflow.publish'],
+    workflowBuilder: ['document-workflow.view', 'document-workflow.configure'],
     backupRestore: ['backup-restore.view'],
     auditLogs: ['activity-logs.view_logs'],
     systemSettings: ['system-settings.manage']
