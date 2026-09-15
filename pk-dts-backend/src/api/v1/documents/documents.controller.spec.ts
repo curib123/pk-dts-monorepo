@@ -1,4 +1,6 @@
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
+import { REQUIRED_PERMISSIONS_KEY } from "../../../common/auth/require-permissions.decorator";
+import { DOCUMENT_APPROVAL_PERMISSIONS } from "../../../common/auth/document-workflow-permissions";
 import { DocumentsController } from "./documents.controller";
 import { DocumentsService } from "./documents.service";
 
@@ -32,6 +34,35 @@ describe("DocumentsController update permissions", () => {
 
     expect(updateRequest).toHaveBeenCalledWith("42", dto, "7", user);
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe("DocumentsController workflow decision permissions", () => {
+  it("requires an approval capability before an assigned user can approve", () => {
+    expect(
+      Reflect.getMetadata(
+        REQUIRED_PERMISSIONS_KEY,
+        DocumentsController.prototype.approve,
+      ),
+    ).toEqual([...DOCUMENT_APPROVAL_PERMISSIONS]);
+  });
+
+  it("requires request-revision permission before an assigned user can return a request", () => {
+    expect(
+      Reflect.getMetadata(
+        REQUIRED_PERMISSIONS_KEY,
+        DocumentsController.prototype.requestRevision,
+      ),
+    ).toEqual(["document-requests.request-revision"]);
+  });
+
+  it("requires reject permission before an assigned user can reject", () => {
+    expect(
+      Reflect.getMetadata(
+        REQUIRED_PERMISSIONS_KEY,
+        DocumentsController.prototype.reject,
+      ),
+    ).toEqual(["document-requests.reject"]);
   });
 });
 
