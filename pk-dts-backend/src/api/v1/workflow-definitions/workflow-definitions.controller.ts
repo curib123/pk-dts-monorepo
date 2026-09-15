@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 import { CurrentUser } from "../../../common/auth/current-user.decorator";
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
 import { RequirePermissions } from "../../../common/auth/require-permissions.decorator";
@@ -36,7 +36,10 @@ export class WorkflowDefinitionsController {
   @Post(":id/versions")
   @RequirePermissions("document-workflow.configure")
   createVersion(@Param("id") id: string, @Body() dto: CreateWorkflowVersionDto, @CurrentUser() user: AuthenticatedUser) {
-    if (dto.graph !== undefined) assertSequentialWorkflowGraph(dto.graph);
+    if (dto.graph === undefined) {
+      throw new BadRequestException("A new workflow version must provide an explicit sequential approval route.");
+    }
+    assertSequentialWorkflowGraph(dto.graph);
     return this.service.createVersion(id, dto, user);
   }
 
