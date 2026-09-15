@@ -278,7 +278,8 @@ export class DocumentsController {
   }
 
   @Post(":id/approve")
-  // The persisted step assignee and its configured permission are checked by transition().
+  @RequirePermissions(...DOCUMENT_APPROVAL_PERMISSIONS)
+  // Assignment is still checked by transition(); permission and responsibility are separate gates.
   approve(
     @Param("id") id: string,
     @Body() dto: WorkflowActionDto,
@@ -294,7 +295,8 @@ export class DocumentsController {
   }
 
   @Post(":id/request-revision")
-  // transition() checks either the assigned Builder step or revision-request permission.
+  @RequirePermissions("document-requests.request-revision")
+  // transition() also requires the current Builder step assignment while approval is active.
   requestRevision(
     @Param("id") id: string,
     @Body() dto: WorkflowActionDto,
@@ -310,7 +312,8 @@ export class DocumentsController {
   }
 
   @Post(":id/reject")
-  // transition() checks the assigned step and its decision permissions.
+  @RequirePermissions("document-requests.reject")
+  // transition() also requires the current Builder step assignment.
   reject(
     @Param("id") id: string,
     @Body() dto: WorkflowActionDto,
