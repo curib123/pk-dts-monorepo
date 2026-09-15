@@ -1,5 +1,4 @@
 import { AuthenticatedUser } from "./authenticated-user.interface";
-import { isAdministrativeRole } from "./administrative-role.util";
 
 export const DOCUMENT_APPROVAL_PERMISSIONS = [
   "document-requests.approve-noted-by",
@@ -20,10 +19,7 @@ export function hasPermission(
   user: AuthenticatedUser,
   permission: string,
 ) {
-  return (
-    isAdministrativeRole(user.role.role_name) ||
-    user.role.permissions.includes(permission)
-  );
+  return user.role.permissions.includes(permission);
 }
 
 export function hasAnyPermission(
