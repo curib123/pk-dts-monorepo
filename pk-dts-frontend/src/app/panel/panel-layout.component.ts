@@ -6,24 +6,10 @@ import { Subject, catchError, filter, of, switchMap, takeUntil, timer } from 'rx
 import { AuthService } from '@/app/auth/auth.service';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
+import { PANEL_NAVIGATION, PanelNavCategory, PanelNavItem, shouldShowPanelItem } from './panel-access.config';
 import { DashboardService } from './pages/dashboard/dashboard.service';
 import { NavigationNotificationCounts } from './pages/dashboard/dashboard.types';
 import { NotificationsService, UserNotification } from './notifications.service';
-
-interface PanelNavItem {
-    label: string;
-    icon: string;
-    route: string;
-    permissions: string[];
-    notificationKey?: keyof NavigationNotificationCounts;
-}
-
-interface PanelNavCategory {
-    id: string;
-    label: string;
-    icon: string;
-    items: PanelNavItem[];
-}
 
 @Component({
     selector: 'app-panel-layout',
@@ -160,47 +146,8 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     private destroy$ = new Subject<void>();
     settings = this.systemSettings.settings;
 
-    primaryNavItems: PanelNavItem[] = [
-        { label: 'Dashboard', icon: 'pi pi-home', route: '/panel/dashboard', permissions: ['dashboard.view'] }
-    ];
-
-    navCategories: PanelNavCategory[] = [
-        {
-            id: 'documents',
-            label: 'Documents',
-            icon: 'pi pi-folder-open',
-            items: [
-                { label: 'Softcopy Documents', icon: 'pi pi-file', route: '/panel/softcopy-documents', permissions: ['documents.view', 'document-requests.view'] },
-                { label: 'Hardcopy Documents', icon: 'pi pi-box', route: '/panel/hardcopy-documents', permissions: ['documents.view', 'document-requests.view'] },
-                { label: 'Document Requests', icon: 'pi pi-file-edit', route: '/panel/my-document-requests', permissions: ['document-requests.view-own', 'document-requests.create'], notificationKey: 'document_requests' },
-                { label: 'Document Access Requests', icon: 'pi pi-key', route: '/panel/document-access-requests', permissions: ['document-access-requests.catalog', 'document-access-requests.view-own', 'document-access-requests.review', 'document-access-requests.approve', 'document-access-requests.reject', 'document-access-requests.grant', 'document-access-requests.revoke', 'document-access-requests.expire'], notificationKey: 'access_requests' },
-                { label: 'Disposal Requests', icon: 'pi pi-trash', route: '/panel/my-disposal-requests', permissions: ['document-disposal.request', 'document-disposal.view'], notificationKey: 'disposal_requests' },
-                { label: 'Document Approval Requests', icon: 'pi pi-check-square', route: '/panel/approval-review', permissions: ['document-requests.review', 'document-requests.approve-noted-by', 'document-requests.approve-plant-manager', 'document-requests.approve-document-controller', 'document-requests.approve-hardcopy'], notificationKey: 'approval_review' },
-                { label: 'Document Disposal', icon: 'pi pi-trash', route: '/panel/disposal', permissions: ['document-disposal.view'] }
-            ]
-        },
-        {
-            id: 'administration',
-            label: 'Administration',
-            icon: 'pi pi-objects-column',
-            items: [
-                { label: 'Storage and Classification', icon: 'pi pi-database', route: '/panel/storage', permissions: ['storage-classification.view', 'location-management.view', 'softcopy-folders.view', 'softcopy-folders.manage'] },
-                { label: 'User Account', icon: 'pi pi-users', route: '/panel/users', permissions: [], notificationKey: 'user_accounts' },
-                { label: 'Role and Permission', icon: 'pi pi-shield', route: '/panel/roles-permissions', permissions: ['roles-permissions.view'] },
-                { label: 'Workflow Builder', icon: 'pi pi-sitemap', route: '/panel/workflow-builder', permissions: ['document-workflow.view', 'document-workflow.configure'] }
-            ]
-        },
-        {
-            id: 'system',
-            label: 'System',
-            icon: 'pi pi-cog',
-            items: [
-                { label: 'Backup, Restore and Reset', icon: 'pi pi-history', route: '/panel/backup-restore', permissions: ['backup-restore.view'] },
-                { label: 'Audit and Activity Logs', icon: 'pi pi-list-check', route: '/panel/audit-logs', permissions: ['activity-logs.view_logs'] },
-                { label: 'System Settings', icon: 'pi pi-sliders-h', route: '/panel/settings', permissions: ['system-settings.manage'] }
-            ]
-        }
-    ];
+    primaryNavItems: PanelNavItem[] = [PANEL_NAVIGATION.dashboard];
+    navCategories: PanelNavCategory[] = PANEL_NAVIGATION.categories;
 
     pageTitle = signal('Dashboard');
     pageSubtitle = signal('Your document-tracking overview will live here.');
@@ -216,10 +163,10 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     });
 
     userRole = computed(() => this.auth.user()?.role?.role_name ?? 'User');
-    visiblePrimaryNavItems = computed(() => this.primaryNavItems.filter((item) => this.auth.hasAnyPermission(...item.permissions)));
+    visiblePrimaryNavItems = computed(() => this.primaryNavItems.filter((item) => shouldShowPanelItem(item, this.accessContext())));
     visibleNavCategories = computed(() =>
         this.navCategories
-            .map((category) => ({ ...category, items: category.items.filter((item) => this.auth.hasAnyPermission(...item.permissions) || (item.notificationKey === 'approval_review' && this.notificationCount(item) > 0)) }))
+            .map((category) => ({ ...category, items: category.items.filter((item) => shouldShowPanelItem(item, this.accessContext())) }))
             .filter((category) => category.items.length > 0)
     );
     openCategories = signal<Set<string>>(new Set());
@@ -318,6 +265,14 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
         }
     }
 
+    private accessContext() {
+        const user = this.auth.user();
+        return {
+            roleName: user?.role.role_name ?? 'User',
+            permissions: user?.role.permissions ?? []
+        };
+    }
+
     private syncPageMeta() {
         const snapshot = this.getDeepestSnapshot();
         const data = snapshot?.data ?? {};
@@ -348,18 +303,39 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
         switch (segment) {
             case 'documents':
                 return 'Document';
+            case 'softcopy-documents':
+                return 'Softcopy Documents';
+            case 'hardcopy-documents':
+                return 'Hardcopy Documents';
+            case 'softcopy-folders':
+                return 'Softcopy Folders';
+            case 'my-document-requests':
+                return 'My Document Requests';
+            case 'my-access-requests':
+                return 'My Access Requests';
+            case 'access-review':
+                return 'Access Request Review';
+            case 'approval-review':
+                return 'Approval Requests';
+            case 'my-disposal-requests':
+                return 'My Disposal Requests';
             case 'storage':
+            case 'classification':
                 return 'Storage and Classification';
             case 'disposal':
                 return 'Document Disposal';
-            case 'classification':
-                return 'Storage and Classification';
+            case 'my-profile':
+                return 'My Profile';
             case 'users':
-                return 'User Account';
+                return 'User Management';
             case 'roles-permissions':
-                return 'Role and Permission';
+                return 'Roles and Permissions';
+            case 'workflow-builder':
+                return 'Workflow Builder';
             case 'backup-restore':
                 return 'Backup, Restore and Reset';
+            case 'audit-logs':
+                return 'Audit and Activity Logs';
             case 'settings':
                 return 'System Settings';
             default:
