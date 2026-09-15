@@ -49,7 +49,13 @@ export class WorkflowDefinitionsController {
 
   @Post(":id/versions/:versionId/publish")
   @RequirePermissions("document-workflow.publish")
-  publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) { return this.service.publish(id, versionId, user); }
+  async publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) {
+    const definitions = await this.service.list(true);
+    const definition = definitions.find((item) => String(item.workflow_definition_id) === id);
+    const version = definition?.versions.find((item) => String(item.workflow_version_id) === versionId);
+    if (version) assertSequentialWorkflowGraph(version.graph);
+    return this.service.publish(id, versionId, user);
+  }
 
   @Patch(":id/active")
   @RequirePermissions("document-workflow.configure")
