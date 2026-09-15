@@ -89,6 +89,9 @@ function validateNode(node: WorkflowGraphNode, nodeKeys: Set<string>) {
     throw new BadRequestException(`Workflow step ${node.label} needs an approver assignment.`);
   }
 
+  if (node.required_permission) {
+    throw new BadRequestException("Workflow steps assign responsibility; permissions are managed separately through Roles and Permissions.");
+  }
   if (!ALLOWED_ASSIGNMENT_TYPES.has(node.assignment.type)) {
     throw new BadRequestException("Approvers can only be the requester's leader, a specific user, or a role.");
   }
