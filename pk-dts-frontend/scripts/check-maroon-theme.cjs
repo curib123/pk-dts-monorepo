@@ -21,6 +21,14 @@ for (const token of ['--brand-primary', '--brand-primary-hover', '--brand-primar
     if (!globalStyles.includes(token)) fail(`global styles are missing centralized token ${token}.`);
 }
 
+for (const alias of [
+    '--dts-accent: var(--brand-primary)',
+    '--dts-accent-deep: var(--brand-primary-deep)',
+    '--dts-accent-soft: var(--brand-soft-strong)'
+]) {
+    if (!globalStyles.includes(alias)) fail(`global styles must map legacy compatibility token ${alias} to the central brand palette.`);
+}
+
 const themeOptionsMatch = settingsService.match(/export const COLOR_THEME_OPTIONS = \[(.*?)\] as const;/s);
 if (!themeOptionsMatch) {
     fail('COLOR_THEME_OPTIONS could not be found.');
@@ -29,7 +37,10 @@ if (!themeOptionsMatch) {
     if (ids.length !== 1 || ids[0] !== 'default') {
         fail(`appearance settings must expose exactly one theme (default deep maroon); found: ${ids.join(', ') || 'none'}.`);
     }
-    if (!themeOptionsMatch[1].includes("accent: '#800000'")) fail('the remaining appearance theme must use #800000 as its accent.');
+    if (!settingsService.includes("from '@/app/theme/brand-preset'")) fail('system settings must reuse the centralized brand preset rather than duplicate maroon hex values.');
+    if (!themeOptionsMatch[1].includes('accent: BRAND_DEEP_RED')) fail('the remaining appearance theme must use BRAND_DEEP_RED as its accent.');
+    if (!themeOptionsMatch[1].includes('deep: MAROON_PALETTE[800]')) fail('the remaining appearance theme must derive its deep shade from MAROON_PALETTE.');
+    if (!themeOptionsMatch[1].includes('soft: MAROON_PALETTE[100]')) fail('the remaining appearance theme must derive its soft shade from MAROON_PALETTE.');
 }
 
 for (const legacyHex of ['#dc2626', '#991b1b']) {
