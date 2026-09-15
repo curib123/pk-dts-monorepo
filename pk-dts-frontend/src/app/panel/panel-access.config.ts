@@ -252,5 +252,7 @@ export function shouldShowPanelItem(item: PanelNavItem, context: PanelAccessCont
 export function firstAuthorizedPanelUrl(permissions: readonly string[], roleName: PanelRoleName) {
     const context: PanelAccessContext = { permissions, roleName };
     const ordered = [PANEL_NAVIGATION.dashboard, ...PANEL_NAVIGATION.categories.flatMap((category) => category.items)];
+    const workspace = ordered.find((item) => item.permissions.length > 0 && shouldShowPanelItem(item, context));
+    if (workspace) return workspace.route;
     return ordered.find((item) => shouldShowPanelItem(item, context))?.route ?? '/panel/my-profile';
 }
