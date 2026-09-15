@@ -1,0 +1,22 @@
+name: Maroon theme check
+
+on:
+  push:
+    branches:
+      - refactor/centralize-maroon-theme
+  pull_request:
+    paths:
+      - 'pk-dts-frontend/src/app/theme/**'
+      - 'pk-dts-frontend/src/assets/**'
+      - 'pk-dts-frontend/src/app/panel/**'
+      - 'pk-dts-frontend/src/app/shared/services/system-settings.service.ts'
+      - 'pk-dts-frontend/scripts/check-maroon-theme.cjs'
+
+jobs:
+  centralized-theme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check centralized deep-maroon theme
+        run: node pk-dts-frontend/scripts/check-maroon-theme.cjs
