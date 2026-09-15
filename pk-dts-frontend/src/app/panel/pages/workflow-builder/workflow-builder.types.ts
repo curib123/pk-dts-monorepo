@@ -1,8 +1,15 @@
 export type WorkflowDocumentType = 'SOFTCOPY' | 'HARDCOPY' | null;
 export type WorkflowVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-export type WorkflowAssignmentType = 'USER' | 'ROLE' | 'REQUESTER_LEADER' | 'PERMISSION';
+
+/** Editable assignment types exposed by the sequential Workflow Builder. */
+export type EditableWorkflowAssignmentType = 'USER' | 'ROLE' | 'REQUESTER_LEADER';
+/** PERMISSION remains readable only for previously-published graph versions. */
+export type WorkflowAssignmentType = EditableWorkflowAssignmentType | 'PERMISSION';
+
+/** Legacy graph wire-format outcomes. New builder writes only APPROVE edges. */
 export type WorkflowOutcome = 'APPROVE' | 'REJECT' | 'RETURN' | 'DEFAULT';
 
+/** Legacy graph conditions are retained only so historical versions can be read safely. */
 export interface WorkflowCondition {
     field: 'document_type' | 'action_requested' | 'business_document_type' | 'requester_type';
     operator: 'EQUALS' | 'NOT_EQUALS' | 'IN';
@@ -18,12 +25,19 @@ export interface WorkflowNode {
         type: WorkflowAssignmentType;
         user_id?: string;
         role_id?: string;
+        /** Legacy compatibility only. New writes must not set this. */
         permission?: string;
     };
+    /** Legacy compatibility only. Permissions are managed separately from route assignment. */
     required_permission?: string;
+    /** Legacy visual-canvas metadata. New sequential writes omit positions. */
     position?: { x: number; y: number };
 }
 
+/**
+ * Legacy persistence/runtime wire format. The product model is now a sequential list;
+ * new writes serialize exactly one APPROVE edge from each ordered step to the next.
+ */
 export interface WorkflowEdge {
     key: string;
     from: string;

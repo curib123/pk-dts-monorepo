@@ -3,12 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
-import { Permission, Role } from '../roles-permissions/role-permission.types';
+import { Role } from '../roles-permissions/role-permission.types';
 import { RolePermissionService } from '../roles-permissions/role-permission.service';
 import { UserAccountSummary } from '../user-account/user-account.types';
 import { UserAccountService } from '../user-account/user-account.service';
 import { WorkflowBuilderService } from './workflow-builder.service';
-import { WorkflowCondition, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowOutcome, WorkflowVersion } from './workflow-builder.types';
+import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersion } from './workflow-builder.types';
 
 @Component({
     selector: 'app-workflow-builder-page',
@@ -26,7 +26,6 @@ export class WorkflowBuilderPage implements OnInit {
     definitions: WorkflowDefinition[] = [];
     users: UserAccountSummary[] = [];
     roles: Role[] = [];
-    permissions: Permission[] = [];
     selectedDefinition?: WorkflowDefinition;
     selectedVersion?: WorkflowVersion;
     graph: WorkflowGraph = this.blankGraph();
@@ -35,25 +34,29 @@ export class WorkflowBuilderPage implements OnInit {
     referenceDataError = '';
     saving = false;
     dirty = false;
+    legacyComplex = false;
+    unsupportedLegacyAssignment = false;
     message = '';
     error = '';
     draggedIndex = -1;
     createOpen = false;
     createForm = { workflow_key: '', name: '', description: '', document_type: '' as '' | 'SOFTCOPY' | 'HARDCOPY' };
 
-    readonly outcomes: WorkflowOutcome[] = ['APPROVE', 'REJECT', 'RETURN', 'DEFAULT'];
-    readonly conditionFields: WorkflowCondition['field'][] = ['document_type', 'action_requested', 'business_document_type', 'requester_type'];
-
     private referenceDataLoaded = false;
-    private edgeLookup = new Map<string, WorkflowEdge>();
     private loadSequence = 0;
 
     ngOnInit() { this.load(); }
 
     get canConfigure() { return this.auth.hasPermission('document-workflow.configure'); }
     get canPublish() { return this.auth.hasPermission('document-workflow.publish'); }
-    get editable() { return this.canConfigure && this.selectedVersion?.status === 'DRAFT'; }
+    get editable() {
+        return this.canConfigure
+            && this.selectedVersion?.status === 'DRAFT'
+            && !this.legacyComplex
+            && !this.unsupportedLegacyAssignment;
+    }
     get approvalNodes() { return this.graph.nodes.filter((node) => node.type === 'APPROVAL'); }
+    get approvedNode() { return this.graph.nodes.find((node) => node.type === 'END'); }
 
     load(selectDefinitionId?: string, selectVersionId?: string) {
         const sequence = ++this.loadSequence;
@@ -92,8 +95,10 @@ export class WorkflowBuilderPage implements OnInit {
     selectVersion(version?: WorkflowVersion) {
         if (this.dirty && !confirm('Discard unsaved workflow changes?')) return;
         this.selectedVersion = version;
-        this.graph = version ? this.copyGraph(version.graph) : this.blankGraph();
-        this.rebuildEdgeLookup();
+        this.legacyComplex = false;
+        this.unsupportedLegacyAssignment = false;
+        this.graph = version ? this.prepareSequentialGraph(version.graph) : this.blankGraph();
+        if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
         this.dirty = false;
         this.clearFeedback();
     }
@@ -105,7 +110,7 @@ export class WorkflowBuilderPage implements OnInit {
     createDefinition() {
         const name = this.createForm.name.trim();
         const key = this.createForm.workflow_key.trim().toLowerCase() || this.workflowKeyFromName(name);
-        if (!name || !key) { this.error = 'Workflow name and key are required.'; return; }
+        if (!name || !key) { this.error = 'Workflow name is required.'; return; }
         this.saving = true;
         this.workflowsApi.create({
             workflow_key: key,
@@ -126,36 +131,54 @@ export class WorkflowBuilderPage implements OnInit {
     }
 
     newVersion() {
-        if (!this.selectedDefinition) return;
+        if (!this.selectedDefinition || !this.selectedVersion) return;
+        if (this.legacyComplex || this.unsupportedLegacyAssignment) {
+            this.error = 'This legacy workflow contains routing or assignment rules that cannot be converted safely. Create a new sequential workflow instead.';
+            return;
+        }
+        const validationError = this.validateDraft();
+        if (validationError) { this.error = validationError; return; }
         this.saving = true;
-        this.workflowsApi.createVersion(this.selectedDefinition.workflow_definition_id).subscribe({
-            next: (version) => { this.saving = false; this.load(this.selectedDefinition!.workflow_definition_id, version.workflow_version_id); },
+        this.workflowsApi.createVersion(this.selectedDefinition.workflow_definition_id, this.normalizedGraph()).subscribe({
+            next: (version) => {
+                this.saving = false;
+                this.load(this.selectedDefinition!.workflow_definition_id, version.workflow_version_id);
+                this.message = 'New sequential workflow version created.';
+            },
             error: (error) => { this.saving = false; this.error = this.errorText(error); }
         });
     }
 
     save() {
         if (!this.selectedDefinition || !this.selectedVersion || !this.editable) return;
+        const validationError = this.validateDraft();
+        if (validationError) { this.error = validationError; return; }
         this.saving = true;
         this.workflowsApi.save(this.selectedDefinition.workflow_definition_id, this.selectedVersion.workflow_version_id, this.normalizedGraph()).subscribe({
             next: (version) => {
                 this.saving = false;
                 this.selectedVersion = { ...this.selectedVersion!, ...version };
-                this.graph = this.copyGraph(version.graph);
-                this.rebuildEdgeLookup();
+                this.graph = this.prepareSequentialGraph(version.graph);
+                if (this.referenceDataLoaded) this.normalizeLegacyAssignments();
                 this.dirty = false;
-                this.message = 'Draft saved. Requests already in progress remain bound to their original snapshot.';
+                this.message = 'Draft saved. Requests already in progress remain bound to their original workflow version.';
             },
             error: (error) => { this.saving = false; this.error = this.errorText(error); }
         });
     }
 
     publish() {
-        if (!this.selectedDefinition || !this.selectedVersion || !this.canPublish || this.dirty) return;
-        if (!confirm(`Publish version ${this.selectedVersion.version_number}? The published version becomes immutable.`)) return;
+        if (!this.selectedDefinition || !this.selectedVersion || !this.canPublish || this.dirty || this.legacyComplex || this.unsupportedLegacyAssignment) return;
+        const validationError = this.validateDraft();
+        if (validationError) { this.error = validationError; return; }
+        if (!confirm(`Publish version ${this.selectedVersion.version_number}? Published versions cannot be edited.`)) return;
         this.saving = true;
         this.workflowsApi.publish(this.selectedDefinition.workflow_definition_id, this.selectedVersion.workflow_version_id).subscribe({
-            next: () => { this.saving = false; this.load(this.selectedDefinition!.workflow_definition_id, this.selectedVersion!.workflow_version_id); this.message = 'Workflow version published.'; },
+            next: () => {
+                this.saving = false;
+                this.load(this.selectedDefinition!.workflow_definition_id, this.selectedVersion!.workflow_version_id);
+                this.message = 'Workflow version published.';
+            },
             error: (error) => { this.saving = false; this.error = this.errorText(error); }
         });
     }
@@ -163,96 +186,75 @@ export class WorkflowBuilderPage implements OnInit {
     toggleActive() {
         if (!this.selectedDefinition || !this.canConfigure) return;
         this.workflowsApi.setActive(this.selectedDefinition.workflow_definition_id, !this.selectedDefinition.is_active).subscribe({
-            next: (definition) => { this.selectedDefinition = definition; this.load(definition.workflow_definition_id, this.selectedVersion?.workflow_version_id); },
+            next: (definition) => {
+                this.selectedDefinition = definition;
+                this.load(definition.workflow_definition_id, this.selectedVersion?.workflow_version_id);
+            },
             error: (error) => this.error = this.errorText(error)
         });
     }
 
     addApproval() {
-        const key = this.uniqueKey('approval');
-        this.graph.nodes.push({
-            key, label: 'New approval step', type: 'APPROVAL', stage: 'CUSTOM',
-            assignment: { type: 'REQUESTER_LEADER' }, position: { x: 80, y: this.graph.nodes.length * 160 }
-        });
-        this.markDirty();
-    }
-
-    addEnd() {
-        this.graph.nodes.push({ key: this.uniqueKey('end'), label: 'End', type: 'END', position: { x: 80, y: this.graph.nodes.length * 160 } });
+        if (!this.editable) return;
+        this.graph.nodes = [
+            ...this.approvalNodes,
+            {
+                key: this.uniqueKey('approval'),
+                label: 'New approval step',
+                type: 'APPROVAL',
+                stage: 'CUSTOM',
+                assignment: { type: 'REQUESTER_LEADER' }
+            },
+            this.approvedNode || this.approvedEndNode()
+        ];
+        this.rebuildLinearRoute();
         this.markDirty();
     }
 
     removeNode(node: WorkflowNode) {
-        if (!this.editable || this.graph.nodes.length === 1) return;
+        if (!this.editable || node.type !== 'APPROVAL' || this.approvalNodes.length <= 1) return;
         this.graph.nodes = this.graph.nodes.filter((item) => item.key !== node.key);
-        this.graph.edges = this.graph.edges.filter((edge) => edge.from !== node.key && edge.to !== node.key);
-        this.rebuildEdgeLookup();
-        if (this.graph.start_node_key === node.key) this.graph.start_node_key = this.graph.nodes[0].key;
+        this.rebuildLinearRoute();
         this.markDirty();
     }
 
-    setAssignmentType(node: WorkflowNode, type: WorkflowNode['assignment'] extends infer _T ? 'USER' | 'ROLE' | 'REQUESTER_LEADER' | 'PERMISSION' : never) {
+    setAssignmentType(node: WorkflowNode, type: EditableWorkflowAssignmentType) {
         node.assignment = { type };
         node.required_permission = undefined;
         this.markDirty();
     }
 
-    target(node: WorkflowNode, outcome: WorkflowOutcome) {
-        return this.edge(node, outcome)?.to || '';
-    }
-
-    setTarget(node: WorkflowNode, outcome: WorkflowOutcome, target: string) {
-        this.graph.edges = this.graph.edges.filter((edge) => !(edge.from === node.key && edge.outcome === outcome));
-        if (target) this.graph.edges.push({ key: this.uniqueEdgeKey(node.key, outcome), from: node.key, to: target, outcome });
-        this.rebuildEdgeLookup();
-        this.markDirty();
-    }
-
-    conditions(node: WorkflowNode, outcome: WorkflowOutcome) {
-        return this.edge(node, outcome)?.conditions || [];
-    }
-
-    addCondition(node: WorkflowNode, outcome: WorkflowOutcome) {
-        const edge = this.edge(node, outcome);
-        if (!edge) { this.error = `Connect the ${this.outcomeLabel(outcome)} path before adding conditions.`; return; }
-        edge.conditions ||= [];
-        edge.conditions.push({ field: 'document_type', operator: 'EQUALS', value: 'SOFTCOPY' });
-        this.markDirty();
-    }
-
-    removeCondition(node: WorkflowNode, outcome: WorkflowOutcome, index: number) {
-        const edge = this.edge(node, outcome);
-        edge?.conditions?.splice(index, 1);
-        this.markDirty();
-    }
-
-    conditionValue(condition: WorkflowCondition) { return Array.isArray(condition.value) ? condition.value.join(', ') : condition.value; }
-    setConditionValue(condition: WorkflowCondition, value: string) { condition.value = condition.operator === 'IN' ? value.split(',').map((item) => item.trim()).filter(Boolean) : value; this.markDirty(); }
-    setConditionOperator(condition: WorkflowCondition, operator: WorkflowCondition['operator']) { condition.operator = operator; condition.value = operator === 'IN' ? [String(condition.value)] : String(condition.value); this.markDirty(); }
-
     dragStart(index: number) { if (this.editable) this.draggedIndex = index; }
+
     drop(index: number) {
         if (!this.editable || this.draggedIndex < 0 || this.draggedIndex === index) return;
-        const [node] = this.graph.nodes.splice(this.draggedIndex, 1);
-        this.graph.nodes.splice(index, 0, node);
-        this.graph.nodes.forEach((item, order) => item.position = { x: item.position?.x ?? 80, y: order * 160 });
+        const approvals = [...this.approvalNodes];
+        const [node] = approvals.splice(this.draggedIndex, 1);
+        approvals.splice(index, 0, node);
+        this.graph.nodes = [...approvals, this.approvedNode || this.approvedEndNode()];
         this.draggedIndex = -1;
+        this.rebuildLinearRoute();
+        this.markDirty();
+    }
+
+    moveStep(index: number, direction: -1 | 1) {
+        const target = index + direction;
+        const approvals = [...this.approvalNodes];
+        if (!this.editable || target < 0 || target >= approvals.length) return;
+        [approvals[index], approvals[target]] = [approvals[target], approvals[index]];
+        this.graph.nodes = [...approvals, this.approvedNode || this.approvedEndNode()];
+        this.rebuildLinearRoute();
         this.markDirty();
     }
 
     userLabel(user: UserAccountSummary) { return `${user.firstname} ${user.lastname} · ${user.role.role_name}`; }
     versionLabel(version: WorkflowVersion) { return `Version ${version.version_number} · ${version.status}${version._count?.documents ? ` · ${version._count.documents} request(s)` : ''}`; }
-    outcomeLabel(outcome: WorkflowOutcome) { return ({ APPROVE: 'Approve', REJECT: 'Reject', RETURN: 'Return', DEFAULT: 'Default' })[outcome]; }
-    markDirty() { if (this.editable) { this.dirty = true; this.clearFeedback(); } }
-
     trackDefinition(_index: number, definition: WorkflowDefinition) { return definition.workflow_definition_id; }
     trackVersion(_index: number, version: WorkflowVersion) { return version.workflow_version_id; }
     trackNode(_index: number, node: WorkflowNode) { return node.key; }
     trackUser(_index: number, user: UserAccountSummary) { return user.user_id; }
     trackRole(_index: number, role: Role) { return role.role_id; }
-    trackPermission(_index: number, permission: Permission) { return permission.permission_id; }
-    trackOutcome(_index: number, outcome: WorkflowOutcome) { return outcome; }
-    trackConditionField(_index: number, field: WorkflowCondition['field']) { return field; }
+    markDirty() { if (this.editable) { this.dirty = true; this.clearFeedback(); } }
 
     private loadReferenceData() {
         if (this.referenceDataLoaded || this.referenceDataLoading) return;
@@ -260,14 +262,13 @@ export class WorkflowBuilderPage implements OnInit {
         this.referenceDataError = '';
         forkJoin({
             users: this.usersApi.listUsers(1, 1000),
-            roles: this.accessApi.listRoles(),
-            permissions: this.accessApi.listPermissions()
+            roles: this.accessApi.listRoles()
         }).pipe(finalize(() => this.referenceDataLoading = false)).subscribe({
-            next: ({ users, roles, permissions }) => {
+            next: ({ users, roles }) => {
                 this.users = users.items || [];
                 this.roles = roles;
-                this.permissions = permissions;
                 this.referenceDataLoaded = true;
+                if (this.selectedVersion && !this.legacyComplex) this.normalizeLegacyAssignments();
             },
             error: (error) => {
                 this.referenceDataError = this.errorText(error);
@@ -283,35 +284,165 @@ export class WorkflowBuilderPage implements OnInit {
         this.selectDefinition(definition, selectVersionId);
     }
 
-    private edge(node: WorkflowNode, outcome: WorkflowOutcome) {
-        return this.edgeLookup.get(this.edgeLookupKey(node.key, outcome));
-    }
+    private prepareSequentialGraph(source: WorkflowGraph): WorkflowGraph {
+        const graph = this.copyGraph(source);
+        const nodesByKey = new Map(graph.nodes.map((node) => [node.key, node]));
+        const endNodes = graph.nodes.filter((node) => node.type === 'END');
+        const approvalCount = graph.nodes.filter((node) => node.type === 'APPROVAL').length;
+        const ordered: WorkflowNode[] = [];
+        const visited = new Set<string>();
+        let currentKey = graph.start_node_key;
+        let valid = endNodes.length === 1 && approvalCount > 0 && graph.edges.length === approvalCount;
 
-    private rebuildEdgeLookup() {
-        this.edgeLookup.clear();
-        for (const edge of this.graph.edges) {
-            this.edgeLookup.set(this.edgeLookupKey(edge.from, edge.outcome), edge);
+        while (valid && currentKey) {
+            if (visited.has(currentKey)) { valid = false; break; }
+            visited.add(currentKey);
+            const node = nodesByKey.get(currentKey);
+            if (!node) { valid = false; break; }
+            if (node.type === 'END') break;
+            if (node.type !== 'APPROVAL') { valid = false; break; }
+            ordered.push(node);
+            const outgoing = graph.edges.filter((edge) => edge.from === node.key);
+            if (outgoing.length !== 1 || outgoing[0].outcome !== 'APPROVE' || outgoing[0].conditions?.length) {
+                valid = false;
+                break;
+            }
+            currentKey = outgoing[0].to;
         }
+
+        const finalNode = nodesByKey.get(currentKey);
+        if (!valid || finalNode?.type !== 'END' || ordered.length !== approvalCount || visited.size !== graph.nodes.length) {
+            this.legacyComplex = true;
+            return graph;
+        }
+
+        const normalized: WorkflowGraph = {
+            schema_version: 2,
+            start_node_key: ordered[0].key,
+            nodes: [...ordered, finalNode],
+            edges: []
+        };
+        normalized.edges = this.linearEdges(normalized.nodes);
+        return normalized;
     }
 
-    private edgeLookupKey(nodeKey: string, outcome: WorkflowOutcome) { return `${nodeKey}:${outcome}`; }
-    private clearFeedback() { this.message = ''; this.error = ''; }
-    private uniqueKey(prefix: string) { let index = 1; while (this.graph.nodes.some((node) => node.key === `${prefix}-${index}`)) index++; return `${prefix}-${index}`; }
-    private workflowKeyFromName(name: string) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 88); }
-    private uniqueEdgeKey(from: string, outcome: WorkflowOutcome) { return `${from}-${outcome.toLowerCase()}-${Date.now()}`.slice(0, 100); }
-    private copyGraph(graph: WorkflowGraph): WorkflowGraph { return JSON.parse(JSON.stringify(graph)); }
-    private normalizedGraph(): WorkflowGraph { return { ...this.copyGraph(this.graph), schema_version: 2 }; }
+    private normalizeLegacyAssignments() {
+        if (this.legacyComplex) return;
+        let unresolved = false;
+        for (const node of this.approvalNodes) {
+            if (node.required_permission && node.assignment?.type !== 'PERMISSION') {
+                unresolved = true;
+                continue;
+            }
+            if (!node.assignment) {
+                unresolved = true;
+                continue;
+            }
+            if (node.assignment.type !== 'PERMISSION') continue;
+            const replacement = this.replacementForLegacyPermission(node);
+            if (replacement) {
+                node.assignment = replacement;
+                node.required_permission = undefined;
+            } else {
+                unresolved = true;
+            }
+        }
+        this.unsupportedLegacyAssignment = unresolved;
+    }
+
+    private replacementForLegacyPermission(node: WorkflowNode): WorkflowNode['assignment'] | undefined {
+        if (node.stage === 'NOTED_BY') return { type: 'REQUESTER_LEADER' };
+        const roleName = node.stage === 'PLANT_MANAGER'
+            ? 'Plant Manager'
+            : node.stage === 'DOCUMENT_CONTROLLER_ADMIN' || node.stage === 'HARDCOPY_APPROVAL'
+                ? 'Documentation Officer'
+                : undefined;
+        if (!roleName) return undefined;
+        const role = this.roles.find((item) => item.role_name.trim().toLowerCase() === roleName.toLowerCase());
+        return role ? { type: 'ROLE', role_id: role.role_id } : undefined;
+    }
+
+    private validateDraft() {
+        if (this.legacyComplex) return 'Legacy branching workflows are read-only. Create a new sequential workflow instead.';
+        if (this.unsupportedLegacyAssignment) return 'This legacy workflow contains an assignment rule that cannot be converted safely.';
+        const approvals = this.approvalNodes;
+        if (!approvals.length) return 'Add at least one approval step.';
+        if (approvals.length > 15) return 'A workflow can contain at most 15 approval steps.';
+        for (const node of approvals) {
+            if (!node.label?.trim()) return 'Every approval step needs a name.';
+            if (!node.assignment) return `${node.label || 'Approval step'} needs an approver.`;
+            if (node.required_permission) return `${node.label} contains legacy permission routing and cannot be saved as a sequential route.`;
+            if (node.assignment.type === 'USER' && !node.assignment.user_id) return `${node.label} needs a selected person.`;
+            if (node.assignment.type === 'ROLE' && !node.assignment.role_id) return `${node.label} needs a selected role.`;
+            if (node.assignment.type === 'PERMISSION') return `${node.label} still uses an unsupported legacy permission assignment.`;
+        }
+        return '';
+    }
+
+    private rebuildLinearRoute() {
+        const approvals = this.approvalNodes;
+        const end = this.approvedNode || this.approvedEndNode();
+        this.graph.nodes = [...approvals, end];
+        this.graph.start_node_key = approvals[0]?.key || '';
+        this.graph.edges = this.linearEdges(this.graph.nodes);
+    }
+
+    private linearEdges(nodes: WorkflowNode[]): WorkflowEdge[] {
+        const approvals = nodes.filter((node) => node.type === 'APPROVAL');
+        const end = nodes.find((node) => node.type === 'END');
+        if (!end) return [];
+        return approvals.map((node, index) => ({
+            key: `${node.key}-approve`,
+            from: node.key,
+            to: approvals[index + 1]?.key || end.key,
+            outcome: 'APPROVE'
+        }));
+    }
+
+    private normalizedGraph(): WorkflowGraph {
+        this.rebuildLinearRoute();
+        return {
+            schema_version: 2,
+            start_node_key: this.graph.start_node_key,
+            nodes: this.graph.nodes.map((node) => {
+                if (node.type === 'END') return { key: node.key, label: node.label, type: 'END' as const };
+                const assignment = node.assignment?.type === 'USER'
+                    ? { type: 'USER' as const, user_id: node.assignment.user_id }
+                    : node.assignment?.type === 'ROLE'
+                        ? { type: 'ROLE' as const, role_id: node.assignment.role_id }
+                        : { type: 'REQUESTER_LEADER' as const };
+                return {
+                    key: node.key,
+                    label: node.label.trim(),
+                    type: 'APPROVAL' as const,
+                    stage: node.stage || 'CUSTOM',
+                    assignment
+                };
+            }),
+            edges: this.linearEdges(this.graph.nodes)
+        };
+    }
+
+    private approvedEndNode(): WorkflowNode {
+        return { key: 'approved', label: 'Approved', type: 'END' };
+    }
+
     private blankGraph(): WorkflowGraph {
         return {
             schema_version: 2,
             start_node_key: 'approval-1',
             nodes: [
-                { key: 'approval-1', label: 'Approval', type: 'APPROVAL', stage: 'CUSTOM', assignment: { type: 'REQUESTER_LEADER' }, position: { x: 80, y: 0 } },
-                { key: 'end-approved', label: 'Approved', type: 'END', position: { x: 80, y: 160 } }
+                { key: 'approval-1', label: 'Approval', type: 'APPROVAL', stage: 'CUSTOM', assignment: { type: 'REQUESTER_LEADER' } },
+                this.approvedEndNode()
             ],
-            edges: [{ key: 'approval-1-approve', from: 'approval-1', to: 'end-approved', outcome: 'APPROVE' }]
+            edges: [{ key: 'approval-1-approve', from: 'approval-1', to: 'approved', outcome: 'APPROVE' }]
         };
     }
+
+    private clearFeedback() { this.message = ''; this.error = ''; }
+    private uniqueKey(prefix: string) { let index = 1; while (this.graph.nodes.some((node) => node.key === `${prefix}-${index}`)) index++; return `${prefix}-${index}`; }
+    private workflowKeyFromName(name: string) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 88); }
+    private copyGraph(graph: WorkflowGraph): WorkflowGraph { return JSON.parse(JSON.stringify(graph)); }
     private errorText(error: unknown) {
         const value = error as { error?: { message?: string | string[] }; message?: string };
         return Array.isArray(value?.error?.message) ? value.error!.message!.join(' ') : value?.error?.message || value?.message || 'The workflow operation failed.';

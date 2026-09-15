@@ -12,6 +12,12 @@ const graph = {
   edges: [{ key: "leader-approved", from: "leader", to: "released", outcome: "APPROVE" }],
 };
 
+const actor = {
+  user_id: "1",
+  username: "admin",
+  role: { role_id: "1", role_name: "Admin", permissions: ["document-workflow.publish"] },
+} as any;
+
 describe("WorkflowDefinitionsService", () => {
   it("accepts an acyclic graph with explicit assignment rules", async () => {
     const service = new WorkflowDefinitionsService({} as any);
@@ -35,6 +41,38 @@ describe("WorkflowDefinitionsService", () => {
     };
     const service = new WorkflowDefinitionsService(prisma);
     await expect(service.updateVersion("1", "2", { graph })).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("rejects publishing a branching draft even when the service is called directly", async () => {
+    const branching = {
+      ...graph,
+      nodes: [
+        { key: "leader", label: "Leader approval", type: "APPROVAL", assignment: { type: "REQUESTER_LEADER" } },
+        { key: "other", label: "Other approval", type: "APPROVAL", assignment: { type: "REQUESTER_LEADER" } },
+        { key: "released", label: "Released", type: "END" },
+      ],
+      edges: [
+        { key: "leader-approved", from: "leader", to: "released", outcome: "APPROVE" },
+        { key: "leader-rejected", from: "leader", to: "other", outcome: "REJECT" },
+      ],
+    };
+    const tx: any = {
+      workflowVersion: {
+        findFirst: jest.fn().mockResolvedValue({
+          status: WorkflowVersionStatus.DRAFT,
+          graph: branching,
+        }),
+        updateMany: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+    const prisma: any = {
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const service = new WorkflowDefinitionsService(prisma);
+
+    await expect(service.publish("1", "2", actor)).rejects.toBeInstanceOf(BadRequestException);
+    expect(tx.workflowVersion.updateMany).not.toHaveBeenCalled();
   });
 
   it("caches repeated workflow-list reads and avoids expensive document counts", async () => {

@@ -70,7 +70,11 @@ export class UsersController {
     const isSelf = String(user?.user_id ?? "") === String(id);
 
     if (isSelf && !canManageAccounts) {
-      const { role_id: _ignoredRoleId, ...safeProfileChanges } = dto;
+      const {
+        role_id: _ignoredRoleId,
+        leader_id: _ignoredLeaderId,
+        ...safeProfileChanges
+      } = dto;
       return this.usersService.update(id, safeProfileChanges);
     }
 

@@ -1,9 +1,8 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsObject, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { IsObject } from "class-validator";
 
 export class CreateWorkflowVersionDto {
-  @ApiPropertyOptional({ description: "Omit to copy the latest version into a new draft." })
-  @IsOptional()
+  @ApiProperty({ description: "Explicit sequential approval route for the new immutable-version draft." })
   @IsObject()
-  graph?: Record<string, unknown>;
+  graph!: Record<string, unknown>;
 }

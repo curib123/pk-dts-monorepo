@@ -7,6 +7,7 @@ import { PrismaService } from "../../../core/prisma/prisma.service";
 import { CreateWorkflowDefinitionDto } from "./dto/create-workflow-definition.dto";
 import { CreateWorkflowVersionDto } from "./dto/create-workflow-version.dto";
 import { UpdateWorkflowVersionDto } from "./dto/update-workflow-version.dto";
+import { assertSequentialWorkflowGraph } from "./sequential-workflow.validator";
 import { WorkflowCondition, WorkflowGraph, WorkflowGraphEdge, WorkflowGraphNode } from "./workflow-graph.types";
 
 const WORKFLOW_INCLUDE = {
@@ -64,6 +65,7 @@ export class WorkflowDefinitionsService {
   }
 
   async create(dto: CreateWorkflowDefinitionDto, actor: AuthenticatedUser) {
+    assertSequentialWorkflowGraph(dto.graph);
     const graph = await this.validateGraph(dto.graph);
     const actorId = toBigIntId(actor.user_id, "current_user_id");
     const created = await this.prisma.$transaction(async (tx) => {
@@ -98,7 +100,9 @@ export class WorkflowDefinitionsService {
     });
     if (!definition) throw new NotFoundException("Workflow definition was not found.");
     const latest = definition.versions[0];
-    const graph = await this.validateGraph(dto.graph ?? latest?.graph);
+    const graphValue = dto.graph ?? latest?.graph;
+    assertSequentialWorkflowGraph(graphValue);
+    const graph = await this.validateGraph(graphValue);
     const version = await this.prisma.workflowVersion.create({
       data: {
         workflow_definition_id: definitionId,
@@ -117,6 +121,7 @@ export class WorkflowDefinitionsService {
     const version = await this.prisma.workflowVersion.findFirst({ where: { workflow_version_id: versionId, workflow_definition_id: definitionId } });
     if (!version) throw new NotFoundException("Workflow version was not found.");
     if (version.status !== WorkflowVersionStatus.DRAFT) throw new ConflictException("Published workflow versions are immutable. Create a new draft version instead.");
+    assertSequentialWorkflowGraph(dto.graph);
     const graph = await this.validateGraph(dto.graph);
     const updated = await this.prisma.workflowVersion.update({
       where: { workflow_version_id: versionId },
@@ -133,6 +138,7 @@ export class WorkflowDefinitionsService {
       const version = await tx.workflowVersion.findFirst({ where: { workflow_version_id: versionId, workflow_definition_id: definitionId } });
       if (!version) throw new NotFoundException("Workflow version was not found.");
       if (version.status !== WorkflowVersionStatus.DRAFT) throw new ConflictException("Only a draft workflow version can be published.");
+      assertSequentialWorkflowGraph(version.graph);
       await this.validateGraph(version.graph, tx);
       await tx.workflowVersion.updateMany({
         where: { workflow_definition_id: definitionId, status: WorkflowVersionStatus.PUBLISHED },

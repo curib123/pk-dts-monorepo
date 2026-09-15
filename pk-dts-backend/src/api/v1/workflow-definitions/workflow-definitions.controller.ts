@@ -5,6 +5,7 @@ import { RequirePermissions } from "../../../common/auth/require-permissions.dec
 import { CreateWorkflowDefinitionDto } from "./dto/create-workflow-definition.dto";
 import { CreateWorkflowVersionDto } from "./dto/create-workflow-version.dto";
 import { UpdateWorkflowVersionDto } from "./dto/update-workflow-version.dto";
+import { assertSequentialWorkflowGraph } from "./sequential-workflow.validator";
 import { WorkflowDefinitionsService } from "./workflow-definitions.service";
 
 @Controller({ path: "workflow-definitions", version: "1" })
@@ -27,19 +28,34 @@ export class WorkflowDefinitionsController {
 
   @Post()
   @RequirePermissions("document-workflow.configure")
-  create(@Body() dto: CreateWorkflowDefinitionDto, @CurrentUser() user: AuthenticatedUser) { return this.service.create(dto, user); }
+  create(@Body() dto: CreateWorkflowDefinitionDto, @CurrentUser() user: AuthenticatedUser) {
+    assertSequentialWorkflowGraph(dto.graph);
+    return this.service.create(dto, user);
+  }
 
   @Post(":id/versions")
   @RequirePermissions("document-workflow.configure")
-  createVersion(@Param("id") id: string, @Body() dto: CreateWorkflowVersionDto, @CurrentUser() user: AuthenticatedUser) { return this.service.createVersion(id, dto, user); }
+  createVersion(@Param("id") id: string, @Body() dto: CreateWorkflowVersionDto, @CurrentUser() user: AuthenticatedUser) {
+    assertSequentialWorkflowGraph(dto.graph);
+    return this.service.createVersion(id, dto, user);
+  }
 
   @Put(":id/versions/:versionId")
   @RequirePermissions("document-workflow.configure")
-  updateVersion(@Param("id") id: string, @Param("versionId") versionId: string, @Body() dto: UpdateWorkflowVersionDto) { return this.service.updateVersion(id, versionId, dto); }
+  updateVersion(@Param("id") id: string, @Param("versionId") versionId: string, @Body() dto: UpdateWorkflowVersionDto) {
+    assertSequentialWorkflowGraph(dto.graph);
+    return this.service.updateVersion(id, versionId, dto);
+  }
 
   @Post(":id/versions/:versionId/publish")
   @RequirePermissions("document-workflow.publish")
-  publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) { return this.service.publish(id, versionId, user); }
+  async publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) {
+    const definitions = await this.service.list(true);
+    const definition = definitions.find((item) => String(item.workflow_definition_id) === id);
+    const version = definition?.versions.find((item) => String(item.workflow_version_id) === versionId);
+    if (version) assertSequentialWorkflowGraph(version.graph);
+    return this.service.publish(id, versionId, user);
+  }
 
   @Patch(":id/active")
   @RequirePermissions("document-workflow.configure")
