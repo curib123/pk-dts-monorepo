@@ -154,7 +154,7 @@ export class SoftcopyFoldersPage implements OnInit {
         this.saving.set(true);
         this.clearFeedback();
         const request = id
-            ? this.storageApi.updateSoftcopyCategory(id, { category_name: name, parent_category_id: this.parentId || undefined })
+            ? this.storageApi.updateSoftcopyCategory(id, { category_name: name, parent_category_id: this.parentId })
             : this.storageApi.createSoftcopyCategory({ category_name: name, parent_category_id: this.parentId || undefined });
         request.subscribe({
             next: () => {
