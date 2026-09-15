@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
+import { firstAuthorizedPanelUrl } from '@/app/panel/panel-access.config';
 import { AuthService } from './auth.service';
 
 export const authGuard: CanActivateFn = (route) => {
@@ -14,7 +15,10 @@ export const authGuard: CanActivateFn = (route) => {
         }
 
         if (route.routeConfig?.path === 'dashboard') {
-            return router.createUrlTree([firstAuthorizedPanelUrl(auth)]);
+            const user = auth.user();
+            return router.createUrlTree([
+                firstAuthorizedPanelUrl(user?.role.permissions ?? [], user?.role.role_name ?? 'User')
+            ]);
         }
 
         const refreshedProfile = auth.refreshProfile();
@@ -39,23 +43,6 @@ export const authGuard: CanActivateFn = (route) => {
 
     return router.createUrlTree(['/auth/login']);
 };
-
-function firstAuthorizedPanelUrl(auth: AuthService) {
-    const routes: Array<{ url: string; permissions: string[] }> = [
-        { url: '/panel/dashboard', permissions: ['dashboard.view'] },
-        { url: '/panel/documents', permissions: ['documents.view', 'document-requests.view'] },
-        { url: '/panel/my-document-requests', permissions: ['document-requests.view-own'] },
-        { url: '/panel/my-disposal-requests', permissions: ['document-disposal.request'] },
-        { url: '/panel/approval-review', permissions: ['document-requests.review', 'document-requests.approve-noted-by', 'document-requests.approve-plant-manager', 'document-requests.approve-document-controller', 'document-requests.approve-hardcopy'] },
-        { url: '/panel/disposal', permissions: ['document-disposal.view'] },
-        { url: '/panel/storage', permissions: ['storage-classification.view', 'location-management.view', 'softcopy-folders.view', 'softcopy-folders.manage'] },
-        { url: '/panel/roles-permissions', permissions: ['roles-permissions.view'] },
-        { url: '/panel/backup-restore', permissions: ['backup-restore.view'] },
-        { url: '/panel/settings', permissions: ['system-settings.manage'] }
-    ];
-
-    return routes.find((candidate) => auth.hasAnyPermission(...candidate.permissions))?.url ?? '/panel/users';
-}
 
 export const guestGuard: CanActivateFn = (): boolean | UrlTree => {
     const auth = inject(AuthService);
