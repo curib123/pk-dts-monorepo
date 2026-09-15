@@ -23,7 +23,7 @@ describe('MyProfilePage', () => {
     beforeEach(async () => {
         users.getCurrentUser.and.returnValue(of(currentUser));
         users.updateUser.and.returnValue(of(currentUser));
-        auth.refreshProfile.and.returnValue(of({} as never));
+        auth.refreshProfile.and.returnValue(of(currentUser));
 
         await TestBed.configureTestingModule({
             imports: [MyProfilePage],
