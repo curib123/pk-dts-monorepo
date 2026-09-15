@@ -1,4 +1,4 @@
-/* Global application theme — one source of truth: light mode + deep red brand. */
+/* Global application theme — one source of truth: light mode + deep maroon brand. */
 @use 'primeicons/primeicons.css';
 @use '@/assets/layout/layout.scss';
 @use '@/assets/demo/demo.scss';
@@ -14,6 +14,11 @@
     --brand-soft: var(--p-primary-50);
     --brand-soft-strong: var(--p-primary-100);
     --brand-contrast: var(--p-primary-contrast-color);
+
+    /* Compatibility aliases keep older custom screens on the same palette. */
+    --dts-accent: var(--brand-primary);
+    --dts-accent-deep: var(--brand-primary-deep);
+    --dts-accent-soft: var(--brand-soft-strong);
 
     --app-background: var(--p-surface-50);
     --app-surface: var(--p-surface-0);
@@ -61,7 +66,6 @@ body {
     .filter-footer { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--app-border) }
     .filter-meta { color:var(--app-text-muted);font-size:.72rem;line-height:1.5 }
 }
-
 
 @media (max-width: 640px) {
     .documents-page {
