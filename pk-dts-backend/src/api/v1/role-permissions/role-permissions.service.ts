@@ -1,5 +1,4 @@
-import { DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES } from "../../../common/constants/permission-catalog";
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { toBigIntId } from '../../../common/utils/prisma-id.util';
 import {
@@ -35,11 +34,10 @@ export class RolePermissionsService {
       this.prisma.role.findUnique({ where: { role_id: roleId } }),
       this.prisma.permission.findUnique({ where: { permission_id: permissionId } }),
     ]);
-    if (!role || !permission) throw new NotFoundException('Role or permission was not found.');
-    const normalizedRole = role.role_name.trim().toLowerCase();
-    if (normalizedRole === 'internal audit' && !(DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES as readonly string[]).includes(permission.permission_name)) {
-      throw new BadRequestException('Internal Audit is a protected read-only role and can only receive view permissions.');
+    if (!role || !permission) {
+      throw new NotFoundException('Role or permission was not found.');
     }
+
     return this.prisma.rolePermission.create({
       data: {
         role_id: roleId,
@@ -52,12 +50,13 @@ export class RolePermissionsService {
     const rolePermissionId = toBigIntId(id, 'role_permission_id');
     const existing = await this.prisma.rolePermission.findUnique({
       where: { role_permission_id: rolePermissionId },
-      include: { role: true, permission: true },
     });
-    if (!existing) throw new NotFoundException('Role permission was not found.');
-    if (existing.role.role_name.trim().toLowerCase() === 'internal audit') {
-      throw new BadRequestException('Internal Audit is a protected read-only role. Its required view permissions cannot be removed.');
+    if (!existing) {
+      throw new NotFoundException('Role permission was not found.');
     }
-    return this.prisma.rolePermission.delete({ where: { role_permission_id: rolePermissionId } });
+
+    return this.prisma.rolePermission.delete({
+      where: { role_permission_id: rolePermissionId },
+    });
   }
 }
