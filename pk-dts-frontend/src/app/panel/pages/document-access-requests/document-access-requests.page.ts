@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
@@ -12,6 +13,7 @@ import { DocumentAccessRequestsService } from './document-access-requests.servic
 import { AccessRequestDocument, DocumentAccessRequest, DocumentAccessRequestStatus } from './document-access-requests.types';
 
 type ViewTab = 'catalog' | 'mine' | 'pending';
+type AccessPageMode = 'requester' | 'reviewer' | 'all';
 type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'REJECTED' | 'RETURNED' };
 
 @Component({
@@ -24,8 +26,8 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
             <header class="access-hero">
                 <div>
                     <span class="eyebrow">CONTROLLED DOCUMENT ACCESS</span>
-                    <h1>Document Access Requests</h1>
-                    <p>Search approved document records and request assignment. Access begins only after an authorized administrator approves the request.</p>
+                    <h1>{{ pageHeading() }}</h1>
+                    <p>{{ pageDescription() }}</p>
                 </div>
                 <div class="hero-status"><i class="pi pi-shield"></i><span>Approval required</span></div>
             </header>
@@ -79,11 +81,11 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
                         <div class="applicant"><span class="avatar"><i class="pi pi-user"></i></span><div><strong>{{ userName(request) }}</strong><small>{{ request.requester.username }}</small><small>{{ request.requester.position_title || 'No position title' }}</small></div></div>
                         <div class="requested-document"><span class="label">Requested document</span><strong>{{ request.document.document_type === 'HARDCOPY' ? request.document.document_title : (request.document.document_number || 'No document number') }}</strong><p>{{ request.document.document_title }}</p><small>{{ request.document.document_type }} · {{ request.created_at | date:'medium' }}</small></div>
                         <div class="reason-copy"><span class="label">Staff reason</span><p>{{ request.request_reason || 'No reason provided.' }}</p></div>
-                        <label class="review-note"><span>Administrator note <small>Optional</small></span><textarea [(ngModel)]="reviewRemarks[request.access_request_id]" maxlength="1000" rows="2" placeholder="Note shown to the requester"></textarea></label>
-        <div class="decision-actions"><p-button *ngIf="request.status === 'APPROVED'" label="Grant Access" icon="pi pi-key" severity="success" [disabled]="actingId() === request.access_request_id || !canGrant()" (onClick)="grantAccess(request)" /><ng-container *ngIf="request.status !== 'APPROVED'"><p-button label="Return" icon="pi pi-replay" severity="warn" [outlined]="true" [disabled]="actingId() === request.access_request_id || !canReject()" (onClick)="openDecision(request, 'RETURNED')" /><p-button label="Reject" icon="pi pi-times" severity="danger" [outlined]="true" [disabled]="actingId() === request.access_request_id || !canReject()" (onClick)="openDecision(request, 'REJECTED')" /><p-button label="Approve" icon="pi pi-check" [disabled]="actingId() === request.access_request_id || !canApprove()" (onClick)="openDecision(request, 'APPROVED')" /></ng-container></div>
+                        <label class="review-note"><span>Reviewer note <small>Optional</small></span><textarea [(ngModel)]="reviewRemarks[request.access_request_id]" maxlength="1000" rows="2" placeholder="Note shown to the requester"></textarea></label>
+                        <div class="decision-actions"><p-button *ngIf="request.status === 'APPROVED'" label="Grant Access" icon="pi pi-key" severity="success" [disabled]="actingId() === request.access_request_id || !canGrant()" (onClick)="grantAccess(request)" /><ng-container *ngIf="request.status !== 'APPROVED'"><p-button label="Return" icon="pi pi-replay" severity="warn" [outlined]="true" [disabled]="actingId() === request.access_request_id || !canReject()" (onClick)="openDecision(request, 'RETURNED')" /><p-button label="Reject" icon="pi pi-times" severity="danger" [outlined]="true" [disabled]="actingId() === request.access_request_id || !canReject()" (onClick)="openDecision(request, 'REJECTED')" /><p-button label="Approve" icon="pi pi-check" [disabled]="actingId() === request.access_request_id || !canApprove()" (onClick)="openDecision(request, 'APPROVED')" /></ng-container></div>
                     </article>
                 </div>
-                <ng-template #emptyPending><div class="empty-state"><i class="pi pi-check-circle"></i><strong>No pending access requests</strong><span>New Staff requests will appear here.</span></div></ng-template>
+                <ng-template #emptyPending><div class="empty-state"><i class="pi pi-check-circle"></i><strong>No pending access requests</strong><span>New access requests will appear here.</span></div></ng-template>
             </article>
         </section>
 
@@ -98,6 +100,8 @@ export class DocumentAccessRequestsPage implements OnInit {
     private api = inject(DocumentAccessRequestsService);
     private auth = inject(AuthService);
     private alerts = inject(AlertDialogService);
+    private route = inject(ActivatedRoute);
+    mode: AccessPageMode = (this.route.snapshot.data['mode'] as AccessPageMode | undefined) ?? 'all';
     loading = signal(true);
     errorMessage = signal('');
     catalog = signal<AccessRequestDocument[]>([]);
@@ -117,18 +121,20 @@ export class DocumentAccessRequestsPage implements OnInit {
     pendingDecision: PendingDecision | null = null;
     cancelVisible = false;
     pendingCancellation: DocumentAccessRequest | null = null;
-    canUseCatalog = computed(() => this.auth.hasPermission('document-access-requests.catalog'));
-    canViewOwn = computed(() => this.auth.hasPermission('document-access-requests.view-own'));
-    canCancelOwn = computed(() => this.auth.hasPermission('document-access-requests.cancel-own'));
-    canReview = computed(() => this.auth.hasPermission('document-access-requests.review'));
-    canApprove = computed(() => this.auth.hasPermission('document-access-requests.approve'));
-    canReject = computed(() => this.auth.hasPermission('document-access-requests.reject'));
-    canGrant = computed(() => this.auth.hasAnyPermission('document-access-requests.grant', 'document-access-requests.approve'));
+    canUseCatalog = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.catalog'));
+    canViewOwn = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.view-own'));
+    canCancelOwn = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.cancel-own'));
+    canReview = computed(() => this.mode !== 'requester' && this.auth.hasPermission('document-access-requests.review'));
+    canApprove = computed(() => this.mode !== 'requester' && this.auth.hasPermission('document-access-requests.approve'));
+    canReject = computed(() => this.mode !== 'requester' && this.auth.hasPermission('document-access-requests.reject'));
+    canGrant = computed(() => this.mode !== 'requester' && this.auth.hasAnyPermission('document-access-requests.grant', 'document-access-requests.approve'));
 
     ngOnInit() {
         this.activeTab.set(this.canReview() ? 'pending' : this.canUseCatalog() ? 'catalog' : 'mine');
         this.loadAll();
     }
+    pageHeading() { return this.mode === 'reviewer' ? 'Access Request Review' : this.mode === 'requester' ? 'My Access Requests' : 'Document Access Requests'; }
+    pageDescription() { return this.mode === 'reviewer' ? 'Review access requests and grant approved document assignments using only the actions authorized for your account.' : this.mode === 'requester' ? 'Find controlled documents and track only the access requests submitted by your account.' : 'Search approved document records, request assignment, and review pending approvals when authorized.'; }
     loadAll() {
         this.loading.set(true);
         let remaining = 0;
@@ -138,7 +144,13 @@ export class DocumentAccessRequestsPage implements OnInit {
         if (this.canReview()) { remaining += 1; this.loadPending(done); }
         if (!remaining) this.loading.set(false);
     }
-    selectTab(tab: ViewTab) { this.activeTab.set(tab); this.errorMessage.set(''); }
+    selectTab(tab: ViewTab) {
+        if (tab === 'pending' && !this.canReview()) return;
+        if (tab === 'catalog' && !this.canUseCatalog()) return;
+        if (tab === 'mine' && !this.canViewOwn()) return;
+        this.activeTab.set(tab);
+        this.errorMessage.set('');
+    }
     searchCatalog() { this.catalogPage.set(1); this.loadCatalog(); }
     setDocumentType(type: string) { this.documentType = type; if (type === 'SOFTCOPY') this.locationId = ''; this.searchCatalog(); }
     setLocation(value: SearchableDropdownValue) { this.locationId = value === null ? '' : String(value); if (this.locationId) this.documentType = 'HARDCOPY'; this.searchCatalog(); }
@@ -147,7 +159,7 @@ export class DocumentAccessRequestsPage implements OnInit {
     loadLocations(done?: () => void) { this.api.locations().subscribe({ next: (locations) => { this.locationOptions.set((locations ?? []).map((location) => ({ value: location.location_id, label: location.location_name }))); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
     loadMine(done?: () => void) { this.api.mine().subscribe({ next: (result) => { this.myRequests.set(result.items ?? []); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
     loadPending(done?: () => void) { this.api.pending().subscribe({ next: (result) => { this.pendingRequests.set(result.items ?? []); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
-    requestAccess(document: AccessRequestDocument) { this.actingId.set(document.document_id); this.errorMessage.set(''); this.api.create(document.document_id, this.requestReasons[document.document_id] ?? '').subscribe({ next: (request) => { document.access_request = request; this.catalog.update((items) => [...items]); this.requestReasons[document.document_id] = ''; this.actingId.set(''); this.alerts.success('Access requested', `${document.document_number || document.document_title} was sent to the administrator for approval.`); this.loadMine(); }, error: (error) => { this.actingId.set(''); this.errorMessage.set(this.message(error)); } }); }
+    requestAccess(document: AccessRequestDocument) { this.actingId.set(document.document_id); this.errorMessage.set(''); this.api.create(document.document_id, this.requestReasons[document.document_id] ?? '').subscribe({ next: (request) => { document.access_request = request; this.catalog.update((items) => [...items]); this.requestReasons[document.document_id] = ''; this.actingId.set(''); this.alerts.success('Access requested', `${document.document_number || document.document_title} was sent for approval.`); if (this.canViewOwn()) this.loadMine(); }, error: (error) => { this.actingId.set(''); this.errorMessage.set(this.message(error)); } }); }
     openCancellation(request: DocumentAccessRequest) { this.pendingCancellation = request; this.cancelVisible = true; }
     confirmCancellation() { const request = this.pendingCancellation; if (!request) return; this.actingId.set(request.access_request_id); this.api.cancel(request.access_request_id).subscribe({ next: (cancelled) => { this.myRequests.update((items) => items.map((item) => item.access_request_id === request.access_request_id ? cancelled : item)); this.catalog.update((items) => items.map((document) => document.document_id === request.document_id ? { ...document, access_request: cancelled } : document)); this.actingId.set(''); this.clearCancellation(); this.alerts.success('Request cancelled', 'The pending access request was cancelled. You may request this document again later.'); }, error: (error) => { this.actingId.set(''); this.clearCancellation(); this.errorMessage.set(this.message(error)); } }); }
     clearCancellation() { this.pendingCancellation = null; this.cancelVisible = false; }
@@ -158,7 +170,7 @@ export class DocumentAccessRequestsPage implements OnInit {
         if (!decision) return;
         this.actingId.set(decision.request.access_request_id);
         this.api.review(decision.request.access_request_id, decision.status, this.reviewRemarks[decision.request.access_request_id] ?? '').subscribe({
-            next: () => { this.actingId.set(''); this.clearDecision(); this.alerts.success(decision.status === 'APPROVED' ? 'Access approved' : decision.status === 'RETURNED' ? 'Request returned' : 'Access rejected', decision.status === 'APPROVED' ? 'Use Grant Access to assign the document to the requester.' : 'The document remains unassigned to the requester.'); this.loadPending(); this.loadMine(); },
+            next: () => { this.actingId.set(''); this.clearDecision(); this.alerts.success(decision.status === 'APPROVED' ? 'Access approved' : decision.status === 'RETURNED' ? 'Request returned' : 'Access rejected', decision.status === 'APPROVED' ? 'Use Grant Access to assign the document to the requester.' : 'The document remains unassigned to the requester.'); this.loadPending(); if (this.canViewOwn()) this.loadMine(); },
             error: (error) => { this.actingId.set(''); this.clearDecision(); this.errorMessage.set(this.message(error)); }
         });
     }
