@@ -39,8 +39,8 @@ export class WorkflowBuilderService {
         return this.http.post<Envelope<WorkflowDefinition>>(API, payload).pipe(map(this.unwrap));
     }
 
-    createVersion(definitionId: string) {
-        return this.http.post<Envelope<WorkflowVersion>>(`${API}/${definitionId}/versions`, {}).pipe(map(this.unwrap));
+    createVersion(definitionId: string, graph?: WorkflowGraph) {
+        return this.http.post<Envelope<WorkflowVersion>>(`${API}/${definitionId}/versions`, graph ? { graph } : {}).pipe(map(this.unwrap));
     }
 
     save(definitionId: string, versionId: string, graph: WorkflowGraph) {
