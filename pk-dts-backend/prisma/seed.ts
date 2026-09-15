@@ -53,78 +53,30 @@ const DEFAULT_WORKFLOW_DEFINITIONS = [
     name: "Standard Softcopy Approval",
     description: "Default approval route for standard Softcopy requests.",
     document_type: DocumentType.SOFTCOPY,
-    graph: {
-      schema_version: 2,
-      start_node_key: "noted-by",
-      nodes: [
-        {
-          key: "noted-by",
-          label: "Leader / Noted By",
-          type: "APPROVAL",
-          stage: "NOTED_BY",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-noted-by",
-          },
-          position: { x: 80, y: 0 },
-        },
-        {
-          key: "plant-manager",
-          label: "Plant Manager Approval",
-          type: "APPROVAL",
-          stage: "PLANT_MANAGER",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-plant-manager",
-          },
-          position: { x: 80, y: 160 },
-        },
-        {
-          key: "document-controller",
-          label: "Document Controller Approval",
-          type: "APPROVAL",
-          stage: "DOCUMENT_CONTROLLER_ADMIN",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-document-controller",
-          },
-          position: { x: 80, y: 320 },
-        },
-        {
-          key: "approved",
-          label: "Approved",
-          type: "END",
-          position: { x: 80, y: 480 },
-        },
-      ],
-      edges: [
-        {
-          key: "noted-by-approve",
-          from: "noted-by",
-          to: "plant-manager",
-          outcome: "APPROVE",
-        },
-        {
-          key: "plant-manager-approve",
-          from: "plant-manager",
-          to: "document-controller",
-          outcome: "APPROVE",
-        },
-        {
-          key: "document-controller-approve",
-          from: "document-controller",
-          to: "approved",
-          outcome: "APPROVE",
-        },
-      ],
-    } as Prisma.InputJsonValue,
   },
   {
     workflow_key: "system-softcopy-cancellation",
     name: "Softcopy Cancellation Approval",
     description: "Default approval route for Softcopy cancellation requests.",
     document_type: DocumentType.SOFTCOPY,
-    graph: {
+  },
+  {
+    workflow_key: "system-hardcopy-direct-approval",
+    name: "Direct Hardcopy Approval",
+    description: "Default direct approval route for Hardcopy requests.",
+    document_type: DocumentType.HARDCOPY,
+  },
+] as const;
+
+function defaultWorkflowGraph(
+  workflowKey: string,
+  plantManagerRoleId: bigint,
+  documentControllerRoleId: bigint,
+): Prisma.InputJsonValue {
+  const approved = { key: "approved", label: "Approved", type: "END" };
+
+  if (workflowKey === "system-softcopy-standard") {
+    return {
       schema_version: 2,
       start_node_key: "noted-by",
       nodes: [
@@ -133,86 +85,84 @@ const DEFAULT_WORKFLOW_DEFINITIONS = [
           label: "Leader / Noted By",
           type: "APPROVAL",
           stage: "NOTED_BY",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-noted-by",
-          },
-          position: { x: 80, y: 0 },
+          assignment: { type: "REQUESTER_LEADER" },
+        },
+        {
+          key: "plant-manager",
+          label: "Plant Manager Approval",
+          type: "APPROVAL",
+          stage: "PLANT_MANAGER",
+          assignment: { type: "ROLE", role_id: String(plantManagerRoleId) },
         },
         {
           key: "document-controller",
           label: "Document Controller Approval",
           type: "APPROVAL",
           stage: "DOCUMENT_CONTROLLER_ADMIN",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-document-controller",
-          },
-          position: { x: 80, y: 160 },
+          assignment: { type: "ROLE", role_id: String(documentControllerRoleId) },
         },
-        {
-          key: "approved",
-          label: "Approved",
-          type: "END",
-          position: { x: 80, y: 320 },
-        },
+        approved,
       ],
       edges: [
-        {
-          key: "noted-by-approve",
-          from: "noted-by",
-          to: "document-controller",
-          outcome: "APPROVE",
-        },
-        {
-          key: "document-controller-approve",
-          from: "document-controller",
-          to: "approved",
-          outcome: "APPROVE",
-        },
+        { key: "noted-by-approve", from: "noted-by", to: "plant-manager", outcome: "APPROVE" },
+        { key: "plant-manager-approve", from: "plant-manager", to: "document-controller", outcome: "APPROVE" },
+        { key: "document-controller-approve", from: "document-controller", to: "approved", outcome: "APPROVE" },
       ],
-    } as Prisma.InputJsonValue,
-  },
-  {
-    workflow_key: "system-hardcopy-direct-approval",
-    name: "Direct Hardcopy Approval",
-    description: "Default direct approval route for Hardcopy requests.",
-    document_type: DocumentType.HARDCOPY,
-    graph: {
+    } as Prisma.InputJsonValue;
+  }
+
+  if (workflowKey === "system-softcopy-cancellation") {
+    return {
       schema_version: 2,
-      start_node_key: "hardcopy-approval",
+      start_node_key: "noted-by",
       nodes: [
         {
-          key: "hardcopy-approval",
-          label: "Hardcopy Approval",
+          key: "noted-by",
+          label: "Leader / Noted By",
           type: "APPROVAL",
-          stage: "HARDCOPY_APPROVAL",
-          assignment: {
-            type: "PERMISSION",
-            permission: "document-requests.approve-hardcopy",
-          },
-          position: { x: 80, y: 0 },
+          stage: "NOTED_BY",
+          assignment: { type: "REQUESTER_LEADER" },
         },
         {
-          key: "approved",
-          label: "Approved",
-          type: "END",
-          position: { x: 80, y: 160 },
+          key: "document-controller",
+          label: "Document Controller Approval",
+          type: "APPROVAL",
+          stage: "DOCUMENT_CONTROLLER_ADMIN",
+          assignment: { type: "ROLE", role_id: String(documentControllerRoleId) },
         },
+        approved,
       ],
       edges: [
-        {
-          key: "hardcopy-approval-approve",
-          from: "hardcopy-approval",
-          to: "approved",
-          outcome: "APPROVE",
-        },
+        { key: "noted-by-approve", from: "noted-by", to: "document-controller", outcome: "APPROVE" },
+        { key: "document-controller-approve", from: "document-controller", to: "approved", outcome: "APPROVE" },
       ],
-    } as Prisma.InputJsonValue,
-  },
-];
+    } as Prisma.InputJsonValue;
+  }
 
-async function seedDefaultWorkflowDefinitions(createdByUserId: bigint) {
+  return {
+    schema_version: 2,
+    start_node_key: "hardcopy-approval",
+    nodes: [
+      {
+        key: "hardcopy-approval",
+        label: "Hardcopy Approval",
+        type: "APPROVAL",
+        stage: "HARDCOPY_APPROVAL",
+        assignment: { type: "ROLE", role_id: String(documentControllerRoleId) },
+      },
+      approved,
+    ],
+    edges: [
+      { key: "hardcopy-approval-approve", from: "hardcopy-approval", to: "approved", outcome: "APPROVE" },
+    ],
+  } as Prisma.InputJsonValue;
+}
+
+async function seedDefaultWorkflowDefinitions(
+  createdByUserId: bigint,
+  plantManagerRoleId: bigint,
+  documentControllerRoleId: bigint,
+) {
   for (const workflow of DEFAULT_WORKFLOW_DEFINITIONS) {
     const definition = await prisma.workflowDefinition.upsert({
       where: { workflow_key: workflow.workflow_key },
@@ -237,7 +187,11 @@ async function seedDefaultWorkflowDefinitions(createdByUserId: bigint) {
         workflow_definition_id: definition.workflow_definition_id,
         version_number: 1,
         status: WorkflowVersionStatus.PUBLISHED,
-        graph: workflow.graph,
+        graph: defaultWorkflowGraph(
+          workflow.workflow_key,
+          plantManagerRoleId,
+          documentControllerRoleId,
+        ),
         created_by_user_id: createdByUserId,
         published_by_user_id: createdByUserId,
         published_at: new Date(),
@@ -527,7 +481,11 @@ async function main() {
     },
   });
 
-  await seedDefaultWorkflowDefinitions(adminUser.user_id);
+  await seedDefaultWorkflowDefinitions(
+    adminUser.user_id,
+    plantManagerRole.role_id,
+    documentControllerRole.role_id,
+  );
 
   await prisma.softcopyCategory.upsert({
     where: { folder_name: "uncategorized" },
