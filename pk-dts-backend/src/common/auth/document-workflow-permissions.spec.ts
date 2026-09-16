@@ -1,5 +1,5 @@
 import { AuthenticatedUser } from './authenticated-user.interface';
-import { hasAnyPermission, hasPermission } from './document-workflow-permissions';
+import { canManageDocuments, hasAnyPermission, hasPermission } from './document-workflow-permissions';
 
 function createUser(roleName: string, permissions: string[]): AuthenticatedUser {
   return {
@@ -42,6 +42,12 @@ describe('document workflow permission helpers', () => {
     expect(hasPermission(user, 'documents.edit')).toBe(true);
     expect(hasPermission(user, 'documents.delete')).toBe(true);
     expect(hasPermission(user, 'document-requests.review')).toBe(false);
+  });
+
+  it('keeps the canonical Admin role as a document manager', () => {
+    expect(canManageDocuments(createUser('Admin', []))).toBe(true);
+    expect(canManageDocuments(createUser('Internal Audit', ['documents.manage']))).toBe(true);
+    expect(canManageDocuments(createUser('Staff', ['documents.manage-own']))).toBe(false);
   });
 
   it('checks a list using only assigned permissions', () => {

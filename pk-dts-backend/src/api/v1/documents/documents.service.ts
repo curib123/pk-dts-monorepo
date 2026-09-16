@@ -58,9 +58,11 @@ import { BatchSoftcopyFolderUploadDto } from "./dto/batch-softcopy-folder-upload
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
 import { isAdministrativeRole } from "../../../common/auth/administrative-role.util";
 import {
+  canManageDocuments,
   DOCUMENT_APPROVAL_PERMISSIONS,
   DOCUMENT_WORKFLOW_CONFIGURATION_PERMISSION,
   hasAnyPermission,
+  hasPermission,
 } from "../../../common/auth/document-workflow-permissions";
 import { ElectronicDocumentStampService } from "./electronic-document-stamp.service";
 import { WorkflowGraph, WorkflowGraphEdge, WorkflowGraphNode } from "../workflow-definitions/workflow-graph.types";
@@ -1294,7 +1296,7 @@ export class DocumentsService {
       if (dto.document_type !== DocumentType.SOFTCOPY) {
         throw new BadRequestException("Direct creation is supported for Softcopy documents only.");
       }
-      if (!actor || (!isAdministrativeRole(actor.role.role_name) && !actor.role.permissions.includes("documents.create-direct"))) {
+      if (!actor || !hasPermission(actor, "documents.create-direct")) {
         throw new ForbiddenException("You are not authorized to create a Softcopy directly without a Document Control Request.");
       }
       if (!dto.direct_creation_reason?.trim()) {
@@ -1422,7 +1424,7 @@ export class DocumentsService {
           },
         });
         let assignmentIds = [createdBy];
-        if (actor && this.isAdministrativeRole(actor.role.role_name) && dto.assigned_user_ids) {
+        if (actor && canManageDocuments(actor) && dto.assigned_user_ids) {
           try {
             const selected = JSON.parse(dto.assigned_user_ids) as string[];
             assignmentIds = [...new Set(selected.map((id) => toBigIntId(id, "assigned_user_id")))];
@@ -2841,7 +2843,7 @@ export class DocumentsService {
         }
         const canManageRevision = current.created_by === actorId ||
           current.assignments.some((assignment) => assignment.user_id === actorId) ||
-          (actor ? isAdministrativeRole(actor.role.role_name) : false);
+          (actor ? canManageDocuments(actor) : false);
         if (!canManageRevision) {
           throw new ForbiddenException("Only the document creator, an assigned user, or an administrator can request a new revision.");
         }
@@ -3714,7 +3716,7 @@ export class DocumentsService {
     });
     if (!existing) throw new NotFoundException("Document not found.");
 
-    if (!this.isAdministrativeRole(actor.role.role_name)) {
+    if (!canManageDocuments(actor)) {
       if (existing.status !== DocumentStatus.Draft) {
         throw new ConflictException("Only Draft documents can be removed by Staff.");
       }
@@ -3754,8 +3756,7 @@ export class DocumentsService {
       return null;
     }
 
-    const isAdministrator = !!actor && isAdministrativeRole(actor.role.role_name);
-    const canEditAllDocuments = isAdministrator || actor?.role.permissions.includes("documents.edit");
+    const canEditAllDocuments = !!actor && canManageDocuments(actor);
     const correctionRevisionId = dto.superseded_by_revision_id
       ? toBigIntId(dto.superseded_by_revision_id, "superseded_by_revision_id")
       : null;
@@ -3966,7 +3967,7 @@ export class DocumentsService {
   async finalizeRevision(documentIdValue: string, revisionIdValue: string, actor: AuthenticatedUser, reason?: string) {
     const documentId = toBigIntId(documentIdValue, "document_id");
     const revisionId = toBigIntId(revisionIdValue, "revision_id");
-    if (!isAdministrativeRole(actor.role.role_name) && !actor.role.permissions.some((permission) => ["documents.edit", "documents.manage-own", "document-requests.edit"].includes(permission))) {
+    if (!hasAnyPermission(actor, ["documents.edit", "documents.manage-own", "document-requests.edit"])) {
       throw new ForbiddenException("You do not have permission to finalize a controlled copy.");
     }
     return this.prisma.$transaction(async (tx) => {
@@ -3976,7 +3977,7 @@ export class DocumentsService {
       });
       const revision = await tx.documentRevision.findFirst({ where: { revision_id: revisionId, softcopy: { document_id: documentId } } });
       if (!document || !revision) throw new NotFoundException("The document revision was not found.");
-      if (!isAdministrativeRole(actor.role.role_name) && document.created_by !== toBigIntId(actor.user_id, "current_user_id")) {
+      if (!canManageDocuments(actor) && document.created_by !== toBigIntId(actor.user_id, "current_user_id")) {
         const assignment = await tx.documentAssignment.findFirst({ where: { document_id: documentId, user_id: toBigIntId(actor.user_id, "current_user_id") }, select: { document_assignment_id: true } });
         if (!assignment) throw new ForbiddenException("Only the document creator, an assigned user, or an administrator can finalize this controlled copy.");
       }
@@ -4301,9 +4302,9 @@ export class DocumentsService {
     userIds: string[],
     actor: AuthenticatedUser,
   ) {
-    if (!this.isAdministrativeRole(actor.role.role_name)) {
+    if (!canManageDocuments(actor)) {
       throw new ForbiddenException(
-        "Only an admin or super admin can assign documents.",
+        "Only a document manager can assign documents.",
       );
     }
 
@@ -4427,7 +4428,7 @@ export class DocumentsService {
       );
     }
     const uploadedBy = toBigIntId(actor.user_id, "current_user_id");
-    if (!this.isAdministrativeRole(actor.role.role_name)) {
+    if (!canManageDocuments(actor)) {
       const canManage = await this.prisma.document.findFirst({
         where: {
           document_id: parsedDocumentId,
@@ -4472,7 +4473,7 @@ export class DocumentsService {
     const attachment = softcopy ? { ...softcopy, document_id: softcopy.softcopy.document_id, kind: "softcopy" as const } : hardcopy ? { ...hardcopy, document_id: hardcopy.hardcopy.document_id, kind: "hardcopy" as const } : null;
     if (!attachment || attachment.document_id !== document_id) throw new NotFoundException("Attachment not found.");
     const actorId = toBigIntId(actor.user_id, "current_user_id");
-    if (!this.isAdministrativeRole(actor.role.role_name) && attachment.uploaded_by !== actorId) throw new ForbiddenException("Only the uploader or an administrator can delete this attachment.");
+    if (!canManageDocuments(actor) && attachment.uploaded_by !== actorId) throw new ForbiddenException("Only the uploader or a document manager can delete this attachment.");
     if (attachment.kind === "softcopy") await this.prisma.softcopyAttachment.delete({ where: { attachment_id } });
     else await this.prisma.hardcopyAttachment.delete({ where: { attachment_id } });
     const attachmentPath = attachment.file_path as string | undefined;
@@ -4670,9 +4671,9 @@ export class DocumentsService {
   }
 
   private assertAdministrativeActor(actor: AuthenticatedUser) {
-    if (!this.isAdministrativeRole(actor.role.role_name)) {
+    if (!canManageDocuments(actor)) {
       throw new ForbiddenException(
-        "Only an admin or super admin can manage document assignments.",
+        "Only a document manager can manage document assignments.",
       );
     }
   }
@@ -4680,7 +4681,7 @@ export class DocumentsService {
   private documentAccessWhere(
     user?: AuthenticatedUser,
   ): Prisma.DocumentWhereInput {
-    if (!user || this.isAdministrativeRole(user.role.role_name)) return {};
+    if (!user || canManageDocuments(user)) return {};
     return {
       assignments: {
         some: { user_id: toBigIntId(user.user_id, "current_user_id") },

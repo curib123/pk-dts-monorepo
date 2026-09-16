@@ -14,7 +14,7 @@ import {
 import { rename, unlink } from "fs/promises";
 import { join } from "path";
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
-import { isAdministrativeRole } from "../../../common/auth/administrative-role.util";
+import { hasPermission } from "../../../common/auth/document-workflow-permissions";
 import { toBigIntId } from "../../../common/utils/prisma-id.util";
 import { ensureRevisionCategoryUploadsRoot } from "../../../config/upload-paths";
 import { PrismaService } from "../../../core/prisma/prisma.service";
@@ -89,9 +89,7 @@ export class DocumentRequestReviewFileService {
         );
       }
 
-      const canEditAll =
-        isAdministrativeRole(actor.role.role_name) ||
-        actor.role.permissions.includes("documents.edit");
+      const canEditAll = hasPermission(actor, "documents.edit");
       const canManage =
         document.created_by === actorId ||
         document.assignments.some((assignment) => assignment.user_id === actorId);

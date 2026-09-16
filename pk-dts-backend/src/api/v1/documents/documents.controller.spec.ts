@@ -78,10 +78,16 @@ describe("DocumentsController disposal identity", () => {
     expect(dispose).toHaveBeenCalledWith("42", { disposal_remarks: "Approved", disposed_by_user_id: "99" }, user);
   });
 
+  it("allows a document manager to dispose directly", () => {
+    const user = authenticatedUser(["documents.manage"], "Internal Audit");
+    controller.dispose("42", { disposal_remarks: "Approved", disposed_by_user_id: "99" }, user);
+    expect(dispose).toHaveBeenCalledWith("42", { disposal_remarks: "Approved", disposed_by_user_id: "99" }, user);
+  });
+
   it("prevents non-administrators from disposing directly", () => {
     const user = authenticatedUser(["documents.dispose"], "Staff");
     expect(() => controller.dispose("42", { disposal_remarks: "Approved", disposed_by_user_id: "99" }, user)).toThrow(
-      "Only administrators can dispose documents directly",
+      "Only document managers can dispose documents directly",
     );
     expect(dispose).not.toHaveBeenCalled();
   });

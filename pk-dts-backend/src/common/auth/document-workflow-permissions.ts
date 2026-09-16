@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from "./authenticated-user.interface";
+import { isAdministrativeRole } from "./administrative-role.util";
 
 export const DOCUMENT_APPROVAL_PERMISSIONS = [
   "document-requests.approve-noted-by",
@@ -16,6 +17,13 @@ export const DOCUMENT_WORKFLOW_CONFIGURATION_PERMISSION =
   "document-workflow.configure" as const;
 
 export const DOCUMENT_MANAGEMENT_PERMISSION = "documents.manage" as const;
+
+export function canManageDocuments(user: AuthenticatedUser) {
+  return (
+    isAdministrativeRole(user.role.role_name) ||
+    user.role.permissions.includes(DOCUMENT_MANAGEMENT_PERMISSION)
+  );
+}
 
 export function hasPermission(
   user: AuthenticatedUser,

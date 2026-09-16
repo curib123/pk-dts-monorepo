@@ -57,9 +57,11 @@ import { ReassignWorkflowStepDto } from "./dto/reassign-workflow-step.dto";
 import { DocumentAssistantQueryDto } from "./dto/document-assistant-query.dto";
 import { isAdministrativeRole } from "../../../common/auth/administrative-role.util";
 import {
+  canManageDocuments,
   DOCUMENT_APPROVAL_PERMISSIONS,
   DOCUMENT_REVIEW_PERMISSIONS,
   DOCUMENT_WORKFLOW_CONFIGURATION_PERMISSION,
+  hasPermission,
 } from "../../../common/auth/document-workflow-permissions";
 
 const BATCH_IMPORT_MAX_FILE_SIZE_BYTES =
@@ -252,7 +254,7 @@ export class DocumentsController {
     @Body() dto: UpdateDocumentDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    if (isAdministrativeRole(user!.role.role_name) || user!.role.permissions.includes("documents.edit")) {
+    if (hasPermission(user!, "documents.edit")) {
       return this.documentsService.update(id, { ...dto, action: undefined }, user);
     }
 
@@ -360,8 +362,8 @@ export class DocumentsController {
     @Body() dto: DisposeDocumentDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    if (!isAdministrativeRole(user!.role.role_name)) {
-      throw new ForbiddenException("Only administrators can dispose documents directly. Submit a disposal request instead.");
+    if (!canManageDocuments(user!)) {
+      throw new ForbiddenException("Only document managers can dispose documents directly. Submit a disposal request instead.");
     }
     return this.documentsService.dispose(id, dto, user);
   }
@@ -374,8 +376,8 @@ export class DocumentsController {
     @Body() dto: DisposeDocumentDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    if (isAdministrativeRole(user!.role.role_name)) {
-      throw new ForbiddenException("Administrators should use direct disposal.");
+    if (canManageDocuments(user!)) {
+      throw new ForbiddenException("Document managers should use direct disposal.");
     }
     return this.documentsService.requestDisposal(id, dto, user!);
   }
