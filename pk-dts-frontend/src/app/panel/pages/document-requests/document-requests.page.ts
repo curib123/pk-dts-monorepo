@@ -469,17 +469,14 @@ export class DocumentRequestsPage implements OnInit {
     openRevisionDialog(item: DocumentSummary) {
         if (!this.canUploadRequestedRevision(item)) return;
         this.saving.set(true);
-        forkJoin({
-            detail: this.documents.getDocument(item.document_id),
-            revisions: this.documents.listRevisions(item.document_id)
-        }).pipe(
+        this.documents.getDocument(item.document_id).pipe(
             finalize(() => this.saving.set(false))
         ).subscribe({
-            next: ({ detail, revisions }) => {
+            next: (detail) => {
                 this.revisionDocumentId = item.document_id;
                 this.revisionDocumentNumber = detail?.document_number || item.document_number || 'No document number';
                 this.revisionCurrent = detail?.softcopy?.current_revision || null;
-                this.revisionHistory = revisions || [];
+                this.revisionHistory = detail?.softcopy?.revisions || [];
                 const current = detail?.softcopy?.current_revision;
                 this.revisionForm = {
                     ...this.emptyRevisionForm(),

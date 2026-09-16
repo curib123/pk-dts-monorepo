@@ -240,12 +240,8 @@ export class DocumentDisposalPage implements OnInit {
                     return;
                 }
                 this.detail.set(detail);
-                this.documentsService.listRevisions(document.document_id).subscribe({
-                    next: (revisions) => {
-                        this.revisions.set(revisions ?? []);
-                        this.detailVisible = true;
-                    }
-                });
+                this.revisions.set(detail.softcopy?.revisions ?? []);
+                this.detailVisible = true;
             }
         });
     }
