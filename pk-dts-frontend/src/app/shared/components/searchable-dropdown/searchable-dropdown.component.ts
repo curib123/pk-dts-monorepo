@@ -68,7 +68,7 @@ export const SEARCHABLE_DROPDOWN_THRESHOLD = 10;
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select.p-focus {
-                border-color: #b91c1c;
+                border-color: var(--brand-primary);
                 box-shadow: 0 0 0 0.18rem rgba(185, 28, 28, 0.12);
             }
 
@@ -83,7 +83,7 @@ export const SEARCHABLE_DROPDOWN_THRESHOLD = 10;
             }
 
             .searchable-dropdown-invalid ::ng-deep .p-select {
-                border-color: #dc2626;
+                border-color: var(--brand-primary);
             }
         `
     ]

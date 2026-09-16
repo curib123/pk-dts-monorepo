@@ -198,8 +198,8 @@ import { BatchHardcopyImportResponse, BatchHardcopyImportRow } from '../../docum
             .validation-message {
                 margin-top: 0.85rem;
                 border-radius: 0.9rem;
-                background: #fff1f2;
-                color: #b91c1c;
+                background: var(--brand-soft);
+                color: var(--brand-primary);
                 padding: 0.75rem 0.9rem;
                 font-size: 0.85rem;
                 line-height: 1.5;
@@ -230,7 +230,7 @@ import { BatchHardcopyImportResponse, BatchHardcopyImportRow } from '../../docum
             .progress-bar {
                 height: 100%;
                 border-radius: 9999px;
-                background: linear-gradient(90deg, #991b1b, #dc2626);
+                background: linear-gradient(90deg, var(--brand-primary-deep), var(--brand-primary));
                 transition: width 0.2s ease;
             }
 
@@ -273,7 +273,7 @@ import { BatchHardcopyImportResponse, BatchHardcopyImportRow } from '../../docum
             }
 
             .status-chip-error {
-                background: #fff1f2;
+                background: var(--brand-soft);
                 color: #be123c;
             }
 

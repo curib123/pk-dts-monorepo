@@ -246,7 +246,7 @@ interface ResourceOption {
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
                 border-radius: 1.25rem;
-                background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+                background: linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft-strong) 100%);
                 padding: 1rem 1.25rem;
             }
 
@@ -316,7 +316,7 @@ interface ResourceOption {
             }
 
             .catalog-search { display:flex;align-items:center;gap:.65rem;margin-top:1rem;border:1px solid #dbe4ee;border-radius:1rem;background:#fff;padding:.2rem .75rem;box-shadow:0 5px 15px rgba(15,23,42,.04); }
-            .catalog-search>i { color:#991b1b; }
+            .catalog-search>i { color:var(--brand-primary-deep); }
             .catalog-search input { min-width:0;min-height:2.7rem;flex:1;border:0;background:transparent;color:#0f172a;outline:0; }
             .catalog-search button { display:grid;place-items:center;width:2rem;height:2rem;border:0;border-radius:.55rem;background:#f1f5f9;color:#475569;cursor:pointer; }
             :host-context(.app-dark) .catalog-search { border-color:#404040;background:#171717; }

@@ -722,8 +722,8 @@ interface DocumentFolderNode {
             .document-search-bar button { display: grid; place-items: center; min-width: 2rem; height: 2rem; border: none; background: #f1f5f9; color: #64748b; cursor: pointer; }
             .document-search-bar .search-clear-button { border-radius: 50%; }
             .document-search-bar .advanced-filter-button { display: flex; gap: .45rem; width: auto; padding: 0 .75rem; border-left: 1px solid #e2e8f0; border-radius: .65rem; color: #334155; font-size: .78rem; font-weight: 800; }
-            .document-search-bar .advanced-filter-button.active { background: #fee2e2; color: #991b1b; }
-            .advanced-filter-button strong { display: grid; place-items: center; min-width: 1.15rem; height: 1.15rem; border-radius: 999px; background: #b91c1c; color: #fff; font-size: .65rem; }
+            .document-search-bar .advanced-filter-button.active { background: var(--brand-soft-strong); color: var(--brand-primary-deep); }
+            .advanced-filter-button strong { display: grid; place-items: center; min-width: 1.15rem; height: 1.15rem; border-radius: 999px; background: var(--brand-primary); color: #fff; font-size: .65rem; }
             .filter-close-button { display: grid; place-items: center; width: 2rem; height: 2rem; border: 0; border-radius: .55rem; background: #f1f5f9; color: #475569; cursor: pointer; }
 
             .surface-card {
@@ -738,7 +738,7 @@ interface DocumentFolderNode {
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
                 border-radius: 1.25rem;
-                background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+                background: linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft-strong) 100%);
                 padding: 1rem 1.25rem;
             }
 
@@ -806,8 +806,8 @@ interface DocumentFolderNode {
             }
 
             .status-pill-disposed {
-                border-color: #b91c1c;
-                background: #b91c1c;
+                border-color: var(--brand-primary);
+                background: var(--brand-primary);
                 color: #ffffff;
             }
 
@@ -830,8 +830,8 @@ interface DocumentFolderNode {
             }
 
             .status-pill-rejected {
-                border-color: #dc2626;
-                background: #dc2626;
+                border-color: var(--brand-primary);
+                background: var(--brand-primary);
                 color: #ffffff;
             }
 
@@ -850,7 +850,7 @@ interface DocumentFolderNode {
 
             .status-remark {
                 max-width: 15rem;
-                border-left: 4px solid #b91c1c;
+                border-left: 4px solid var(--brand-primary);
                 background: #ffffff;
                 padding: 0.35rem 0 0.35rem 0.75rem;
                 color: #475569;
@@ -872,8 +872,8 @@ interface DocumentFolderNode {
             }
 
             .retention-summary.retention-alert {
-                background: #fff1f2;
-                color: #b91c1c;
+                background: var(--brand-soft);
+                color: var(--brand-primary);
             }
 
             .retention-card-meta small {
@@ -894,9 +894,9 @@ interface DocumentFolderNode {
             }
 
             .status-toggle-button {
-                border: 1px solid #b91c1c;
+                border: 1px solid var(--brand-primary);
                 border-radius: 9999px;
-                background: #b91c1c;
+                background: var(--brand-primary);
                 padding: 0.55rem 0.95rem;
                 color: #ffffff;
                 font-size: 0.76rem;
@@ -912,8 +912,8 @@ interface DocumentFolderNode {
             }
 
             .status-toggle-button:hover {
-                background: #991b1b;
-                border-color: #991b1b;
+                background: var(--brand-primary-deep);
+                border-color: var(--brand-primary-deep);
                 transform: translateY(-1px);
             }
 
@@ -1156,7 +1156,7 @@ interface DocumentFolderNode {
             :host-context(.app-dark) .document-search-bar input { color: #f5f5f5; }
             :host-context(.app-dark) .document-search-bar button { background: #292929; color: #d4d4d4; }
             :host-context(.app-dark) .document-search-bar .advanced-filter-button { border-left-color: #404040; }
-            :host-context(.app-dark) .document-search-bar .advanced-filter-button.active { background: #3f1818; color: #fecaca; }
+            :host-context(.app-dark) .document-search-bar .advanced-filter-button.active { background: #3f1818; color: var(--brand-border); }
             :host-context(.app-dark) .filter-close-button { background: #292929; color: #d4d4d4; }
             :host-context(.app-dark) .surface-card,
             :host-context(.app-dark) .filter-shell,
@@ -1193,7 +1193,7 @@ interface DocumentFolderNode {
             :host-context(.app-dark) ::ng-deep .p-dialog-content,
             :host-context(.app-dark) ::ng-deep .p-dialog-footer { background: #171717; color: #e5e5e5; }
 
-            :host ::ng-deep .attachment-modal .p-dialog-header{padding:1.25rem 1.35rem .8rem;font-weight:900}.attachment-upload-dialog{display:grid;gap:1rem}.attachment-target{display:flex;align-items:center;gap:.85rem;border-radius:1rem;background:linear-gradient(135deg,#111827,#27272a);padding:1rem;color:#fff}.attachment-target-icon{display:grid;place-items:center;width:3rem;height:3rem;flex:0 0 auto;border-radius:.85rem;background:linear-gradient(135deg,var(--dts-accent,#dc2626),var(--dts-accent-deep,#991b1b));font-size:1.1rem}.attachment-target>span:last-child{display:grid;min-width:0}.attachment-target small{color:#fca5a5;font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.attachment-target strong{overflow:hidden;margin:.18rem 0;color:#fff;text-overflow:ellipsis;white-space:nowrap}.attachment-target em{color:#a3a3a3;font-size:.68rem;font-style:normal}.attachment-dropzone{display:grid;place-items:center;gap:.38rem;border:1.5px dashed #cbd5e1;border-radius:1rem;background:#f8fafc;padding:1.35rem;text-align:center;cursor:pointer;transition:.18s ease}.attachment-dropzone:hover{border-color:var(--dts-accent,#dc2626);background:var(--dts-accent-soft,#fef2f2);transform:translateY(-1px)}.attachment-dropzone input{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}.upload-orb{display:grid;place-items:center;width:3.2rem;height:3.2rem;border-radius:1rem;background:#fff;color:var(--dts-accent,#dc2626);font-size:1.25rem;box-shadow:0 8px 22px rgba(15,23,42,.08)}.attachment-dropzone strong{color:#111827;font-size:.88rem}.attachment-dropzone>span:not(.upload-orb){color:#64748b;font-size:.72rem}.attachment-dropzone small{color:#94a3b8;font-size:.65rem}.attachment-file-list{display:grid;gap:.5rem;max-height:13rem;overflow:auto}.attachment-file-list>div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.7rem;border:1px solid #e5e7eb;border-radius:.8rem;background:#fff;padding:.62rem}.file-kind{display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.65rem;background:#fef2f2;color:#b91c1c}.attachment-file-list>div>span:nth-child(2){display:grid;min-width:0}.attachment-file-list strong{overflow:hidden;color:#111827;font-size:.72rem;text-overflow:ellipsis;white-space:nowrap}.attachment-file-list small{color:#94a3b8;font-size:.62rem}.attachment-file-list button{display:grid;place-items:center;width:2rem;height:2rem;border:0;border-radius:.6rem;background:#f1f5f9;color:#64748b;cursor:pointer}.attachment-file-list button:hover{background:#fee2e2;color:#b91c1c}
+            :host ::ng-deep .attachment-modal .p-dialog-header{padding:1.25rem 1.35rem .8rem;font-weight:900}.attachment-upload-dialog{display:grid;gap:1rem}.attachment-target{display:flex;align-items:center;gap:.85rem;border-radius:1rem;background:linear-gradient(135deg,#111827,#27272a);padding:1rem;color:#fff}.attachment-target-icon{display:grid;place-items:center;width:3rem;height:3rem;flex:0 0 auto;border-radius:.85rem;background:linear-gradient(135deg,var(--dts-accent,var(--brand-primary)),var(--dts-accent-deep,var(--brand-primary-deep)));font-size:1.1rem}.attachment-target>span:last-child{display:grid;min-width:0}.attachment-target small{color:var(--brand-border);font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.attachment-target strong{overflow:hidden;margin:.18rem 0;color:#fff;text-overflow:ellipsis;white-space:nowrap}.attachment-target em{color:#a3a3a3;font-size:.68rem;font-style:normal}.attachment-dropzone{display:grid;place-items:center;gap:.38rem;border:1.5px dashed #cbd5e1;border-radius:1rem;background:#f8fafc;padding:1.35rem;text-align:center;cursor:pointer;transition:.18s ease}.attachment-dropzone:hover{border-color:var(--dts-accent,var(--brand-primary));background:var(--dts-accent-soft,var(--brand-soft));transform:translateY(-1px)}.attachment-dropzone input{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}.upload-orb{display:grid;place-items:center;width:3.2rem;height:3.2rem;border-radius:1rem;background:#fff;color:var(--dts-accent,var(--brand-primary));font-size:1.25rem;box-shadow:0 8px 22px rgba(15,23,42,.08)}.attachment-dropzone strong{color:#111827;font-size:.88rem}.attachment-dropzone>span:not(.upload-orb){color:#64748b;font-size:.72rem}.attachment-dropzone small{color:#94a3b8;font-size:.65rem}.attachment-file-list{display:grid;gap:.5rem;max-height:13rem;overflow:auto}.attachment-file-list>div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.7rem;border:1px solid #e5e7eb;border-radius:.8rem;background:#fff;padding:.62rem}.file-kind{display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.65rem;background:var(--brand-soft);color:var(--brand-primary)}.attachment-file-list>div>span:nth-child(2){display:grid;min-width:0}.attachment-file-list strong{overflow:hidden;color:#111827;font-size:.72rem;text-overflow:ellipsis;white-space:nowrap}.attachment-file-list small{color:#94a3b8;font-size:.62rem}.attachment-file-list button{display:grid;place-items:center;width:2rem;height:2rem;border:0;border-radius:.6rem;background:#f1f5f9;color:#64748b;cursor:pointer}.attachment-file-list button:hover{background:var(--brand-soft-strong);color:var(--brand-primary)}
 
             @media (max-width: 640px) {
                 .filter-shell {

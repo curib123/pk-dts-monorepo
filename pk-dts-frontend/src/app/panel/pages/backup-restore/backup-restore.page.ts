@@ -270,9 +270,9 @@ interface NoticeState {
             }
             .backup-tabs button span { border-radius:999px;background:#e2e8f0;padding:.12rem .4rem;font-size:.65rem; }
             .backup-tabs button:hover,
-            .backup-tabs button.active { background:var(--dts-accent-soft,#fee2e2);color:var(--dts-accent-deep,#991b1b); }
-            .backup-tabs .danger-tab { color:#b91c1c; }
-            .backup-tabs .danger-tab.active { background:#fee2e2;color:#991b1b; }
+            .backup-tabs button.active { background:var(--dts-accent-soft,var(--brand-soft-strong));color:var(--dts-accent-deep,var(--brand-primary-deep)); }
+            .backup-tabs .danger-tab { color:var(--brand-primary); }
+            .backup-tabs .danger-tab.active { background:var(--brand-soft-strong);color:var(--brand-primary-deep); }
             :host-context(.app-dark) .backup-toolbar { border-color:#333;background:#171717;box-shadow:none; }
             :host-context(.app-dark) .backup-tabs button { color:#d4d4d4; }
             :host-context(.app-dark) .backup-tabs button span { background:#333;color:#d4d4d4; }
@@ -290,13 +290,13 @@ interface NoticeState {
 
             .hero-strip {
                 height: 0.5rem;
-                background: linear-gradient(90deg, #7f1d1d 0%, #0f172a 50%, #b91c1c 100%);
+                background: linear-gradient(90deg, var(--brand-primary-deep) 0%, #0f172a 50%, var(--brand-primary) 100%);
             }
 
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
                 border-radius: 1.25rem;
-                background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+                background: linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft-strong) 100%);
                 padding: 1rem 1.25rem;
             }
 
@@ -411,7 +411,7 @@ interface NoticeState {
             .action-pill-danger {
                 border-color: rgba(239, 68, 68, 0.18);
                 background: rgba(254, 242, 242, 0.98);
-                color: #b91c1c;
+                color: var(--brand-primary);
             }
 
             @media (max-width: 720px) {

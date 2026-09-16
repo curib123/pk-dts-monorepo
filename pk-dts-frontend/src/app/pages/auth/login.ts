@@ -99,9 +99,9 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 --login-ink: #0f172a;
                 --login-muted: #64748b;
                 --login-line: rgba(148, 163, 184, 0.28);
-                --login-brand: var(--dts-accent, #b91c1c);
-                --login-brand-deep: var(--dts-accent-deep, #7f1d1d);
-                --login-brand-soft: var(--dts-accent-soft, #fee2e2);
+                --login-brand: var(--dts-accent, var(--brand-primary));
+                --login-brand-deep: var(--dts-accent-deep, var(--brand-primary-deep));
+                --login-brand-soft: var(--dts-accent-soft, var(--brand-soft-strong));
             }
 
             .login-shell {
@@ -627,7 +627,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
             }
 
             .brand-mark img { width: 2.05rem; height: 2.05rem; }
-            .landing-brand small { color: #fca5a5; font-weight: 900; }
+            .landing-brand small { color: var(--brand-border); font-weight: 900; }
             .landing-brand strong { color: #fff; font-size: 1rem; letter-spacing: -.01em; }
 
             .landing-nav-meta {
@@ -666,7 +666,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 padding: .48rem .72rem;
                 border: 1px solid rgba(255, 255, 255, .2);
                 border-radius: .45rem;
-                background: #b91c1c;
+                background: var(--brand-primary);
                 color: #fff;
                 font-size: .65rem;
                 letter-spacing: .16em;
@@ -704,7 +704,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 -webkit-backdrop-filter: blur(8px);
             }
             .workflow-points > div:hover { border-color: rgba(252, 165, 165, .65); background: rgba(15, 23, 42, .9); }
-            .workflow-points > div > i { width: 2.1rem; height: 2.1rem; border-radius: .55rem; background: #991b1b; color: #fff; }
+            .workflow-points > div > i { width: 2.1rem; height: 2.1rem; border-radius: .55rem; background: var(--brand-primary-deep); color: #fff; }
             .workflow-points strong { color: #fff; font-size: .74rem; }
             .workflow-points small { color: #cbd5e1; }
 
@@ -717,8 +717,8 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 box-shadow: 0 28px 70px rgba(0, 0, 0, .34), 0 2px 8px rgba(0, 0, 0, .12);
             }
 
-            .portal-label { margin-bottom: 1.35rem; color: #991b1b; }
-            .portal-label span { width: 1.25rem; background: #b91c1c; }
+            .portal-label { margin-bottom: 1.35rem; color: var(--brand-primary-deep); }
+            .portal-label span { width: 1.25rem; background: var(--brand-primary); }
             .login-card-header { gap: .9rem; margin-bottom: 1.65rem; }
             .login-logo { width: 3.75rem; height: 3.75rem; border-radius: .9rem; }
             .login-logo img { width: 2.55rem; height: 2.55rem; }

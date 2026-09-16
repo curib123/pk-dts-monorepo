@@ -227,13 +227,13 @@ interface DeleteTarget {
 
             .hero-strip {
                 height: 0.5rem;
-                background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #7f1d1d 100%);
+                background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-primary-hover) 50%, var(--brand-primary-deep) 100%);
             }
 
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
                 border-radius: 1.25rem;
-                background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+                background: linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft-strong) 100%);
                 padding: 1rem 1.25rem;
             }
 
@@ -285,13 +285,13 @@ interface DeleteTarget {
                 padding: 0.35rem 0.8rem;
                 font-size: 0.75rem;
                 font-weight: 800;
-                color: #b91c1c;
+                color: var(--brand-primary);
             }
 
             .count-pill-emerald {
                 border-color: rgba(220, 38, 38, 0.16);
                 background: rgba(255, 255, 255, 0.96);
-                color: #991b1b;
+                color: var(--brand-primary-deep);
             }
         `
     ]

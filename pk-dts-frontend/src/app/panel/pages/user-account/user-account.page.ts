@@ -285,14 +285,14 @@ interface NoticeState {
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
                 border-radius: 1.25rem;
-                background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+                background: linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft-strong) 100%);
                 padding: 1rem 1.25rem;
             }
 
             .account-tabs { display:flex;flex-wrap:wrap;gap:.4rem;border:1px solid #e2e8f0;border-radius:.9rem;background:#fff;padding:.4rem; }
             .account-tabs button { display:inline-flex;align-items:center;gap:.45rem;border:0;border-radius:.65rem;background:transparent;padding:.55rem .75rem;color:#64748b;font-size:.75rem;font-weight:850;cursor:pointer; }
-            .account-tabs button:hover,.account-tabs button.active { background:var(--dts-accent-soft,#fee2e2);color:var(--dts-accent-deep,#991b1b); }
-            .account-tabs button span { display:grid;place-items:center;min-width:1.25rem;height:1.25rem;border-radius:999px;background:#991b1b;color:#fff;font-size:.62rem; }
+            .account-tabs button:hover,.account-tabs button.active { background:var(--dts-accent-soft,var(--brand-soft-strong));color:var(--dts-accent-deep,var(--brand-primary-deep)); }
+            .account-tabs button span { display:grid;place-items:center;min-width:1.25rem;height:1.25rem;border-radius:999px;background:var(--brand-primary-deep);color:#fff;font-size:.62rem; }
 
             .session-card {
                 border: 1px solid rgba(59, 130, 246, 0.18);
@@ -412,10 +412,10 @@ interface NoticeState {
                 letter-spacing: 0.08em;
             }
 
-            .registration-count { border-radius: 9999px; padding: .4rem .75rem; color: #991b1b; background: #fee2e2; font-size: .76rem; font-weight: 850; }
+            .registration-count { border-radius: 9999px; padding: .4rem .75rem; color: var(--brand-primary-deep); background: var(--brand-soft-strong); font-size: .76rem; font-weight: 850; }
             .registration-list { margin-top: 1.25rem; display: grid; gap: .85rem; }
             .registration-request { display: grid; grid-template-columns: minmax(13rem,1.2fr) minmax(9rem,.7fr) minmax(11rem,.8fr) minmax(12rem,1fr) auto; gap: 1rem; align-items: end; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1.15rem; background: #fff; }
-            .request-person { display: flex; align-items: center; gap: .8rem; min-width: 0; }.request-avatar { width: 2.7rem; height: 2.7rem; flex: 0 0 auto; display: grid; place-items: center; border-radius: .8rem; color: #991b1b; background: #fee2e2; }.request-person strong,.request-person small { display: block; }.request-person strong { color: #172033; }.request-person small { margin-top: .2rem; color: #7b8495; font-size: .74rem; overflow-wrap: anywhere; }
+            .request-person { display: flex; align-items: center; gap: .8rem; min-width: 0; }.request-avatar { width: 2.7rem; height: 2.7rem; flex: 0 0 auto; display: grid; place-items: center; border-radius: .8rem; color: var(--brand-primary-deep); background: var(--brand-soft-strong); }.request-person strong,.request-person small { display: block; }.request-person strong { color: #172033; }.request-person small { margin-top: .2rem; color: #7b8495; font-size: .74rem; overflow-wrap: anywhere; }
             .requested-role span,.requested-role strong,.requested-role small { display: block; }.requested-role span,.review-field span { color: #94a3b8; font-size: .67rem; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }.requested-role strong { margin-top: .3rem; color: #1e293b; }.requested-role small { margin-top: .25rem; color: #94a3b8; font-size: .7rem; }
             .applicant-remarks { grid-column: 1/-1; border-radius: .8rem; padding: .75rem .85rem; background: #f8fafc; }.applicant-remarks span { color: #94a3b8; font-size: .67rem; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }.applicant-remarks p { margin: .35rem 0 0; color: #475569; font-size: .82rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
             .review-field { display: grid; gap: .4rem; }.review-field select,.review-field input { width: 100%; min-height: 2.65rem; border: 1px solid #dbe1e9; border-radius: .75rem; padding: .55rem .7rem; background: #fff; color: #334155; }

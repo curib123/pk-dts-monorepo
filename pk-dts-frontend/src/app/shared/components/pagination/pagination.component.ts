@@ -50,7 +50,7 @@ import type { PaginatorState } from 'primeng/types/paginator';
 
             :host ::ng-deep .brand-paginator .p-paginator-pages .p-paginator-page.p-highlight,
             :host ::ng-deep .brand-paginator .p-paginator-pages .p-paginator-page.p-paginator-page-selected {
-                background: var(--dts-accent, #dc2626);
+                background: var(--dts-accent, var(--brand-primary));
                 color: #ffffff;
             }
 

@@ -200,11 +200,11 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 height: 4rem;
                 object-fit: contain;
                 border-radius: 1.2rem;
-                background: #fff1f2;
+                background: var(--brand-soft);
                 padding: 0.45rem;
             }
             header span {
-                color: #991b1b;
+                color: var(--brand-primary-deep);
                 font-size: 0.7rem;
                 font-weight: 900;
                 text-transform: uppercase;
@@ -245,7 +245,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             }
             .mode-tabs button.active {
                 color: #fff;
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 box-shadow: 0 8px 18px rgba(153, 27, 27, 0.18);
             }
             .form-grid {
@@ -286,7 +286,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             input:focus,
             select:focus,
             textarea:focus {
-                border-color: #b91c1c;
+                border-color: var(--brand-primary);
                 box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
             }
             .field-note {
@@ -302,7 +302,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 justify-content: center;
                 gap: 0.55rem;
                 color: #fff;
-                background: linear-gradient(135deg, #dc2626, #7f1d1d);
+                background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-deep));
                 font-weight: 850;
                 cursor: pointer;
             }
@@ -315,8 +315,8 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 gap: 0.55rem;
                 align-items: center;
                 border-radius: 0.8rem;
-                color: #991b1b;
-                background: #fff1f2;
+                color: var(--brand-primary-deep);
+                background: var(--brand-soft);
             }
             .status-form {
                 display: grid;
@@ -393,7 +393,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 padding: 1rem;
                 border: 1px dashed #ef9a9a;
                 border-radius: 0.85rem;
-                color: #7f1d1d;
+                color: var(--brand-primary-deep);
                 background: #fff;
                 font-size: 1.2rem;
                 font-weight: 900;
@@ -416,8 +416,8 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 background: #dcfce7;
             }
             .status-result[data-status='REJECTED'] .status-badge {
-                color: #991b1b;
-                background: #fee2e2;
+                color: var(--brand-primary-deep);
+                background: var(--brand-soft-strong);
             }
             .status-result dl {
                 margin: 1.25rem 0;
@@ -453,7 +453,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 border-radius: 0.75rem;
                 padding: 0.75rem 1rem;
                 color: #fff;
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 text-decoration: none;
                 font-weight: 800;
                 cursor: pointer;
@@ -469,7 +469,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 font-size: 0.85rem;
             }
             footer a {
-                color: #991b1b;
+                color: var(--brand-primary-deep);
                 font-weight: 850;
                 text-decoration: none;
             }

@@ -398,7 +398,7 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
             }
 
             .field small {
-                color: #dc2626;
+                color: var(--brand-primary);
                 font-size: 0.8rem;
                 font-weight: 600;
             }
@@ -409,19 +409,19 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
             }
 
             .system-generated-field { display: flex; align-items: center; gap: .55rem; min-height: 2.75rem; border: 1px solid #e2e8f0; border-radius: .85rem; background: #f8fafc; padding: .75rem .9rem; color: #334155; font-size: .88rem; font-weight: 700; }
-            .system-generated-field i { color: #991b1b; }
+            .system-generated-field i { color: var(--brand-primary-deep); }
 
-            .hardcopy-form-note { display: flex; align-items: flex-start; gap: .75rem; margin: .15rem 0 1rem; border: 1px solid #fecaca; border-radius: 1rem; background: linear-gradient(135deg, #fff7f7, #fff); padding: .85rem 1rem; color: #7f1d1d; }
+            .hardcopy-form-note { display: flex; align-items: flex-start; gap: .75rem; margin: .15rem 0 1rem; border: 1px solid var(--brand-border); border-radius: 1rem; background: linear-gradient(135deg, var(--brand-soft), #fff); padding: .85rem 1rem; color: var(--brand-primary-deep); }
             .direct-create-panel { display: grid; gap: .7rem; border: 1px solid #bbf7d0; border-radius: 1rem; background: #f0fdf4; padding: .9rem 1rem; }
             .direct-create-toggle { display: flex; align-items: flex-start; gap: .65rem; cursor: pointer; }
             .direct-create-toggle input { margin-top: .2rem; accent-color: #15803d; }
             .direct-create-toggle span { display: grid; gap: .2rem; }
             .direct-create-toggle strong { color: #166534; font-size: .82rem; }
             .direct-create-toggle small { color: #166534; font-size: .72rem; line-height: 1.4; }
-            .hardcopy-form-note > i { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; border-radius: .65rem; background: #991b1b; color: #fff; }
+            .hardcopy-form-note > i { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; border-radius: .65rem; background: var(--brand-primary-deep); color: #fff; }
             .hardcopy-form-note span { display: grid; gap: .2rem; }
             .hardcopy-form-note strong { color: #450a0a; font-size: .82rem; }
-            .hardcopy-form-note small { color: #7f1d1d; font-size: .72rem; line-height: 1.45; }
+            .hardcopy-form-note small { color: var(--brand-primary-deep); font-size: .72rem; line-height: 1.45; }
 
             .retention-panel {
                 border: 1px solid #e2e8f0;
@@ -439,7 +439,7 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
 
             .retention-toggle input {
                 margin-top: 0.2rem;
-                accent-color: #991b1b;
+                accent-color: var(--brand-primary-deep);
             }
 
             .retention-toggle span {
@@ -454,7 +454,7 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
             }
 
             .field-error {
-                color: #dc2626;
+                color: var(--brand-primary);
                 font-size: 0.8rem;
                 font-weight: 600;
             }
@@ -479,10 +479,10 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
             .workflow-step-row > div { display: grid; gap: .12rem; }
             .workflow-step-row strong { color: #0f172a; font-size: .76rem; }
             .workflow-step-row small { color: #64748b; font-size: .65rem; line-height: 1.35; }
-            .workflow-sequence { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: #991b1b; color: #fff; font-size: .7rem; font-weight: 900; }
+            .workflow-sequence { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--brand-primary-deep); color: #fff; font-size: .7rem; font-weight: 900; }
             .workflow-order-actions { display: flex!important; grid-auto-flow: column; gap: .25rem!important; }
             .workflow-order-actions button { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; color: #475569; cursor: pointer; }
-            .workflow-order-actions button:hover:not(:disabled) { border-color: #991b1b; background: #991b1b; color: #fff; }
+            .workflow-order-actions button:hover:not(:disabled) { border-color: var(--brand-primary-deep); background: var(--brand-primary-deep); color: #fff; }
             .workflow-order-actions button:disabled { cursor: not-allowed; opacity: .35; }
             @media(max-width:760px){.workflow-step-row{grid-template-columns:2rem minmax(0,1fr)}.workflow-step-row>select,.workflow-order-actions{grid-column:2}.workflow-builder-heading{flex-direction:column}}
 

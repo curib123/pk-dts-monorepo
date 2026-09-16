@@ -32,7 +32,7 @@ export type DataViewMode = 'list' | 'grid';
             .view-switch { display:flex;gap:.25rem;border:1px solid #d1d5db;border-radius:.85rem;background:#fff;padding:.25rem; }
             .view-switch button { display:flex;align-items:center;gap:.4rem;border:0;border-radius:.65rem;background:transparent;padding:.55rem .7rem;color:#64748b;font-size:.72rem;font-weight:800;cursor:pointer; }
             .view-switch button.active { background:#111827;color:#fff;box-shadow:0 6px 14px rgba(17,24,39,.16); }
-            .view-switch button:hover:not(.active) { background:#fee2e2;color:#991b1b; }
+            .view-switch button:hover:not(.active) { background:var(--brand-soft-strong);color:var(--brand-primary-deep); }
             @media (max-width:640px) { .view-toolbar { align-items:stretch;flex-direction:column; }.view-switch { align-self:flex-start; }.view-copy { display:none; } }
         `
     ]

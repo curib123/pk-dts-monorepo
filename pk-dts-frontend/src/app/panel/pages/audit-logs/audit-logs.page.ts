@@ -121,7 +121,7 @@ interface AuditItem {
                 align-items: center;
                 gap: 1rem;
                 border-radius: 1.25rem;
-                background: linear-gradient(120deg, #171717 0%, #292524 62%, #7f1d1d 100%);
+                background: linear-gradient(120deg, #171717 0%, #292524 62%, var(--brand-primary-deep) 100%);
                 padding: 1.25rem 1.4rem;
                 color: #fff;
                 box-shadow: 0 14px 32px rgba(17, 24, 39, 0.14);
@@ -153,7 +153,7 @@ interface AuditItem {
             .filter-panel label > span,
             .list-heading > div > span {
                 display: block;
-                color: #fca5a5;
+                color: var(--brand-border);
                 font-size: 0.64rem;
                 font-weight: 900;
                 letter-spacing: 0.13em;
@@ -191,7 +191,7 @@ interface AuditItem {
                 border-radius: 0.65rem;
                 background: #fff;
                 padding: 0.65rem 0.8rem;
-                color: #7f1d1d;
+                color: var(--brand-primary-deep);
             }
             .filter-panel {
                 display: grid;
@@ -233,13 +233,13 @@ interface AuditItem {
             }
             .filter-panel input:focus,
             .filter-panel select:focus {
-                border-color: #991b1b;
+                border-color: var(--brand-primary-deep);
                 box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
             }
             .search-button {
                 min-height: 2.6rem;
                 border-radius: 0.65rem;
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 padding: 0.6rem 0.9rem;
                 color: #fff;
             }
@@ -262,7 +262,7 @@ interface AuditItem {
                 padding: 0.85rem 1rem;
             }
             .list-heading > div > span {
-                color: #991b1b;
+                color: var(--brand-primary-deep);
             }
             .list-heading strong {
                 display: block;
@@ -294,15 +294,15 @@ interface AuditItem {
                 height: 2.5rem;
                 border-radius: 0.7rem;
                 background: #f5f5f4;
-                color: #7f1d1d;
+                color: var(--brand-primary-deep);
             }
             .action-icon[data-action='CREATE'] {
                 background: #ecfdf5;
                 color: #047857;
             }
             .action-icon[data-action='DELETE'] {
-                background: #fef2f2;
-                color: #b91c1c;
+                background: var(--brand-soft);
+                color: var(--brand-primary);
             }
             .actor {
                 display: grid;
@@ -341,9 +341,9 @@ interface AuditItem {
             }
             .event-title em {
                 border-radius: 0.35rem;
-                background: #fee2e2;
+                background: var(--brand-soft-strong);
                 padding: 0.18rem 0.38rem;
-                color: #991b1b;
+                color: var(--brand-primary-deep);
                 font-size: 0.58rem;
                 font-style: normal;
                 font-weight: 900;
@@ -371,13 +371,13 @@ interface AuditItem {
             .trace i {
                 color: #a8a29e;
             }
-            .timeline-link { border: 0; background: transparent; color: #991b1b; font-size: .64rem; font-weight: 800; cursor: pointer; }
+            .timeline-link { border: 0; background: transparent; color: var(--brand-primary-deep); font-size: .64rem; font-weight: 800; cursor: pointer; }
             .reason { display: block; margin-top: .45rem; color: #92400e; font-size: .68rem; }
             .timeline-panel { overflow: hidden; border-radius: 1rem; background: var(--surface-card, #fff); box-shadow: 0 5px 18px rgba(17,24,39,.05); }
             .timeline-list { display: grid; gap: .7rem; padding: 1rem 1.25rem 1.25rem; }
             .timeline-event { display: grid; grid-template-columns: .8rem 1fr; gap: .75rem; position: relative; }
-            .timeline-event:not(:last-child)::before { content: ''; position: absolute; left: .34rem; top: .8rem; bottom: -.8rem; width: 1px; background: #fecaca; }
-            .timeline-dot { position: relative; z-index: 1; width: .7rem; height: .7rem; margin-top: .25rem; border-radius: 50%; background: #991b1b; }
+            .timeline-event:not(:last-child)::before { content: ''; position: absolute; left: .34rem; top: .8rem; bottom: -.8rem; width: 1px; background: var(--brand-border); }
+            .timeline-dot { position: relative; z-index: 1; width: .7rem; height: .7rem; margin-top: .25rem; border-radius: 50%; background: var(--brand-primary-deep); }
             .timeline-event strong,.timeline-event span,.timeline-event small { display: block; }
             .timeline-event strong { font-size: .78rem; }
             .timeline-event span { margin-top: .15rem; color: #78716c; font-size: .68rem; }
@@ -396,8 +396,8 @@ interface AuditItem {
                 width: 3rem;
                 height: 3rem;
                 border-radius: 50%;
-                background: #fef2f2;
-                color: #991b1b;
+                background: var(--brand-soft);
+                color: var(--brand-primary-deep);
                 font-size: 1.2rem;
             }
             .empty strong {
@@ -409,7 +409,7 @@ interface AuditItem {
             .empty button {
                 margin-top: 0.35rem;
                 border-radius: 0.6rem;
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 padding: 0.55rem 0.7rem;
                 color: #fff;
             }
@@ -505,7 +505,7 @@ interface AuditItem {
                 }
             }
             .audit-hero {
-                background: linear-gradient(120deg, #fff 0%, #fff7f7 68%, #fee2e2 100%);
+                background: linear-gradient(120deg, #fff 0%, var(--brand-soft) 68%, var(--brand-soft-strong) 100%);
                 color: #171717;
                 box-shadow: 0 10px 28px rgba(127, 29, 29, 0.08);
             }
@@ -513,12 +513,12 @@ interface AuditItem {
                 border-color: rgba(153, 27, 27, 0.1);
             }
             .hero-mark {
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 color: #fff;
                 box-shadow: 0 8px 18px rgba(153, 27, 27, 0.2);
             }
             .hero-copy > span {
-                color: #991b1b;
+                color: var(--brand-primary-deep);
             }
             .hero-copy h1 {
                 color: #171717;
@@ -527,16 +527,16 @@ interface AuditItem {
                 color: #57534e;
             }
             .hero-stat {
-                border-left-color: #fecaca;
+                border-left-color: var(--brand-border);
             }
             .hero-stat strong {
-                color: #991b1b;
+                color: var(--brand-primary-deep);
             }
             .hero-stat span {
                 color: #78716c;
             }
             .refresh-button {
-                background: #991b1b;
+                background: var(--brand-primary-deep);
                 color: #fff;
                 box-shadow: 0 6px 14px rgba(153, 27, 27, 0.16);
             }

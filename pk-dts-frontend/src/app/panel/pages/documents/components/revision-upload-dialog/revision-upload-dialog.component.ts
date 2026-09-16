@@ -124,7 +124,7 @@ import { RevisionFormValue, RevisionSummary, SoftcopyCategoryReference } from '.
             }
 
             .field small {
-                color: #dc2626;
+                color: var(--brand-primary);
                 font-size: 0.8rem;
                 font-weight: 600;
             }
