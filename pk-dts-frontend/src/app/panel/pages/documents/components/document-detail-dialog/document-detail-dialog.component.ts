@@ -143,6 +143,8 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                                 <strong>{{ workflowStepPerson(step) }}</strong>
                                 <small>{{ workflowStepPosition(step) }} · {{ workflowStepStatusLabel(step) }}</small>
                                 <small *ngIf="step.acted_at">Acted {{ formatDate(step.acted_at) }}</small>
+                                <small *ngIf="step.status === 'RETURNED'">Returned by: {{ workflowStepPerson(step) }}</small>
+                                <small *ngIf="step.status === 'RETURNED' && step.comments">Reason: {{ step.comments }}</small>
                             </div>
                             <details *ngIf="canConfigureWorkflow && step.status === 'PENDING'" class="workflow-reassign-controls">
                                 <summary>Reassign approver</summary>

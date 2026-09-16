@@ -21,6 +21,7 @@ import {
     AssetReference,
     DocumentDetail,
     DocumentFormValue,
+    DocumentStatusHistory,
     DocumentSummary,
     LocationReference,
     SequenceReference,
@@ -59,11 +60,11 @@ import {
                 <app-loading-shimmer *ngIf="loading()" label="Loading your document requests" [columns]="6" />
 
                 <p-table *ngIf="viewMode === 'list' && !loading()" [value]="requests()" responsiveLayout="scroll">
-                    <ng-template pTemplate="header"><tr><th>Document</th><th>Requester</th><th>Status</th><th>Updated</th><th>Reviewer remarks</th><th>Actions</th></tr></ng-template>
+                    <ng-template pTemplate="header"><tr><th>Document</th><th>Requester</th><th>Status</th><th>Updated</th><th>Returned by</th><th>Return reason</th><th>Actions</th></tr></ng-template>
                     <ng-template pTemplate="body" let-item><tr>
                         <td><strong>{{ item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number') }}</strong><small>{{ item.document_title }}</small></td>
                         <td>{{ requester(item) }}</td><td><span class="status">{{ statusLabel(item.status) }}</span></td>
-                        <td>{{ item.updated_at || item.created_at | date:'medium' }}</td><td>{{ item.reviewer_remarks || 'None' }}</td>
+                        <td>{{ item.updated_at || item.created_at | date:'medium' }}</td><td>{{ returnActor(item) }}</td><td>{{ returnReason(item) }}</td>
                         <td>
                             <div class="row-actions">
                                 <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
@@ -76,7 +77,7 @@ import {
                             </div>
                         </td>
                     </tr></ng-template>
-                    <ng-template pTemplate="emptymessage"><tr><td colspan="6">No requests found.</td></tr></ng-template>
+                    <ng-template pTemplate="emptymessage"><tr><td colspan="7">No requests found.</td></tr></ng-template>
                 </p-table>
 
                 <app-record-grid *ngIf="viewMode === 'grid' && !loading()" [empty]="!requests().length" emptyTitle="No requests found" emptyMessage="Create a document request to start your workflow.">
@@ -85,7 +86,8 @@ import {
                         <div record-details>
                             <div><span>Requester</span><strong>{{ requester(item) }}</strong></div>
                             <div><span>Updated</span><strong>{{ requestUpdatedAt(item) | date:'medium' }}</strong></div>
-                            <div class="wide"><span>Reviewer remarks</span><strong>{{ item.reviewer_remarks || 'None' }}</strong></div>
+                            <div><span>Returned by</span><strong>{{ returnActor(item) }}</strong></div>
+                            <div class="wide"><span>Return reason</span><strong>{{ returnReason(item) }}</strong></div>
                         </div>
                         <div record-actions>
                             <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
@@ -522,6 +524,9 @@ export class DocumentRequestsPage implements OnInit {
     }
     currentUserName() { const user = this.auth.user(); return [user?.firstname, user?.lastname].filter(Boolean).join(' ') || user?.username || ''; }
     requester(item: DocumentSummary) { return item.requested_by_name || [item.requester?.firstname, item.requester?.lastname].filter(Boolean).join(' ') || 'Current user'; }
+    private latestReturn(item: DocumentSummary): DocumentStatusHistory | undefined { return item.status_history?.find((history) => history.action === 'request-revision'); }
+    returnActor(item: DocumentSummary) { const actor = this.latestReturn(item)?.actor; return [actor?.firstname, actor?.lastname].filter(Boolean).join(' ') || actor?.username || 'None'; }
+    returnReason(item: DocumentSummary) { return this.latestReturn(item)?.remarks || 'None'; }
     statusLabel(status: DocumentSummary['status']) {
         const labels: Record<string, string> = { Draft: 'Draft', PendingApproval: 'Pending Approval', ForNotedBy: 'For Noted By', ForPlantManagerApproval: 'For Plant Manager Approval', ForDocumentControllerAdmin: 'For Document Controller/Admin Approval', ForApproval: 'For Approval', Approved: 'Approved — Pending Release', Completed: 'Completed / Released', ReturnedForCorrection: 'For Revision', ForRevision: 'For Revision', Rejected: 'Rejected', Cancelled: 'Cancelled', Disposed: 'Disposed' };
         return status ? (labels[status] || status.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')) : 'N/A';
