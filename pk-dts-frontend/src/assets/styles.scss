@@ -45,9 +45,9 @@ body {
 }
 
 /* Filled danger actions must keep readable white content on the red surface. */
-html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text),
-html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-label,
-html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-icon {
+html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text),
+html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-label,
+html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-icon {
     color: var(--brand-contrast) !important;
 }
 

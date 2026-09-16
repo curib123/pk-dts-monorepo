@@ -6,4 +6,10 @@ describe('centralized deep-maroon theme', () => {
         expect(styles.getPropertyValue('--dts-accent-deep').trim()).toBe('var(--brand-primary-deep)');
         expect(styles.getPropertyValue('--dts-accent-soft').trim()).toBe('var(--brand-soft-strong)');
     });
+
+    it('uses the white primary contrast for filled danger actions', () => {
+        const styles = getComputedStyle(document.documentElement);
+
+        expect(styles.getPropertyValue('--brand-contrast').trim()).toBe('var(--p-primary-contrast-color)');
+    });
 });
