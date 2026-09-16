@@ -269,7 +269,8 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
         const user = this.auth.user();
         return {
             roleName: user?.role.role_name ?? 'User',
-            permissions: user?.role.permissions ?? []
+            permissions: user?.role.permissions ?? [],
+            assignedApprovalCount: this.notificationCounts().approval_review
         };
     }
 

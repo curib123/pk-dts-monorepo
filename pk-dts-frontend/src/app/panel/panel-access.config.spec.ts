@@ -81,6 +81,17 @@ describe('panel access configuration', () => {
         expect(shouldShowPanelItem(item('system-settings'), context)).toBeFalse();
     });
 
+    it('shows an assigned requester-leader approval task without global review permission', () => {
+        const context = {
+            roleName: 'Staff',
+            permissions: ['dashboard.view'],
+            assignedApprovalCount: 1
+        };
+
+        expect(shouldShowPanelItem(item('approval-review'), context)).toBeTrue();
+        expect(shouldShowPanelItem(item('approval-review'), { ...context, assignedApprovalCount: 0 })).toBeFalse();
+    });
+
     it('keeps Internal Audit read-only and audit focused', () => {
         const context = {
             roleName: 'Internal Audit',

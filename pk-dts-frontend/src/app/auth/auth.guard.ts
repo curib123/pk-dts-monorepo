@@ -4,13 +4,22 @@ import { catchError, map, of } from 'rxjs';
 import { firstAuthorizedPanelUrl } from '@/app/panel/panel-access.config';
 import { AuthService } from './auth.service';
 
+export function canEnterAuthenticatedRoute(
+    requiredPermissions: readonly string[] | undefined,
+    hasRequiredPermission: boolean,
+    allowAssignedWorkflowTask: boolean
+) {
+    return !requiredPermissions?.length || hasRequiredPermission || allowAssignedWorkflowTask;
+}
+
 export const authGuard: CanActivateFn = (route) => {
     const auth = inject(AuthService);
     const router = inject(Router);
 
     if (auth.isAuthenticated()) {
         const requiredPermissions = route.data?.['permissions'] as string[] | undefined;
-        if (!requiredPermissions?.length || auth.hasAnyPermission(...requiredPermissions)) {
+        const allowAssignedWorkflowTask = route.data?.['allowAssignedWorkflowTask'] === true;
+        if (canEnterAuthenticatedRoute(requiredPermissions, auth.hasAnyPermission(...(requiredPermissions ?? [])), allowAssignedWorkflowTask)) {
             return true;
         }
 
@@ -27,7 +36,7 @@ export const authGuard: CanActivateFn = (route) => {
         }
 
         return refreshedProfile.pipe(
-            map(() => auth.hasAnyPermission(...requiredPermissions)
+            map(() => auth.hasAnyPermission(...(requiredPermissions ?? []))
                 ? true
                 : router.createUrlTree(['/auth/access'])),
             catchError(() => {

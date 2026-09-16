@@ -10,6 +10,7 @@ export interface PanelNavItem {
     route: string;
     permissions: string[];
     notificationKey?: keyof NavigationNotificationCounts;
+    requiresAssignedApproval?: boolean;
     hideForRoles?: string[];
 }
 
@@ -23,6 +24,7 @@ export interface PanelNavCategory {
 export interface PanelAccessContext {
     roleName: PanelRoleName;
     permissions: readonly string[];
+    assignedApprovalCount?: number;
 }
 
 // Route/sidebar permissions answer only whether the user can enter and read a workspace.
@@ -153,7 +155,8 @@ export const PANEL_NAVIGATION: { dashboard: PanelNavItem; categories: PanelNavCa
                     icon: 'pi pi-check-square',
                     route: '/panel/approval-review',
                     permissions: PANEL_ROUTE_PERMISSIONS.approvalReview,
-                    notificationKey: 'approval_review'
+                    notificationKey: 'approval_review',
+                    requiresAssignedApproval: true
                 },
                 {
                     key: 'access-review',
@@ -245,7 +248,8 @@ export function canAccessPanelItem(item: Pick<PanelNavItem, 'permissions'>, perm
 }
 
 export function shouldShowPanelItem(item: PanelNavItem, context: PanelAccessContext) {
-    if (!canAccessPanelItem(item, context.permissions)) return false;
+    const hasAssignedApproval = item.requiresAssignedApproval && (context.assignedApprovalCount ?? 0) > 0;
+    if (!canAccessPanelItem(item, context.permissions) && !hasAssignedApproval) return false;
     return !(item.hideForRoles ?? []).includes(context.roleName);
 }
 
