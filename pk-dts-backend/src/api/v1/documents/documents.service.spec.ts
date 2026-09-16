@@ -1617,7 +1617,21 @@ describe('DocumentsService', () => {
     prisma.document.findFirst.mockResolvedValue(null);
     await expect(service.findApprovalDocument('12', regularUser)).rejects.toThrow('no longer assigned');
     expect(prisma.document.findFirst).toHaveBeenCalledTimes(1);
-    expect(prisma.document.findFirst.mock.calls[0][0].where.OR[0].workflow_steps.some.assigned_user_id).toBe(7n);
+    const where = prisma.document.findFirst.mock.calls[0][0].where;
+    expect(where.AND[0].document_id).toBe(12n);
+    expect(where.AND[1].OR[0].workflow_steps.some.assigned_user_id).toBe(7n);
+  });
+
+  it('loads approval details with the queue scope in one query', async () => {
+    prisma.document.findFirst.mockResolvedValue({ document_id: 12n });
+
+    await expect(service.findApprovalDocument('12', regularUser)).resolves.toMatchObject({ document_id: 12n });
+
+    expect(prisma.document.findFirst).toHaveBeenCalledTimes(1);
+    expect(prisma.document.findFirst.mock.calls[0][0].include).toEqual(expect.objectContaining({
+      workflow_steps: expect.any(Object),
+      softcopy: expect.any(Object),
+    }));
   });
 
   it('invalidates a controlled artifact when its revision becomes historical', () => {

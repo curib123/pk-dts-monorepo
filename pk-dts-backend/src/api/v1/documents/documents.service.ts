@@ -1118,13 +1118,21 @@ export class DocumentsService {
     );
   }
 
-  findOne(id: string, user?: AuthenticatedUser) {
+  findOne(
+    id: string,
+    user?: AuthenticatedUser,
+    additionalWhere?: Prisma.DocumentWhereInput,
+  ) {
+    const accessWhere: Prisma.DocumentWhereInput = {
+      document_id: toBigIntId(id, "document_id"),
+      ...this.documentAccessWhere(user),
+    };
+
     return this.prisma.document
       .findFirst({
-        where: {
-          document_id: toBigIntId(id, "document_id"),
-          ...this.documentAccessWhere(user),
-        },
+        where: additionalWhere
+          ? { AND: [accessWhere, additionalWhere] }
+          : accessWhere,
         include: {
           requester: {
             select: {
@@ -1689,12 +1697,17 @@ export class DocumentsService {
   }
 
   async findApprovalDocument(id: string, actor: AuthenticatedUser) {
-    const available = await this.prisma.document.findFirst({
-      where: { document_id: toBigIntId(id, "document_id"), ...this.approvalQueueWhere(actor) },
-      select: { document_id: true },
-    });
-    if (!available) throw new NotFoundException("This document is no longer assigned to your approval queue.");
-    return this.findOne(id);
+    const document = await this.findOne(
+      id,
+      undefined,
+      this.approvalQueueWhere(actor),
+    );
+    if (!document) {
+      throw new NotFoundException(
+        "This document is no longer assigned to your approval queue.",
+      );
+    }
+    return document;
   }
 
   private async initializeWorkflowSteps(
