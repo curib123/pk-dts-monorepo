@@ -295,8 +295,7 @@ export class DocumentsController {
   }
 
   @Post(":id/request-revision")
-  @RequirePermissions("document-requests.request-revision")
-  // transition() also requires the current Builder step assignment while approval is active.
+  // transition() authorizes the exact pending workflow assignee while approval is active.
   requestRevision(
     @Param("id") id: string,
     @Body() dto: WorkflowActionDto,

@@ -234,6 +234,77 @@ describe('DocumentsService', () => {
     ).resolves.toMatchObject({ status: DocumentStatus.ForPlantManagerApproval });
   });
 
+  it('allows an assigned legacy Noted By user to return a request without global return permission', async () => {
+    prisma.document.findUnique
+      .mockResolvedValueOnce({
+        document_id: 1n,
+        created_by: 8n,
+        document_type: DocumentType.SOFTCOPY,
+        status: DocumentStatus.ForNotedBy,
+        action_requested: 'CREATE_REVISE',
+        workflow_version_id: null,
+        workflow_steps: [{
+          workflow_step_id: 10n,
+          stage: 'NOTED_BY',
+          sequence: 1,
+          assigned_user_id: 7n,
+          status: 'PENDING',
+        }],
+      })
+      .mockResolvedValueOnce({ document_id: 1n, status: DocumentStatus.ForRevision });
+    prisma.documentWorkflowStep.update.mockResolvedValue({});
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
+    prisma.documentStatusHistory.create.mockResolvedValue({});
+
+    await expect(
+      service.transition('1', '7', 'request-revision', 'Please correct the document number.', regularUser),
+    ).resolves.toMatchObject({ status: DocumentStatus.ForRevision });
+    expect(prisma.documentWorkflowStep.update).toHaveBeenCalledWith({
+      where: { workflow_step_id: 10n },
+      data: expect.objectContaining({
+        status: 'RETURNED',
+        acted_by_user_id: 7n,
+        decision: 'request-revision',
+        comments: 'Please correct the document number.',
+      }),
+    });
+    expect(prisma.documentStatusHistory.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'request-revision',
+        performed_by: 7n,
+        remarks: 'Please correct the document number.',
+      }),
+    });
+  });
+
+  it('denies a non-assigned user without return permission', async () => {
+    prisma.document.findUnique.mockResolvedValue({
+      document_id: 1n,
+      created_by: 8n,
+      document_type: DocumentType.SOFTCOPY,
+      status: DocumentStatus.ForNotedBy,
+      action_requested: 'CREATE_REVISE',
+      workflow_steps: [{
+        workflow_step_id: 10n,
+        stage: 'NOTED_BY',
+        sequence: 1,
+        assigned_user_id: 9n,
+        status: 'PENDING',
+      }],
+    });
+
+    await expect(
+      service.transition('1', '7', 'request-revision', 'Not assigned.', regularUser),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('requires a reason when returning a request for revision', async () => {
+    await expect(
+      service.transition('1', '7', 'request-revision', '   ', regularUser),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.document.findUnique).not.toHaveBeenCalled();
+  });
+
   it('returns revision work to the previous workflow holder before the requester', async () => {
     const plantManager = {
       ...regularUser,

@@ -47,13 +47,13 @@ describe("DocumentsController workflow decision permissions", () => {
     ).toEqual([...DOCUMENT_APPROVAL_PERMISSIONS]);
   });
 
-  it("requires request-revision permission before an assigned user can return a request", () => {
+  it("leaves return-for-revision authorization to the workflow service", () => {
     expect(
       Reflect.getMetadata(
         REQUIRED_PERMISSIONS_KEY,
         DocumentsController.prototype.requestRevision,
       ),
-    ).toEqual(["document-requests.request-revision"]);
+    ).toBeUndefined();
   });
 
   it("requires reject permission before an assigned user can reject", () => {

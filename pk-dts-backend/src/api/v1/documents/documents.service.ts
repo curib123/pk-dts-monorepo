@@ -2633,6 +2633,9 @@ export class DocumentsService {
     remarks?: string,
     actor?: AuthenticatedUser,
   ) {
+    if (action === "request-revision" && !remarks?.trim()) {
+      throw new BadRequestException("A reason is required when returning a request for revision.");
+    }
     const documentId = toBigIntId(id, "document_id");
     const actorId = toBigIntId(actorUserId, "current_user_id");
     const attachmentFilesToRemove: string[] = [];
@@ -2655,6 +2658,11 @@ export class DocumentsService {
       );
       const builderDecision = !!current.workflow_version_id && !!pendingStep &&
         ["approve", "reject", "request-revision"].includes(action) && !FINALIZED_DOCUMENT_STATUSES.has(current.status);
+      const canReturnAssignedWorkflowStep = action === "request-revision" &&
+        !!actor &&
+        !!pendingStep &&
+        pendingStep.assigned_user_id === actorId &&
+        !FINALIZED_DOCUMENT_STATUSES.has(current.status);
 
       let receivedAt: Date | null = null;
       let releasedAt: Date | null = null;
@@ -2669,7 +2677,7 @@ export class DocumentsService {
               : action === "reject"
                 ? "document-requests.reject"
                 : undefined;
-        if (actionPermission && !builderDecision && !hasAnyPermission(actor, [actionPermission])) {
+        if (actionPermission && !builderDecision && !canReturnAssignedWorkflowStep && !hasAnyPermission(actor, [actionPermission])) {
           throw new ForbiddenException("You do not have permission to perform this request action.");
         }
       }
