@@ -44,11 +44,18 @@ body {
     color: var(--app-text);
 }
 
+/* Filled default-primary actions must keep readable light content on the deep-maroon surface. */
+html .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-danger):not(.p-button-contrast),
+html .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-danger):not(.p-button-contrast) .p-button-label,
+html .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-danger):not(.p-button-contrast) .p-button-icon {
+    color: var(--brand-contrast, #ffffff) !important;
+}
+
 /* Filled danger actions must keep readable white content on the red surface. */
 html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text),
 html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-label,
 html .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-icon {
-    color: var(--brand-contrast) !important;
+    color: var(--brand-contrast, #ffffff) !important;
 }
 
 /* Document workspace: advanced-search panel */

@@ -12,4 +12,24 @@ describe('centralized deep-maroon theme', () => {
 
         expect(styles.getPropertyValue('--brand-contrast').trim()).toBe('var(--p-primary-contrast-color)');
     });
+
+    it('keeps filled default primary button content light', () => {
+        const button = document.createElement('button');
+        button.className = 'p-button p-component';
+        button.style.setProperty('--brand-contrast', '#ffffff');
+
+        const icon = document.createElement('span');
+        icon.className = 'p-button-icon pi pi-plus';
+        const label = document.createElement('span');
+        label.className = 'p-button-label';
+        label.textContent = 'New Document';
+        button.append(icon, label);
+        document.body.appendChild(button);
+
+        expect(getComputedStyle(button).color).toBe('rgb(255, 255, 255)');
+        expect(getComputedStyle(label).color).toBe('rgb(255, 255, 255)');
+        expect(getComputedStyle(icon).color).toBe('rgb(255, 255, 255)');
+
+        button.remove();
+    });
 });
