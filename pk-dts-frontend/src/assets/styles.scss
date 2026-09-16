@@ -44,6 +44,13 @@ body {
     color: var(--app-text);
 }
 
+/* Filled danger actions must keep readable white content on the red surface. */
+html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text),
+html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-label,
+html[data-dts-theme] .p-button.p-button-danger:not(.p-button-outlined):not(.p-button-text) .p-button-icon {
+    color: var(--brand-contrast) !important;
+}
+
 /* Document workspace: advanced-search panel */
 .documents-page {
     .advanced-filter-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;padding-bottom:1.1rem;border-bottom:1px solid var(--app-border) }
