@@ -301,12 +301,12 @@ async function main() {
     where: { role_name: "Internal Audit" },
     update: {
       description:
-        "Read-only access to assigned documents and their folder hierarchy.",
+        "Document management access for internal audit review and control.",
     },
     create: {
       role_name: "Internal Audit",
       description:
-        "Read-only access to assigned documents and their folder hierarchy.",
+        "Document management access for internal audit review and control.",
     },
   });
   const plantManagerRole = await prisma.role.upsert({

@@ -35,6 +35,15 @@ describe('document workflow permission helpers', () => {
     );
   });
 
+  it('lets document managers satisfy only document permissions', () => {
+    const user = createUser('Internal Audit', ['documents.manage']);
+
+    expect(hasPermission(user, 'documents.view')).toBe(true);
+    expect(hasPermission(user, 'documents.edit')).toBe(true);
+    expect(hasPermission(user, 'documents.delete')).toBe(true);
+    expect(hasPermission(user, 'document-requests.review')).toBe(false);
+  });
+
   it('checks a list using only assigned permissions', () => {
     const user = createUser('Documentation Officer', [
       'document-requests.review',

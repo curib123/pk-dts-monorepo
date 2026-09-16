@@ -2,6 +2,8 @@ import {
   DEFAULT_PERMISSION_CATALOG,
   DEFAULT_PERMISSION_NAMES,
   DEFAULT_NOTED_BY_PERMISSION_NAMES,
+  DEFAULT_DOCUMENT_CONTROLLER_PERMISSION_NAMES,
+  DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES,
   DEFAULT_STAFF_PERMISSION_NAMES,
   DEFAULT_VIEWER_PERMISSION_NAMES,
 } from "./permission-catalog";
@@ -102,6 +104,13 @@ describe("DEFAULT_PERMISSION_CATALOG", () => {
       "softcopy-folders.view",
     ]);
     expect(DEFAULT_VIEWER_PERMISSION_NAMES.every((name) => name.endsWith(".view"))).toBe(true);
+  });
+
+  it("grants document management to Internal Audit and Documentation Officer", () => {
+    expect(DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES).toContain("documents.manage");
+    expect(DEFAULT_DOCUMENT_CONTROLLER_PERMISSION_NAMES).toContain("documents.manage");
+    expect(DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES).toContain("softcopy-folders.manage");
+    expect(DEFAULT_DOCUMENT_CONTROLLER_PERMISSION_NAMES).toContain("softcopy-folders.manage");
   });
 
   it("keeps every default role grant in the permission catalog", () => {

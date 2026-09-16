@@ -15,11 +15,17 @@ export const DOCUMENT_REVIEW_PERMISSIONS = [
 export const DOCUMENT_WORKFLOW_CONFIGURATION_PERMISSION =
   "document-workflow.configure" as const;
 
+export const DOCUMENT_MANAGEMENT_PERMISSION = "documents.manage" as const;
+
 export function hasPermission(
   user: AuthenticatedUser,
   permission: string,
 ) {
-  return user.role.permissions.includes(permission);
+  return (
+    user.role.permissions.includes(permission) ||
+    (permission.startsWith("documents.") &&
+      user.role.permissions.includes(DOCUMENT_MANAGEMENT_PERMISSION))
+  );
 }
 
 export function hasAnyPermission(

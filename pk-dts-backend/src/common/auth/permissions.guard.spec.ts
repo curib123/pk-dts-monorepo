@@ -50,6 +50,30 @@ describe('PermissionsGuard', () => {
     ).toBe(true);
   });
 
+  it('allows a document manager to access document endpoints', () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValueOnce(['documents.edit']),
+    } as unknown as Reflector;
+    const guard = new PermissionsGuard(reflector);
+
+    expect(
+      guard.canActivate(
+        createContext(createUser('Internal Audit', ['documents.manage'])),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not let document management grant workflow approval access', () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValueOnce(['document-requests.review']),
+    } as unknown as Reflector;
+    const guard = new PermissionsGuard(reflector);
+
+    expect(() =>
+      guard.canActivate(createContext(createUser('Internal Audit', ['documents.manage']))),
+    ).toThrow(ForbiddenException);
+  });
+
   it('denies Admin when the required permission is not assigned', () => {
     const reflector = {
       getAllAndOverride: jest.fn().mockReturnValueOnce(['documents.delete']),

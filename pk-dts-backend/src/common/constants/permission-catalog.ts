@@ -54,6 +54,11 @@ const permissionModules: PermissionModuleDefinition[] = [
         description: "Edit documents.",
       },
       {
+        action_key: "manage",
+        action_label: "Manage",
+        description: "Manage all document records, files, revisions, and assignments.",
+      },
+      {
         action_key: "manage-own",
         action_label: "Manage Own Documents",
         description: "Manage documents created by the current user.",
@@ -626,6 +631,9 @@ export const DEFAULT_PLANT_MANAGER_PERMISSION_NAMES = [
 
 export const DEFAULT_DOCUMENT_CONTROLLER_PERMISSION_NAMES = [
   ...DEFAULT_STAFF_PERMISSION_NAMES,
+  "documents.manage",
+  "softcopy-folders.manage",
+  "softcopy-folders.delete",
   "document-requests.review",
   "document-requests.approve-document-controller",
   "document-requests.approve-hardcopy",
@@ -645,6 +653,11 @@ export const DEFAULT_DOCUMENT_CONTROLLER_PERMISSION_NAMES = [
 
 export const DEFAULT_INTERNAL_AUDIT_PERMISSION_NAMES = [
   ...DEFAULT_VIEWER_PERMISSION_NAMES,
+  "documents.manage",
+  "softcopy-folders.manage",
+  "softcopy-folders.create",
+  "softcopy-folders.edit",
+  "softcopy-folders.delete",
   "documents.search",
   "documents.download",
   "activity-logs.view_logs",

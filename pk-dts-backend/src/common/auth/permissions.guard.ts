@@ -8,6 +8,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthenticatedUser } from "./authenticated-user.interface";
 import { REQUIRED_PERMISSIONS_KEY } from "./require-permissions.decorator";
 import { ALLOW_SELF_KEY } from "./allow-self.decorator";
+import { hasAnyPermission } from "./document-workflow-permissions";
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -25,10 +26,7 @@ export class PermissionsGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user as AuthenticatedUser | undefined;
-    const currentPermissions = new Set(user?.role.permissions ?? []);
-    const hasPermission = requiredPermissions.some((permission) =>
-      currentPermissions.has(permission),
-    );
+    const hasPermission = !!user && hasAnyPermission(user, requiredPermissions);
 
     if (!hasPermission) {
       const allowSelf = this.reflector.getAllAndOverride<boolean>(
