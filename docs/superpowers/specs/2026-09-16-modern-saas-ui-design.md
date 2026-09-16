@@ -147,4 +147,3 @@ Pages that are editors, builders, timelines, or settings screens may use a speci
 - `npx.cmd tsc -p tsconfig.spec.json --noEmit` passes in `pk-dts-frontend`.
 - `git diff --check` passes, and each coherent implementation slice is committed separately.
 - Browser visual verification is recorded separately from build/test evidence; missing Chrome or unavailable runtime infrastructure is reported honestly.
-
