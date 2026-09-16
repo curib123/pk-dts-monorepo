@@ -234,6 +234,122 @@ describe('DocumentsService', () => {
     ).resolves.toMatchObject({ status: DocumentStatus.ForPlantManagerApproval });
   });
 
+  it('returns revision work to the previous workflow holder before the requester', async () => {
+    const plantManager = {
+      ...regularUser,
+      role: { ...regularUser.role, permissions: ['document-requests.approve-plant-manager'] },
+    } satisfies AuthenticatedUser;
+    prisma.document.findUnique
+      .mockResolvedValueOnce({
+        document_id: 1n,
+        created_by: 8n,
+        document_type: DocumentType.SOFTCOPY,
+        status: DocumentStatus.ForPlantManagerApproval,
+        action_requested: 'CREATE_REVISE',
+        workflow_version_id: 12n,
+        workflow_steps: [{
+          workflow_step_id: 9n,
+          node_key: 'noted-by',
+          stage: 'NOTED_BY',
+          sequence: 1,
+          assigned_user_id: 6n,
+          status: 'APPROVED',
+          acted_by_user_id: 6n,
+          decision: 'approve',
+          comments: 'Previously accepted',
+        }, {
+          workflow_step_id: 10n,
+          node_key: 'plant-manager',
+          stage: 'PLANT_MANAGER',
+          sequence: 2,
+          assigned_user_id: 7n,
+          status: 'PENDING',
+          on_return_node_key: 'later-review',
+        }, {
+          workflow_step_id: 11n,
+          node_key: 'later-review',
+          stage: 'DOCUMENT_CONTROLLER_ADMIN',
+          sequence: 3,
+          assigned_user_id: 5n,
+          status: 'QUEUED',
+        }],
+      })
+      .mockResolvedValueOnce({ document_id: 1n, status: DocumentStatus.ForNotedBy });
+    prisma.documentWorkflowStep.update.mockResolvedValue({});
+    prisma.documentWorkflowStep.updateMany.mockResolvedValue({ count: 1 });
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
+    prisma.documentStatusHistory.create.mockResolvedValue({});
+
+    await expect(
+      service.transition('1', '7', 'request-revision', 'Fix the controlled reference.', plantManager),
+    ).resolves.toMatchObject({ status: DocumentStatus.ForNotedBy });
+    expect(prisma.documentWorkflowStep.update).toHaveBeenCalledWith({
+      where: { workflow_step_id: 9n },
+      data: expect.objectContaining({
+        status: 'PENDING',
+        acted_by_user_id: null,
+        decision: null,
+        comments: null,
+      }),
+    });
+    expect(prisma.documentWorkflowStep.update).toHaveBeenCalledWith({
+      where: { workflow_step_id: 10n },
+      data: expect.objectContaining({ status: 'RETURNED', decision: 'request-revision' }),
+    });
+    expect(prisma.document.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: DocumentStatus.ForNotedBy,
+        workflow_current_node_key: 'noted-by',
+      }),
+    }));
+  });
+
+  it('returns revision work to the requester when the first workflow holder returns it', async () => {
+    const notedBy = {
+      ...regularUser,
+      role: { ...regularUser.role, permissions: ['document-requests.approve-noted-by'] },
+    } satisfies AuthenticatedUser;
+    prisma.document.findUnique
+      .mockResolvedValueOnce({
+        document_id: 1n,
+        created_by: 8n,
+        document_type: DocumentType.SOFTCOPY,
+        status: DocumentStatus.ForNotedBy,
+        action_requested: 'CREATE_REVISE',
+        workflow_version_id: 12n,
+        workflow_steps: [{
+          workflow_step_id: 10n,
+          node_key: 'noted-by',
+          stage: 'NOTED_BY',
+          sequence: 1,
+          assigned_user_id: 7n,
+          status: 'PENDING',
+          on_return_node_key: 'later-review',
+        }, {
+          workflow_step_id: 11n,
+          node_key: 'later-review',
+          stage: 'PLANT_MANAGER',
+          sequence: 2,
+          assigned_user_id: 6n,
+          status: 'QUEUED',
+        }],
+      })
+      .mockResolvedValueOnce({ document_id: 1n, status: DocumentStatus.ForRevision });
+    prisma.documentWorkflowStep.update.mockResolvedValue({});
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
+    prisma.documentStatusHistory.create.mockResolvedValue({});
+
+    await expect(
+      service.transition('1', '7', 'request-revision', 'Please revise.', notedBy),
+    ).resolves.toMatchObject({ status: DocumentStatus.ForRevision });
+    expect(prisma.document.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: DocumentStatus.ForRevision,
+        workflow_current_node_key: null,
+      }),
+    }));
+  });
+
   it('prevents a request creator from approving their own assigned workflow step', async () => {
     const requesterApprover = {
       ...regularUser,

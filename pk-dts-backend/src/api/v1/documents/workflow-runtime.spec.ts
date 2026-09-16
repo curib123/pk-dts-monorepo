@@ -57,8 +57,8 @@ describe('Workflow Builder execution', () => {
     expect(() => service.workflowGraphToPlan(ambiguous, { document_type: 'SOFTCOPY' })).toThrow('multiple matching');
   });
 
-  it.each(['approve', 'reject', 'request-revision'])('follows the configured %s branch', async action => {
-    const permission = action === 'reject' ? 'document-requests.reject' : action === 'request-revision' ? 'document-requests.request-revision' : 'custom.review';
+  it.each(['approve', 'reject'])('follows the configured %s branch', async action => {
+    const permission = action === 'reject' ? 'document-requests.reject' : 'custom.review';
     prisma.document.findUnique.mockResolvedValueOnce({
       document_id: 1n, document_type: 'HARDCOPY', created_by: 3n, status: 'PendingApproval', workflow_version_id: 2n,
       workflow_current_node_key: 'review', workflow_steps: [

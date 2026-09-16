@@ -2842,6 +2842,14 @@ export class DocumentsService {
           : action === "reject"
             ? step.on_reject_node_key
             : step.on_return_node_key;
+        const previousHolderStep = action === "request-revision"
+          ? current.workflow_steps
+            .filter((candidate) =>
+              candidate.sequence < step!.sequence &&
+              candidate.status === WorkflowStepStatus.APPROVED,
+            )
+            .sort((left, right) => right.sequence - left.sequence)[0]
+          : undefined;
         const isLegacyStep = !current.workflow_version_id && (!step.node_key || step.node_key.startsWith("legacy-"));
         const legacyNextStep = action === "approve" && isLegacyStep
             ? current.workflow_steps.find(
@@ -2853,11 +2861,13 @@ export class DocumentsService {
                   ]).has(candidate.status),
               )
             : undefined;
-        const nextStep = configuredTargetKey
-          ? current.workflow_steps.find((candidate) => candidate.node_key === configuredTargetKey)
-          : legacyNextStep;
+        const nextStep = action === "request-revision"
+          ? previousHolderStep
+          : configuredTargetKey
+            ? current.workflow_steps.find((candidate) => candidate.node_key === configuredTargetKey)
+            : legacyNextStep;
 
-        if (configuredTargetKey && !nextStep) {
+        if (action !== "request-revision" && configuredTargetKey && !nextStep) {
           throw new ConflictException("The configured workflow path points to a missing approval step.");
         }
         if (nextStep) {
@@ -2872,7 +2882,17 @@ export class DocumentsService {
           });
           await tx.documentWorkflowStep.update({
             where: { workflow_step_id: nextStep.workflow_step_id },
-            data: { status: WorkflowStepStatus.PENDING },
+            data: action === "request-revision"
+              ? {
+                status: WorkflowStepStatus.PENDING,
+                acted_by_user_id: null,
+                acted_at: null,
+                acted_user_name_snapshot: null,
+                acted_position_title_snapshot: null,
+                decision: null,
+                comments: null,
+              }
+              : { status: WorkflowStepStatus.PENDING },
           });
           current.workflow_current_node_key = nextStep.node_key;
         } else if (action === "request-revision") {
