@@ -66,7 +66,9 @@ export class AuthService {
     }
 
     hasPermission(permission: string) {
-        return this.isAdministrator() || this.permissions().includes(permission);
+        return this.isAdministrator()
+            || this.permissions().includes(permission)
+            || (permission.startsWith('documents.') && this.permissions().includes('documents.manage'));
     }
 
     hasAnyPermission(...permissions: string[]) {
@@ -75,8 +77,7 @@ export class AuthService {
         }
 
         if (this.isAdministrator()) return true;
-        const currentPermissions = new Set(this.permissions());
-        return permissions.some((permission) => currentPermissions.has(permission));
+        return permissions.some((permission) => this.hasPermission(permission));
     }
 
     isAdministrator() {

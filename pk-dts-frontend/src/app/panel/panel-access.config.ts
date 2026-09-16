@@ -44,6 +44,11 @@ const STORAGE_ADMIN_PERMISSIONS = [
 ];
 const USER_MANAGEMENT_PERMISSIONS = ['user-accounts.view', 'user-accounts.manage', 'user-accounts.approve'];
 
+function hasPanelPermission(permissions: readonly string[], requiredPermission: string) {
+    return permissions.includes(requiredPermission)
+        || (requiredPermission.startsWith('documents.') && permissions.includes('documents.manage'));
+}
+
 export const PANEL_ROUTE_PERMISSIONS = {
     dashboard: ['dashboard.view'],
     documents: DOCUMENT_VIEW_PERMISSIONS,
@@ -244,7 +249,7 @@ export const PANEL_NAVIGATION: { dashboard: PanelNavItem; categories: PanelNavCa
 };
 
 export function canAccessPanelItem(item: Pick<PanelNavItem, 'permissions'>, permissions: readonly string[]) {
-    return item.permissions.length === 0 || item.permissions.some((permission) => permissions.includes(permission));
+    return item.permissions.length === 0 || item.permissions.some((permission) => hasPanelPermission(permissions, permission));
 }
 
 export function shouldShowPanelItem(item: PanelNavItem, context: PanelAccessContext) {

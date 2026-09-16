@@ -92,7 +92,7 @@ describe('panel access configuration', () => {
         expect(shouldShowPanelItem(item('approval-review'), { ...context, assignedApprovalCount: 0 })).toBeFalse();
     });
 
-    it('keeps Internal Audit read-only and audit focused', () => {
+    it('does not grant management from read-only permissions alone', () => {
         const context = {
             roleName: 'Internal Audit',
             permissions: ['dashboard.view', 'documents.view', 'softcopy-folders.view', 'activity-logs.view_logs']
@@ -105,6 +105,18 @@ describe('panel access configuration', () => {
         expect(shouldShowPanelItem(item('my-document-requests'), context)).toBeFalse();
         expect(shouldShowPanelItem(item('approval-review'), context)).toBeFalse();
         expect(shouldShowPanelItem(item('roles-permissions'), context)).toBeFalse();
+    });
+
+    it('allows document managers into the document workspace without system administration', () => {
+        const context = {
+            roleName: 'Internal Audit',
+            permissions: ['documents.manage']
+        };
+
+        expect(shouldShowPanelItem(item('softcopy-documents'), context)).toBeTrue();
+        expect(shouldShowPanelItem(item('hardcopy-documents'), context)).toBeTrue();
+        expect(shouldShowPanelItem(item('roles-permissions'), context)).toBeFalse();
+        expect(shouldShowPanelItem(item('system-settings'), context)).toBeFalse();
     });
 
     it('hides personal requester shortcuts from the Admin sidebar without revoking access', () => {

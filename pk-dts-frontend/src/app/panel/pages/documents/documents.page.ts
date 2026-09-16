@@ -593,7 +593,7 @@ interface DocumentFolderNode {
             (save)="uploadRevision($event)"
         />
 
-        <app-document-status-dialog [(visible)]="statusDialogVisible" [document]="statusTargetDocument" [mode]="statusDialogMode" [saving]="isSaving()" [administrator]="auth.isAdministrator()" [users]="users()" [currentUser]="auth.user()" (save)="saveDocumentStatus($event)" />
+        <app-document-status-dialog [(visible)]="statusDialogVisible" [document]="statusTargetDocument" [mode]="statusDialogMode" [saving]="isSaving()" [administrator]="auth.hasPermission('documents.manage')" [users]="users()" [currentUser]="auth.user()" (save)="saveDocumentStatus($event)" />
 
         <app-batch-hardcopy-upload-dialog
             [(visible)]="batchDialogVisible"
@@ -1361,7 +1361,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     readonly searchableThreshold = SEARCHABLE_DROPDOWN_THRESHOLD;
     readonly documentStatuses: DocumentStatusValue[] = ['Draft', 'ForNotedBy', 'ForPlantManagerApproval', 'ForDocumentControllerAdmin', 'ForApproval', 'Approved', 'Completed', 'ForRevision', 'Rejected', 'Cancelled', 'ForTransfer', 'Transferred', 'PendingRecipientAcceptance', 'Disposed'];
     canCreateDocuments = computed(() => this.auth.hasAnyPermission('documents.create', 'document-requests.create'));
-    canDirectCreateSoftcopy = computed(() => this.auth.isAdministrator() || this.auth.hasPermission('documents.create-direct'));
+    canDirectCreateSoftcopy = computed(() => this.auth.hasPermission('documents.create-direct'));
     canEditDocuments = computed(() => this.auth.hasAnyPermission('documents.edit', 'documents.manage-own', 'document-requests.edit'));
     canAttachScans = computed(() => this.auth.hasAnyPermission('documents.attach-scans', 'documents.edit', 'documents.manage-own'));
     canDeleteDocuments = computed(() => this.auth.hasAnyPermission('documents.delete', 'document-requests.delete'));
@@ -1379,7 +1379,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     canChangeDocumentStatus(document: DocumentSummary) {
         return document.status === 'Disposed'
             ? this.auth.hasAnyPermission('documents.restore', 'document-disposal.restore', 'document-disposal.manage')
-            : this.auth.isAdministrator()
+            : this.auth.hasPermission('documents.dispose')
                 ? this.auth.hasAnyPermission('documents.dispose', 'document-disposal.dispose', 'document-disposal.manage')
                 : this.auth.hasPermission('document-disposal.request');
     }
@@ -1387,15 +1387,14 @@ export class DocumentsPage implements OnInit, OnDestroy {
     canConfigureWorkflow = computed(() => this.auth.hasPermission('document-workflow.configure'));
     canUseAssistant = computed(() => this.auth.hasAnyPermission('ai-document-assistant.search', 'documents.search'));
     canAssignDocuments = computed(() => {
-        const role = this.auth.user()?.role?.role_name?.trim().toLowerCase() ?? '';
-        return ['admin', 'administrator', 'super admin', 'superadmin', 'super-admin'].includes(role) && this.auth.hasPermission('documents.edit');
+        return this.auth.hasPermission('documents.manage');
     });
     canManageDocument(document: DocumentSummary) {
         if (this.auth.hasPermission('documents.edit')) return true;
         const userId = this.auth.user()?.user_id;
         return !!userId && this.auth.hasPermission('documents.manage-own') && (document.creator?.user_id === userId || document.assignments?.some((assignment) => assignment.user.user_id === userId));
     }
-    canAttachToDocument(document: DocumentSummary) { return document.document_type === 'SOFTCOPY' && this.canAttachScans() && (this.auth.isAdministrator() || this.canManageDocument(document)); }
+    canAttachToDocument(document: DocumentSummary) { return document.document_type === 'SOFTCOPY' && this.canAttachScans() && this.canManageDocument(document); }
     canUploadRevision(document: DocumentSummary) {
         const hasRevisionFile = !!document.softcopy?.current_revision || !!document.softcopy?.revisions?.length;
         return document.document_type === 'SOFTCOPY' && document.status === 'Approved' && !hasRevisionFile && this.canManageDocument(document) && this.auth.hasAnyPermission('documents.edit', 'documents.manage-own', 'document-requests.edit');
@@ -2123,7 +2122,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         this.isSaving.set(true);
         const request: Observable<unknown> =
             event.action === 'dispose'
-                  ? (this.auth.isAdministrator() ? this.documentsService.disposeDocument(this.statusTargetDocument.document_id, {
+                  ? (this.auth.hasPermission('documents.dispose') ? this.documentsService.disposeDocument(this.statusTargetDocument.document_id, {
                       disposal_action: event.disposal_action,
                       disposal_action_other: event.disposal_action_other,
                       disposal_remarks: event.disposal_remarks,
@@ -2138,7 +2137,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
         request.subscribe({
             next: () => {
-                const requested = event.action === 'dispose' && !this.auth.isAdministrator();
+                const requested = event.action === 'dispose' && !this.auth.hasPermission('documents.dispose');
                 const nextStatusLabel = event.action === 'dispose' ? (requested ? 'submitted for disposal approval' : 'disposed') : 'restored';
                 this.isSaving.set(false);
                 this.statusDialogVisible = false;

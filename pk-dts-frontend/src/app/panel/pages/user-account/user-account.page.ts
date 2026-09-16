@@ -481,10 +481,7 @@ export class UserAccountPage implements OnInit {
     canEditUser = computed(() => this.auth.hasAnyPermission('user-accounts.edit', 'user-accounts.manage'));
     canDeleteUser = computed(() => this.auth.hasAnyPermission('user-accounts.delete', 'user-accounts.manage'));
     canApproveRegistrations = computed(() => this.auth.hasAnyPermission('user-accounts.approve', 'user-accounts.manage'));
-    canManageDocumentAssignments = computed(() => {
-        const roleName = this.auth.user()?.role?.role_name?.trim().toLowerCase() ?? '';
-        return ['admin', 'administrator', 'super admin', 'superadmin', 'super-admin'].includes(roleName) && this.auth.hasPermission('documents.edit');
-    });
+    canManageDocumentAssignments = computed(() => this.auth.hasPermission('documents.manage'));
     currentSessionName = computed(() => {
         const user = this.currentUser();
         return user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : '';
