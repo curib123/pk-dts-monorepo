@@ -66,12 +66,19 @@ const DEFAULT_WORKFLOW_DEFINITIONS = [
     description: "Default direct approval route for Hardcopy requests.",
     document_type: DocumentType.HARDCOPY,
   },
+  {
+    workflow_key: "system-hardcopy-transfer",
+    name: "Hardcopy Transfer Approval",
+    description: "Default route for moving a Hardcopy document to another storage location.",
+    document_type: DocumentType.HARDCOPY,
+  },
 ] as const;
 
 function defaultWorkflowGraph(
   workflowKey: string,
   plantManagerRoleId: bigint,
   documentControllerRoleId: bigint,
+  finalApproverUserId: bigint,
 ): Prisma.InputJsonValue {
   const approved = { key: "approved", label: "Approved", type: "END" };
 
@@ -139,6 +146,42 @@ function defaultWorkflowGraph(
     } as Prisma.InputJsonValue;
   }
 
+  if (workflowKey === "system-hardcopy-transfer") {
+    return {
+      schema_version: 2,
+      start_node_key: "plant-manager",
+      nodes: [
+        {
+          key: "plant-manager",
+          label: "Plant Manager Approval",
+          type: "APPROVAL",
+          stage: "PLANT_MANAGER",
+          assignment: { type: "ROLE", role_id: String(plantManagerRoleId) },
+        },
+        {
+          key: "documentation-officer",
+          label: "Documentation Officer Approval",
+          type: "APPROVAL",
+          stage: "DOCUMENT_CONTROLLER_ADMIN",
+          assignment: { type: "ROLE", role_id: String(documentControllerRoleId) },
+        },
+        {
+          key: "final-approver",
+          label: "Final Approver",
+          type: "APPROVAL",
+          stage: "CUSTOM",
+          assignment: { type: "USER", user_id: String(finalApproverUserId) },
+        },
+        approved,
+      ],
+      edges: [
+        { key: "plant-manager-approve", from: "plant-manager", to: "documentation-officer", outcome: "APPROVE" },
+        { key: "documentation-officer-approve", from: "documentation-officer", to: "final-approver", outcome: "APPROVE" },
+        { key: "final-approver-approve", from: "final-approver", to: "approved", outcome: "APPROVE" },
+      ],
+    } as Prisma.InputJsonValue;
+  }
+
   return {
     schema_version: 2,
     start_node_key: "hardcopy-approval",
@@ -191,6 +234,7 @@ async function seedDefaultWorkflowDefinitions(
           workflow.workflow_key,
           plantManagerRoleId,
           documentControllerRoleId,
+          createdByUserId,
         ),
         created_by_user_id: createdByUserId,
         published_by_user_id: createdByUserId,

@@ -41,7 +41,7 @@ export class WorkflowDefinitionsService {
 
   async publishedDefault(documentType: string, action?: string) {
     if (!["SOFTCOPY", "HARDCOPY"].includes(documentType)) throw new BadRequestException("A valid document type is required.");
-    if (action && !["CREATE", "REVISE", "CREATE_REVISE", "CANCELLATION"].includes(action)) throw new BadRequestException("Invalid document request action.");
+    if (action && !["CREATE", "REVISE", "CREATE_REVISE", "CANCELLATION", "TRANSFER"].includes(action)) throw new BadRequestException("Invalid document request action.");
     const version = await this.prisma.workflowVersion.findFirst({
       where: { status: WorkflowVersionStatus.PUBLISHED, workflow_definition: { workflow_key: systemWorkflowKey(documentType, action), is_active: true } },
       orderBy: { version_number: "desc" },

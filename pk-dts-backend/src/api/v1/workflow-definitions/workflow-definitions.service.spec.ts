@@ -95,4 +95,12 @@ describe("WorkflowDefinitionsService", () => {
     await expect(service.publishedDefault('INVALID')).rejects.toThrow('valid document type');
   });
 
+  it('looks up the published hardcopy transfer workflow', async () => {
+    const findFirst = jest.fn().mockResolvedValue({ workflow_version_id: 9n, version_number: 1 });
+    const service = new WorkflowDefinitionsService({ workflowVersion: { findFirst } } as any);
+
+    await expect(service.publishedDefault('HARDCOPY', 'TRANSFER')).resolves.toEqual([{ workflow_version_id: 9n, version_number: 1 }]);
+    expect(findFirst.mock.calls[0][0].where.workflow_definition.workflow_key).toBe('system-hardcopy-transfer');
+  });
+
 });
