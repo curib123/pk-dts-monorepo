@@ -2,7 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { WorkflowGraph, WorkflowGraphNode } from "./workflow-graph.types";
 
 const MAX_APPROVAL_STEPS = 15;
-const ALLOWED_ASSIGNMENT_TYPES = new Set(["USER", "ROLE", "REQUESTER_LEADER"]);
+const ALLOWED_ASSIGNMENT_TYPES = new Set(["USER", "ROLE", "REQUESTER", "REQUESTER_LEADER"]);
 
 /**
  * New workflow-builder writes are intentionally limited to one ordered approval chain.
@@ -93,7 +93,7 @@ function validateNode(node: WorkflowGraphNode, nodeKeys: Set<string>) {
     throw new BadRequestException("Workflow steps assign responsibility; permissions are managed separately through Roles and Permissions.");
   }
   if (!ALLOWED_ASSIGNMENT_TYPES.has(node.assignment.type)) {
-    throw new BadRequestException("Approvers can only be the requester's leader, a specific user, or a role.");
+    throw new BadRequestException("Approvers can only be the requester, the requester's leader, a specific user, or a role.");
   }
   if (node.assignment.type === "USER" && !node.assignment.user_id) {
     throw new BadRequestException(`Workflow step ${node.label} needs an assigned user.`);

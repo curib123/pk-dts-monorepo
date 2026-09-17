@@ -1725,7 +1725,7 @@ export class DocumentsService {
       }),
       tx.document.findUnique({
         where: { document_id: documentId },
-        select: { action_requested: true, business_document_type: true, requested_by_name: true, workflow_snapshot: true },
+        select: { action_requested: true, business_document_type: true, requested_by_name: true, requested_by_user_id: true, workflow_snapshot: true },
       }),
     ]);
     const configured = await tx.documentApproverConfiguration.findUnique({
@@ -1755,6 +1755,10 @@ export class DocumentsService {
       if (!assignedUserId && plannedStep.assignment_type === "REQUESTER_LEADER") {
         assignedUserId = creator?.leader_id ?? null;
         assignmentSource = "REQUESTER_LEADER";
+      }
+      if (!assignedUserId && plannedStep.assignment_type === "REQUESTER") {
+        assignedUserId = document?.requested_by_user_id ?? null;
+        assignmentSource = "REQUESTER";
       }
       if (!assignedUserId && plannedStep.assignment_type === "ROLE" && plannedStep.assigned_role_id) {
         const fallback = await this.findUserByRoleId(
@@ -1824,6 +1828,9 @@ export class DocumentsService {
       }
 
       if (!assignedUserId) {
+        if (plannedStep.assignment_type === "REQUESTER") {
+          throw new BadRequestException("This workflow step requires a registered requester account.");
+        }
         throw new BadRequestException(
           `${this.workflowStageLabel(plannedStep.stage)} does not have an eligible approver. Configure a named approver before submitting.`,
         );
@@ -1869,7 +1876,7 @@ export class DocumentsService {
       }
       const assignedUser = workflowUsersById.get(step.assignedUserId.toString());
       if (!assignedUser) throw new BadRequestException("The configured workflow approver no longer exists.");
-      if (step.assignedUserId === creatorId) throw new BadRequestException(`${step.stage_label || this.workflowStageLabel(step.stage)} cannot be assigned to the request creator.`);
+      if (step.assignedUserId === creatorId && step.assignment_type !== "REQUESTER") throw new BadRequestException(`${step.stage_label || this.workflowStageLabel(step.stage)} cannot be assigned to the request creator.`);
       if (step.required_permission && (!isExplicitWorkflowAssignment || step.assignment_type === "PERMISSION")) {
         const user = assignedUser;
         const permissions = user.role.role_permissions.map(
@@ -2698,7 +2705,8 @@ export class DocumentsService {
       }
 
       if (actor && (action === "approve" || builderDecision)) {
-        if (current.created_by === actorId) throw new ForbiddenException("A request creator cannot approve their own request.");
+        const isExplicitRequesterAssignment = pendingStep?.assignment_type === "REQUESTER" && pendingStep.assignment_source === "REQUESTER";
+        if (current.created_by === actorId && !isExplicitRequesterAssignment) throw new ForbiddenException("A request creator cannot approve their own request.");
         const isRequesterLeaderNotedBy =
           pendingStep?.stage === DocumentWorkflowStage.NOTED_BY &&
           pendingStep.assignment_source === "REQUESTER_LEADER" &&

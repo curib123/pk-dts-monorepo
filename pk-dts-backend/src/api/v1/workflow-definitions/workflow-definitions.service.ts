@@ -206,7 +206,7 @@ export class WorkflowDefinitionsService {
       return result;
     };
     const assignment = node.assignment!;
-    if (!["USER", "ROLE", "REQUESTER_LEADER", "PERMISSION"].includes(assignment.type)) throw new BadRequestException(`Node ${node.label} has an invalid assignment type.`);
+    if (!["USER", "ROLE", "REQUESTER", "REQUESTER_LEADER", "PERMISSION"].includes(assignment.type)) throw new BadRequestException(`Node ${node.label} has an invalid assignment type.`);
     if (assignment.type === "USER") {
       if (!assignment.user_id) throw new BadRequestException(`Node ${node.label} needs an assigned user.`);
       const user = await lookup(`user:${assignment.user_id}`, () => database.user.findUnique({ where: { user_id: toBigIntId(assignment.user_id!, "workflow_user_id") }, select: { user_id: true } }));

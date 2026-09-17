@@ -1,4 +1,4 @@
-export type WorkflowAssignmentType = "USER" | "ROLE" | "REQUESTER_LEADER" | "PERMISSION";
+export type WorkflowAssignmentType = "USER" | "ROLE" | "REQUESTER" | "REQUESTER_LEADER" | "PERMISSION";
 export type WorkflowOutcome = "APPROVE" | "REJECT" | "RETURN" | "DEFAULT";
 
 export type WorkflowCondition = {
