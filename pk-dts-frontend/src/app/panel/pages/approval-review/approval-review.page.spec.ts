@@ -33,6 +33,30 @@ describe('ApprovalReviewPage', () => {
         expect(component.pendingDecision?.remarks).toBe('');
     });
 
+    it('requires a remark before submitting any workflow decision', () => {
+        const component = fixture.componentInstance;
+        const documents = TestBed.inject(DocumentsService) as any;
+        documents.workflowAction = jasmine.createSpy().and.returnValue(of({}));
+        const item = { document_id: '17' } as any;
+
+        for (const action of ['approve', 'request-revision', 'reject', 'complete'] as const) {
+            component.openDecision(item, action);
+            component.submitDecisionRemark();
+
+            expect(documents.workflowAction).not.toHaveBeenCalled();
+            expect(component.decisionRemarkVisible).toBeTrue();
+            component.clearDecision();
+        }
+    });
+
+    it('uses the required audit remark copy for document decisions', () => {
+        const component = fixture.componentInstance;
+        component.openDecision({ document_id: '17' } as any, 'approve');
+
+        expect(component.decisionRemarkTitle()).toBe('Document decision');
+        expect(component.decisionRemarkDescription()).toBe('Add the required decision remark for the audit trail.');
+    });
+
     it('renders no inline decision remark inputs in the table or cards', () => {
         const documents = TestBed.inject(DocumentsService) as jasmine.SpyObj<DocumentsService>;
         const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
