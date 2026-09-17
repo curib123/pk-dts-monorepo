@@ -19,7 +19,17 @@ function wait(milliseconds) {
 for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
   const result = spawnSync(
     process.execPath,
-    [prismaWrapper, 'db', 'push', '--skip-generate'],
+    [
+      prismaWrapper,
+      'db',
+      'push',
+      '--skip-generate',
+      // The PostgreSQL startup schema adds nullable workflow fields and a
+      // unique current-step relation. Existing rows remain intact because
+      // the new fields start as NULL; Prisma still requires this flag to
+      // acknowledge its generic unique-constraint warning.
+      '--accept-data-loss',
+    ],
     {
       cwd: rootDir,
       env: process.env,
