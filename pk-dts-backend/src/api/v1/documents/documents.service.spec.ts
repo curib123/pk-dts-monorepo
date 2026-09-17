@@ -445,6 +445,41 @@ describe('DocumentsService', () => {
       .rejects.toThrow('A request creator cannot approve their own request.');
   });
 
+  it('allows the requester to approve an explicitly requester-assigned workflow step', async () => {
+    const requesterApprover = {
+      ...regularUser,
+      role: { ...regularUser.role, permissions: [] },
+    } satisfies AuthenticatedUser;
+    prisma.document.findUnique
+      .mockResolvedValueOnce({
+        document_id: 1n,
+        created_by: 7n,
+        document_type: DocumentType.SOFTCOPY,
+        status: DocumentStatus.ForApproval,
+        action_requested: 'CREATE_REVISE',
+        workflow_version_id: 12n,
+        workflow_steps: [{
+          workflow_step_id: 10n,
+          node_key: 'requester-review',
+          stage: 'CUSTOM',
+          sequence: 1,
+          assigned_user_id: 7n,
+          assignment_type: 'REQUESTER',
+          assignment_source: 'REQUESTER',
+          status: 'PENDING',
+        }],
+        assignments: [],
+      })
+      .mockResolvedValueOnce({ document_id: 1n, status: DocumentStatus.Approved });
+    prisma.documentWorkflowStep.update.mockResolvedValue({});
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
+    prisma.documentStatusHistory.create.mockResolvedValue({});
+
+    await expect(
+      service.transition('1', '7', 'approve', 'Requester approval', requesterApprover),
+    ).resolves.toMatchObject({ status: DocumentStatus.Approved });
+  });
+
   it('marks Softcopy attachments approved when Plant Manager approval is completed', async () => {
     const plantManager = {
       ...regularUser,

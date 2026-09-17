@@ -34,6 +34,12 @@ describe("assertSequentialWorkflowGraph", () => {
     expect(() => assertSequentialWorkflowGraph(sequentialGraph)).not.toThrow();
   });
 
+  it("accepts the requester as an approver assignment", () => {
+    const graph = cloneGraph();
+    graph.nodes[0].assignment = { type: "REQUESTER" };
+    expect(() => assertSequentialWorkflowGraph(graph)).not.toThrow();
+  });
+
   it("rejects permission-based approver selection", () => {
     const graph = cloneGraph();
     graph.nodes[0].assignment = {
