@@ -116,8 +116,17 @@ export class HardcopyTransfersService {
   listPending(actor: AuthenticatedUser) {
     return this.prisma.hardcopyTransferRequest.findMany({
       where: {
-        status: HardcopyTransferStatus.ForApproval,
-        workflow_steps: { some: { assigned_user_id: toBigIntId(actor.user_id, "current_user_id"), status: HardcopyTransferWorkflowStepStatus.PENDING } },
+        OR: [
+          {
+            status: HardcopyTransferStatus.ForApproval,
+            workflow_steps: { some: { assigned_user_id: toBigIntId(actor.user_id, "current_user_id"), status: HardcopyTransferWorkflowStepStatus.PENDING } },
+          },
+          {
+            status: HardcopyTransferStatus.ForApproval,
+            workflow_version_id: null,
+            approver_user_id: toBigIntId(actor.user_id, "current_user_id"),
+          },
+        ],
       },
       include: {
         document: { include: { hardcopy: { include: { area: true, specific: true, asset: true, location: true, sequence: true } } } },
@@ -549,6 +558,9 @@ export class HardcopyTransfersService {
       const transfer = await tx.hardcopyTransferRequest.findUnique({ where: { transfer_request_id: transferId } });
       if (!transfer) throw new NotFoundException("Hardcopy transfer request not found.");
       if (transfer.status !== expected) throw new ConflictException(`Cannot move a ${transfer.status} transfer to ${next}.`);
+      if (transfer.workflow_version_id) {
+        throw new ConflictException("Workflow-managed transfers must follow the configured approval route and requester completion step.");
+      }
       const actorId = toBigIntId(actor.user_id, "current_user_id");
       if (isRequesterAction && transfer.requested_by_user_id !== actorId) throw new ForbiddenException("Only the transfer requester can submit this transfer.");
       if (!isRequesterAction && !isAdministrativeRole(actor.role.role_name) && transfer.approver_user_id !== actorId) throw new ForbiddenException("You are not authorized to execute this transfer action.");

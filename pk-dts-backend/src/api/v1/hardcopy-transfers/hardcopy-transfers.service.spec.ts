@@ -1,4 +1,4 @@
-import { ForbiddenException } from "@nestjs/common";
+import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { HardcopyTransferStatus, RecipientAcceptanceStatus } from "@prisma/client";
 import { HardcopyTransfersService } from "./hardcopy-transfers.service";
 
@@ -306,5 +306,23 @@ describe("HardcopyTransfersService", () => {
     expect(tx.hardcopyTransferRequest.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: HardcopyTransferStatus.Completed, accepted_by_user_id: 12n }),
     }));
+  });
+
+  it("does not let legacy dispatch actions bypass a configured transfer workflow", async () => {
+    const tx: any = {
+      hardcopyTransferRequest: {
+        findUnique: jest.fn().mockResolvedValue({
+          transfer_request_id: 12n,
+          requested_by_user_id: 12n,
+          approver_user_id: 4n,
+          workflow_version_id: 40n,
+          status: HardcopyTransferStatus.ForTransfer,
+        }),
+      },
+    };
+    const service = new HardcopyTransfersService({ $transaction: jest.fn((callback) => callback(tx)) } as any);
+    const finalApprover = { ...recipient, user_id: "4", role: { ...recipient.role, permissions: ["hardcopy-transfers.dispatch"] } };
+
+    await expect(service.dispatch("12", finalApprover as any)).rejects.toBeInstanceOf(ConflictException);
   });
 });
