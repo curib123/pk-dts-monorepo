@@ -11,3 +11,4 @@ WHERE rp."role_id" = role."role_id"
     'softcopy-folders.delete',
     'softcopy-folders.manage'
   );
+ 
