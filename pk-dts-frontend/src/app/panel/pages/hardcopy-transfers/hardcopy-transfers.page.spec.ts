@@ -84,4 +84,19 @@ describe('HardcopyTransfersPage', () => {
         expect(page.selectedDestinationAreaName()).toBe('Plant');
         expect(page.selectedDestinationSpecificName()).toBe('Operations');
     });
+
+    it('submits a created transfer into the Plant Manager workflow', () => {
+        const page = fixture.componentInstance;
+        page.form = {
+            document_id: 'document-1',
+            destination_location_id: 'location-1',
+            reason: 'Move to the records room'
+        };
+        transfers.create.and.returnValue(of({ transfer_request_id: 'transfer-1' } as any));
+        transfers.action.and.returnValue(of({} as any));
+
+        page.create();
+
+        expect(transfers.action).toHaveBeenCalledWith('transfer-1', 'submit');
+    });
 });
