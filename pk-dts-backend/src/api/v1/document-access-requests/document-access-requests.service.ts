@@ -150,6 +150,12 @@ export class DocumentAccessRequestsService {
 
   async create(dto: CreateDocumentAccessRequestDto, user: AuthenticatedUser) {
     this.assertPermission(user, "document-access-requests.create");
+    const requestReason = dto.request_reason?.trim();
+    if (!requestReason) {
+      throw new BadRequestException(
+        "A reason is required to request document access.",
+      );
+    }
     const userId = toBigIntId(user.user_id, "current_user_id");
     const documentId = toBigIntId(dto.document_id, "document_id");
     const [document, assignment, pending] = await Promise.all([
@@ -188,14 +194,14 @@ export class DocumentAccessRequestsService {
         data: {
           document_id: documentId,
           requested_by_user_id: userId,
-          request_reason: dto.request_reason?.trim() || null,
+          request_reason: requestReason,
           status: DocumentAccessRequestStatus.ForAccessApproval,
           approver_user_id: approverId,
           approval_stage: "DOCUMENT_CONFIGURED_APPROVER",
         },
         include: REQUEST_INCLUDE,
       });
-      await this.recordHistory(tx, created.access_request_id, null, DocumentAccessRequestStatus.ForAccessApproval, "create", userId, dto.request_reason);
+      await this.recordHistory(tx, created.access_request_id, null, DocumentAccessRequestStatus.ForAccessApproval, "create", userId, requestReason);
       return created;
     });
   }

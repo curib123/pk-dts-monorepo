@@ -598,9 +598,6 @@ export const DEFAULT_STAFF_PERMISSION_NAMES = [
   "hardcopy-transfers.view-own",
   "hardcopy-transfers.create",
   "hardcopy-transfers.accept",
-  "softcopy-folders.view",
-  "softcopy-folders.create",
-  "softcopy-folders.edit",
 ] as const;
 
 export const DEFAULT_NOTED_BY_PERMISSION_NAMES = [

@@ -107,6 +107,18 @@ describe("DocumentAccessRequestsService", () => {
     );
   });
 
+  it("rejects an access request without a nonblank reason", async () => {
+    const prisma: any = {};
+    const service = new DocumentAccessRequestsService(prisma);
+
+    await expect(
+      service.create(
+        { document_id: "4", request_reason: "   " },
+        actor(["document-access-requests.create"]),
+      ),
+    ).rejects.toThrow("A reason is required to request document access.");
+  });
+
   it("lets only the requester cancel a pending request without deleting it", async () => {
     const prisma: any = {
       documentAccessRequest: {

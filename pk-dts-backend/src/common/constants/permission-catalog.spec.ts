@@ -72,6 +72,14 @@ describe("DEFAULT_PERMISSION_CATALOG", () => {
     );
   });
 
+  it("keeps Staff out of the separate Softcopy Folders management workspace", () => {
+    expect(
+      DEFAULT_STAFF_PERMISSION_NAMES.some((name) =>
+        name.startsWith("softcopy-folders."),
+      ),
+    ).toBe(false);
+  });
+
   it("gives the Noted By role the dedicated first-stage approval permissions", () => {
     expect(DEFAULT_NOTED_BY_PERMISSION_NAMES).toEqual(
       expect.arrayContaining([
