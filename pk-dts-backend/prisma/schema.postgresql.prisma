@@ -56,6 +56,9 @@ model User {
   transfer_requests_recipients      HardcopyTransferRequest[]       @relation("TransferRecipients")
   transfer_acceptances              HardcopyTransferRequest[]       @relation("TransferAcceptors")
   transfer_history                  HardcopyTransferHistory[]       @relation("TransferHistoryActors")
+  transfer_workflow_steps_assigned  HardcopyTransferWorkflowStep[]        @relation("TransferWorkflowStepAssignees")
+  transfer_workflow_steps_acted     HardcopyTransferWorkflowStep[]        @relation("TransferWorkflowStepActors")
+  transfer_workflow_histories       HardcopyTransferWorkflowStepHistory[] @relation("TransferWorkflowHistoryActors")
   workflow_definitions_created      WorkflowDefinition[]            @relation("WorkflowDefinitionCreators")
   workflow_versions_created         WorkflowVersion[]               @relation("WorkflowVersionCreators")
   workflow_versions_published       WorkflowVersion[]               @relation("WorkflowVersionPublishers")
@@ -74,6 +77,7 @@ model Role {
   users                           User[]
   role_permissions                RolePermission[]
   workflow_step_assignments       DocumentWorkflowStep[]       @relation("WorkflowStepAssignedRoles")
+  transfer_workflow_step_assignments HardcopyTransferWorkflowStep[] @relation("TransferWorkflowStepAssignedRoles")
   requested_registration_requests AccountRegistrationRequest[] @relation("RequestedRegistrationRole")
   assigned_registration_requests  AccountRegistrationRequest[] @relation("AssignedRegistrationRole")
 
@@ -513,6 +517,13 @@ model HardcopyTransferRequest {
   approver_user_id           BigInt?
   approver                   User?                     @relation("TransferApprovers", fields: [approver_user_id], references: [user_id], onDelete: SetNull)
   approval_date              DateTime?
+  workflow_version_id        BigInt?
+  workflow_version_ref       WorkflowVersion?               @relation("HardcopyTransferWorkflowVersions", fields: [workflow_version_id], references: [workflow_version_id], onDelete: SetNull)
+  workflow_version           Int?
+  workflow_name              String?                        @db.VarChar(150)
+  workflow_snapshot          Json?
+  current_workflow_step_id   BigInt?                        @unique
+  current_workflow_step      HardcopyTransferWorkflowStep?  @relation("HardcopyTransferCurrentStep", fields: [current_workflow_step_id], references: [workflow_step_id], onDelete: SetNull)
   transfer_date              DateTime?
   assigned_recipient_user_id BigInt
   assigned_recipient         User                      @relation("TransferRecipients", fields: [assigned_recipient_user_id], references: [user_id], onDelete: Restrict)
@@ -525,10 +536,59 @@ model HardcopyTransferRequest {
   created_at                 DateTime                  @default(now())
   updated_at                 DateTime                  @updatedAt
   history                    HardcopyTransferHistory[]
+  workflow_steps             HardcopyTransferWorkflowStep[] @relation("HardcopyTransferWorkflowSteps")
 
   @@index([document_id, status])
   @@index([assigned_recipient_user_id, recipient_acceptance])
   @@map("hardcopy_transfer_requests")
+}
+
+model HardcopyTransferWorkflowStep {
+  workflow_step_id                 BigInt                                @id @default(autoincrement())
+  transfer_request_id              BigInt
+  transfer_request                 HardcopyTransferRequest               @relation("HardcopyTransferWorkflowSteps", fields: [transfer_request_id], references: [transfer_request_id], onDelete: Cascade)
+  current_for_transfer             HardcopyTransferRequest?              @relation("HardcopyTransferCurrentStep")
+  node_key                         String                                @db.VarChar(100)
+  sequence                         Int
+  stage                            String                                @db.VarChar(60)
+  stage_label                      String                                @db.VarChar(150)
+  assignment_type                  String?                               @db.VarChar(30)
+  assignment_source                String?                               @db.VarChar(50)
+  assigned_user_id                 BigInt
+  assignee                         User                                  @relation("TransferWorkflowStepAssignees", fields: [assigned_user_id], references: [user_id], onDelete: Restrict)
+  assigned_role_id                 BigInt?
+  assigned_role                    Role?                                 @relation("TransferWorkflowStepAssignedRoles", fields: [assigned_role_id], references: [role_id], onDelete: SetNull)
+  assigned_user_name_snapshot      String                                @db.VarChar(255)
+  assigned_position_title_snapshot String?                               @db.VarChar(150)
+  status                           HardcopyTransferWorkflowStepStatus    @default(QUEUED)
+  decision                         String?                               @db.VarChar(30)
+  comments                         String?                               @db.Text
+  acted_by_user_id                 BigInt?
+  actor                            User?                                 @relation("TransferWorkflowStepActors", fields: [acted_by_user_id], references: [user_id], onDelete: SetNull)
+  acted_at                         DateTime?
+  history                          HardcopyTransferWorkflowStepHistory[]
+  created_at                       DateTime                              @default(now())
+
+  @@unique([transfer_request_id, node_key])
+  @@index([assigned_user_id, status])
+  @@index([transfer_request_id, status])
+  @@map("hardcopy_transfer_workflow_steps")
+}
+
+model HardcopyTransferWorkflowStepHistory {
+  workflow_history_id  BigInt                              @id @default(autoincrement())
+  workflow_step_id     BigInt
+  workflow_step        HardcopyTransferWorkflowStep        @relation(fields: [workflow_step_id], references: [workflow_step_id], onDelete: Cascade)
+  previous_status      HardcopyTransferWorkflowStepStatus?
+  new_status           HardcopyTransferWorkflowStepStatus
+  action               String                              @db.VarChar(40)
+  performed_by_user_id BigInt
+  performed_by         User                                @relation("TransferWorkflowHistoryActors", fields: [performed_by_user_id], references: [user_id], onDelete: Restrict)
+  comments             String?                             @db.Text
+  created_at           DateTime                            @default(now())
+
+  @@index([workflow_step_id, created_at])
+  @@map("hardcopy_transfer_workflow_history")
 }
 
 model HardcopyTransferHistory {
@@ -877,6 +937,7 @@ model WorkflowVersion {
   published_by           User?                 @relation("WorkflowVersionPublishers", fields: [published_by_user_id], references: [user_id], onDelete: SetNull)
   published_at           DateTime?
   documents              Document[]
+  hardcopy_transfer_requests HardcopyTransferRequest[] @relation("HardcopyTransferWorkflowVersions")
   created_at             DateTime              @default(now())
   updated_at             DateTime              @updatedAt
 
@@ -896,6 +957,14 @@ enum HardcopyTransferStatus {
   Returned
   Rejected
   Cancelled
+}
+
+enum HardcopyTransferWorkflowStepStatus {
+  QUEUED
+  PENDING
+  APPROVED
+  RETURNED
+  REJECTED
 }
 
 enum RecipientAcceptanceStatus {
