@@ -169,7 +169,7 @@ describe('DocumentsService', () => {
     });
 
     await expect(
-      service.transition('1', '7', 'approve', undefined, regularUser),
+      service.transition('1', '7', 'approve', 'Pending review', regularUser),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -604,7 +604,7 @@ describe('DocumentsService', () => {
     });
 
     await expect(
-      service.transition('1', '7', 'complete', undefined, {
+      service.transition('1', '7', 'complete', 'Completion attempt', {
         ...regularUser,
         role: { ...regularUser.role, permissions: ['document-requests.complete'] },
       }),
