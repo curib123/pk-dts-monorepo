@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -72,9 +72,9 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                             </label>
                         </div>
 
-                        <p-button type="submit" [loading]="loading" label="Sign In" icon="pi pi-arrow-right" styleClass="w-full"></p-button>
+                        <p-button type="submit" [loading]="loading()" label="Sign In" icon="pi pi-arrow-right" styleClass="w-full"></p-button>
 
-                        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+                        <p class="error-message" *ngIf="errorMessage()">{{ errorMessage() }}</p>
                     </form>
                     <div class="registration-links">
                         <span>Need an account?</span>
@@ -795,8 +795,8 @@ export class Login {
     private systemSettings = inject(SystemSettingsService);
     settings = this.systemSettings.settings;
 
-    loading = false;
-    errorMessage = '';
+    loading = signal(false);
+    errorMessage = signal('');
 
     form = this.fb.group({
         username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,149}$/)]],
@@ -810,27 +810,25 @@ export class Login {
     }
 
     submit() {
-        this.errorMessage = '';
+        this.errorMessage.set('');
         this.form.markAllAsTouched();
 
-        if (this.form.invalid) {
+        if (this.form.invalid || this.loading()) {
             return;
         }
 
-        this.loading = true;
+        this.loading.set(true);
 
         const { username, password, rememberMe } = this.form.getRawValue();
 
         this.auth.login({ username: username ?? '', password: password ?? '' }, rememberMe ?? false).subscribe({
             next: () => {
-                this.loading = false;
                 this.router.navigate(['/panel/dashboard']);
             },
             error: (error) => {
-                this.loading = false;
-                this.errorMessage = error?.error?.message || 'Login failed. Please check your credentials and try again.';
+                this.errorMessage.set(error?.error?.message || 'Login failed. Please check your credentials and try again.');
             }
-        });
+        }).add(() => this.loading.set(false));
     }
 
     isInvalid(controlName: 'username' | 'password') {
