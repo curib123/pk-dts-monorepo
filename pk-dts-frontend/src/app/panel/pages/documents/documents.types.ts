@@ -101,6 +101,7 @@ export interface LocationReference {
     location_id: string;
     location_name: string;
     location_code?: string | null;
+    is_active?: boolean;
     asset_id?: string | null;
     asset?: AssetReference | null;
     specific_id?: string | null;

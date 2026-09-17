@@ -23,7 +23,7 @@ describe('HardcopyTransfersPage', () => {
                 document_title: 'Warehouse release form',
                 document_type: 'HARDCOPY',
                 status: 'Approved',
-                hardcopy: null
+                hardcopy: {}
             }
         ] as any));
         documents.listLocations.and.returnValue(of([
@@ -69,5 +69,19 @@ describe('HardcopyTransfersPage', () => {
         expect(documents.listDocuments).toHaveBeenCalledTimes(1);
         expect(documents.listLocations).toHaveBeenCalledTimes(1);
         expect(documents.listSequences).toHaveBeenCalledTimes(1);
+    });
+
+    it('derives the destination hierarchy and transfer location label from selections', () => {
+        const page = fixture.componentInstance;
+
+        page.selectDestinationLocation('location-1');
+        page.selectTransferDestination('location-1');
+
+        expect(page.form.destination_location_id).toBe('location-1');
+        expect(page.form.destination_area_id).toBe('area-1');
+        expect(page.form.destination_specific_id).toBe('specific-1');
+        expect(page.form.transfer_to).toBe('Records room');
+        expect(page.selectedDestinationAreaName()).toBe('Plant');
+        expect(page.selectedDestinationSpecificName()).toBe('Operations');
     });
 });
