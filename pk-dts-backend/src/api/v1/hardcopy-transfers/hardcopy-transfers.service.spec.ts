@@ -40,7 +40,7 @@ describe("HardcopyTransfersService", () => {
             nodes: [
               { key: "plant-manager", type: "APPROVAL", label: "Plant Manager", stage: "PLANT_MANAGER", assignment: { type: "ROLE", role_id: "20" } },
               { key: "documentation-officer", type: "APPROVAL", label: "Documentation Officer", stage: "DOCUMENT_CONTROLLER_ADMIN", assignment: { type: "ROLE", role_id: "21" } },
-              { key: "final-approver", type: "APPROVAL", label: "Final Approver", stage: "CUSTOM", assignment: { type: "USER", user_id: "22" } },
+          { key: "final-approver", type: "APPROVAL", label: "Transfer Implemented", stage: "CUSTOM", assignment: { type: "REQUESTER" } },
               { key: "complete", type: "END", label: "Approved" },
             ],
             edges: [
@@ -56,7 +56,9 @@ describe("HardcopyTransfersService", () => {
           { user_id: 30n, role_id: 20n, firstname: "Plant", lastname: "Manager", position_title: "Plant Manager" },
           { user_id: 31n, role_id: 21n, firstname: "Documentation", lastname: "Officer", position_title: "Documentation Officer" },
         ]),
-        findUnique: jest.fn().mockResolvedValue({ user_id: 22n, firstname: "Final", lastname: "Approver", position_title: "Approver" }),
+        findUnique: jest.fn(({ where }: any) => Promise.resolve(where.user_id === 12n
+          ? { user_id: 12n, firstname: "Receiving", lastname: "User", position_title: "Requester" }
+          : { user_id: 22n, firstname: "Final", lastname: "Approver", position_title: "Approver" })),
       },
     };
     const prisma: any = { $transaction: jest.fn((callback) => callback(tx)) };
@@ -70,7 +72,7 @@ describe("HardcopyTransfersService", () => {
       data: expect.arrayContaining([
         expect.objectContaining({ sequence: 1, status: "PENDING", assigned_user_id: 30n }),
         expect.objectContaining({ sequence: 2, status: "QUEUED", assigned_user_id: 31n }),
-        expect.objectContaining({ sequence: 3, status: "QUEUED", assigned_user_id: 22n }),
+        expect.objectContaining({ sequence: 3, status: "QUEUED", assigned_user_id: 12n }),
       ]),
     }));
   });
