@@ -12,7 +12,7 @@ model User {
   firstname               String  @db.VarChar(100)
   lastname                String  @db.VarChar(100)
   middlename              String? @db.VarChar(100)
-  username                   String  @unique @db.VarChar(150)
+  username                String  @unique @db.VarChar(150)
   position_title          String? @db.VarChar(100)
   password                String  @db.VarChar(255)
   require_password_change Boolean @default(false)
@@ -24,41 +24,44 @@ model User {
   leader      User?   @relation("UserLeaders", fields: [leader_id], references: [user_id], onDelete: SetNull)
   noted_users User[]  @relation("UserLeaders")
 
-  created_documents                 Document[]                      @relation("CreatedDocuments")
-  requested_documents               Document[]                      @relation("RequestedDocuments")
-  disposed_documents                Document[]                      @relation("DisposedDocuments")
-  disposal_requests                 DocumentDisposalRequest[]       @relation("DisposalRequesters")
-  disposal_request_reviews          DocumentDisposalRequest[]       @relation("DisposalRequestReviewers")
-  reviewed_documents                Document[]                      @relation("ReviewedDocuments")
-  document_status_history           DocumentStatusHistory[]         @relation("DocumentStatusActors")
-  uploaded_revisions                DocumentRevision[]              @relation("UploadedRevisions")
-  approved_revisions                DocumentRevision[]              @relation("ApprovedRevisions")
-  uploaded_softcopy_attachments     SoftcopyAttachment[]            @relation("UploadedSoftcopyAttachments")
-  approved_softcopy_attachments     SoftcopyAttachment[]            @relation("ApprovedSoftcopyAttachments")
-  rejected_softcopy_attachments     SoftcopyAttachment[]            @relation("RejectedSoftcopyAttachments")
-  uploaded_hardcopy_attachments     HardcopyAttachment[]            @relation("UploadedHardcopyAttachments")
-  document_assignments              DocumentAssignment[]            @relation("AssignedDocuments")
-  assigned_documents                DocumentAssignment[]            @relation("DocumentAssignmentActors")
-  document_access_requests          DocumentAccessRequest[]         @relation("DocumentAccessRequesters")
-  access_request_histories          DocumentAccessRequestHistory[]  @relation("AccessRequestHistoryActors")
-  reviewed_document_access_requests DocumentAccessRequest[]         @relation("DocumentAccessReviewers")
-  access_request_approvals          DocumentAccessRequest[]         @relation("DocumentAccessRequestApprovers")
-  created_softcopy_categories       SoftcopyCategory[]              @relation("CreatedSoftcopyCategories")
-  reviewed_registration_requests    AccountRegistrationRequest[]    @relation("RegistrationReviewer")
+  created_documents                 Document[]                            @relation("CreatedDocuments")
+  requested_documents               Document[]                            @relation("RequestedDocuments")
+  disposed_documents                Document[]                            @relation("DisposedDocuments")
+  disposal_requests                 DocumentDisposalRequest[]             @relation("DisposalRequesters")
+  disposal_request_reviews          DocumentDisposalRequest[]             @relation("DisposalRequestReviewers")
+  reviewed_documents                Document[]                            @relation("ReviewedDocuments")
+  document_status_history           DocumentStatusHistory[]               @relation("DocumentStatusActors")
+  uploaded_revisions                DocumentRevision[]                    @relation("UploadedRevisions")
+  approved_revisions                DocumentRevision[]                    @relation("ApprovedRevisions")
+  uploaded_softcopy_attachments     SoftcopyAttachment[]                  @relation("UploadedSoftcopyAttachments")
+  approved_softcopy_attachments     SoftcopyAttachment[]                  @relation("ApprovedSoftcopyAttachments")
+  rejected_softcopy_attachments     SoftcopyAttachment[]                  @relation("RejectedSoftcopyAttachments")
+  uploaded_hardcopy_attachments     HardcopyAttachment[]                  @relation("UploadedHardcopyAttachments")
+  document_assignments              DocumentAssignment[]                  @relation("AssignedDocuments")
+  assigned_documents                DocumentAssignment[]                  @relation("DocumentAssignmentActors")
+  document_access_requests          DocumentAccessRequest[]               @relation("DocumentAccessRequesters")
+  access_request_histories          DocumentAccessRequestHistory[]        @relation("AccessRequestHistoryActors")
+  reviewed_document_access_requests DocumentAccessRequest[]               @relation("DocumentAccessReviewers")
+  access_request_approvals          DocumentAccessRequest[]               @relation("DocumentAccessRequestApprovers")
+  created_softcopy_categories       SoftcopyCategory[]                    @relation("CreatedSoftcopyCategories")
+  reviewed_registration_requests    AccountRegistrationRequest[]          @relation("RegistrationReviewer")
   notification_reads                NotificationRead[]
   audit_logs                        AuditLog[]
-  approval_assignments              DocumentWorkflowStep[]          @relation("WorkflowStepAssignees")
-  approval_actions                  DocumentWorkflowStep[]          @relation("WorkflowStepActors")
-  approver_configurations           DocumentApproverConfiguration[] @relation("ConfiguredApprovers")
-  configured_document_approvers     DocumentApproverConfiguration[] @relation("DocumentApproverOwners")
-  transfer_requests_requested       HardcopyTransferRequest[]       @relation("TransferRequesters")
-  transfer_requests_approved        HardcopyTransferRequest[]       @relation("TransferApprovers")
-  transfer_requests_recipients      HardcopyTransferRequest[]       @relation("TransferRecipients")
-  transfer_acceptances              HardcopyTransferRequest[]       @relation("TransferAcceptors")
-  transfer_history                  HardcopyTransferHistory[]       @relation("TransferHistoryActors")
-  workflow_definitions_created      WorkflowDefinition[]            @relation("WorkflowDefinitionCreators")
-  workflow_versions_created         WorkflowVersion[]               @relation("WorkflowVersionCreators")
-  workflow_versions_published       WorkflowVersion[]               @relation("WorkflowVersionPublishers")
+  approval_assignments              DocumentWorkflowStep[]                @relation("WorkflowStepAssignees")
+  approval_actions                  DocumentWorkflowStep[]                @relation("WorkflowStepActors")
+  approver_configurations           DocumentApproverConfiguration[]       @relation("ConfiguredApprovers")
+  configured_document_approvers     DocumentApproverConfiguration[]       @relation("DocumentApproverOwners")
+  transfer_requests_requested       HardcopyTransferRequest[]             @relation("TransferRequesters")
+  transfer_requests_approved        HardcopyTransferRequest[]             @relation("TransferApprovers")
+  transfer_requests_recipients      HardcopyTransferRequest[]             @relation("TransferRecipients")
+  transfer_acceptances              HardcopyTransferRequest[]             @relation("TransferAcceptors")
+  transfer_history                  HardcopyTransferHistory[]             @relation("TransferHistoryActors")
+  transfer_workflow_steps_assigned  HardcopyTransferWorkflowStep[]        @relation("TransferWorkflowStepAssignees")
+  transfer_workflow_steps_acted     HardcopyTransferWorkflowStep[]        @relation("TransferWorkflowStepActors")
+  transfer_workflow_histories       HardcopyTransferWorkflowStepHistory[] @relation("TransferWorkflowHistoryActors")
+  workflow_definitions_created      WorkflowDefinition[]                  @relation("WorkflowDefinitionCreators")
+  workflow_versions_created         WorkflowVersion[]                     @relation("WorkflowVersionCreators")
+  workflow_versions_published       WorkflowVersion[]                     @relation("WorkflowVersionPublishers")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -71,7 +74,7 @@ model AuditLog {
   user_id          BigInt?
   user             User?    @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
   user_name        String   @db.VarChar(220)
-  user_username       String   @db.VarChar(150)
+  user_username    String   @db.VarChar(150)
   role_name        String   @db.VarChar(100)
   action           String   @db.VarChar(30)
   module           String   @db.VarChar(100)
@@ -111,11 +114,12 @@ model Role {
   role_name   String  @unique @db.VarChar(100)
   description String? @db.Text
 
-  users                           User[]
-  role_permissions                RolePermission[]
-  workflow_step_assignments       DocumentWorkflowStep[]       @relation("WorkflowStepAssignedRoles")
-  requested_registration_requests AccountRegistrationRequest[] @relation("RequestedRegistrationRole")
-  assigned_registration_requests  AccountRegistrationRequest[] @relation("AssignedRegistrationRole")
+  users                              User[]
+  role_permissions                   RolePermission[]
+  workflow_step_assignments          DocumentWorkflowStep[]         @relation("WorkflowStepAssignedRoles")
+  transfer_workflow_step_assignments HardcopyTransferWorkflowStep[] @relation("TransferWorkflowStepAssignedRoles")
+  requested_registration_requests    AccountRegistrationRequest[]   @relation("RequestedRegistrationRole")
+  assigned_registration_requests     AccountRegistrationRequest[]   @relation("AssignedRegistrationRole")
 
   @@map("roles")
 }
@@ -126,7 +130,7 @@ model AccountRegistrationRequest {
   firstname         String             @db.VarChar(100)
   lastname          String             @db.VarChar(100)
   middlename        String?            @db.VarChar(100)
-  username             String             @db.VarChar(150)
+  username          String             @db.VarChar(150)
   position_title    String?            @db.VarChar(100)
   applicant_remarks String?            @db.Text
   password_hash     String             @db.VarChar(255)
@@ -479,56 +483,112 @@ model HardcopyAttachment {
 }
 
 model HardcopyTransferRequest {
-  transfer_request_id        BigInt                    @id @default(autoincrement())
+  transfer_request_id        BigInt                         @id @default(autoincrement())
   document_id                BigInt
-  document                   Document                  @relation(fields: [document_id], references: [document_id], onDelete: Cascade)
+  document                   Document                       @relation(fields: [document_id], references: [document_id], onDelete: Cascade)
   hardcopy_id                BigInt
-  hardcopy                   HardcopyDocument          @relation(fields: [hardcopy_id], references: [hardcopy_id], onDelete: Cascade)
+  hardcopy                   HardcopyDocument               @relation(fields: [hardcopy_id], references: [hardcopy_id], onDelete: Cascade)
   from_area_id               BigInt?
-  from_area                  Area?                     @relation("HardcopyTransferFromArea", fields: [from_area_id], references: [area_id], onDelete: SetNull)
+  from_area                  Area?                          @relation("HardcopyTransferFromArea", fields: [from_area_id], references: [area_id], onDelete: SetNull)
   from_specific_id           BigInt?
-  from_specific              Specific?                 @relation("HardcopyTransferFromSpecific", fields: [from_specific_id], references: [specific_id], onDelete: SetNull)
+  from_specific              Specific?                      @relation("HardcopyTransferFromSpecific", fields: [from_specific_id], references: [specific_id], onDelete: SetNull)
   from_asset_id              BigInt?
-  from_asset                 AssetNumber?              @relation("HardcopyTransferFromAsset", fields: [from_asset_id], references: [asset_id], onDelete: SetNull)
+  from_asset                 AssetNumber?                   @relation("HardcopyTransferFromAsset", fields: [from_asset_id], references: [asset_id], onDelete: SetNull)
   from_location_id           BigInt?
-  from_location              Location?                 @relation("HardcopyTransferFromLocation", fields: [from_location_id], references: [location_id], onDelete: SetNull)
+  from_location              Location?                      @relation("HardcopyTransferFromLocation", fields: [from_location_id], references: [location_id], onDelete: SetNull)
   from_sequence_id           BigInt?
-  from_sequence              Sequence?                 @relation("HardcopyTransferFromSequence", fields: [from_sequence_id], references: [sequence_id], onDelete: SetNull)
+  from_sequence              Sequence?                      @relation("HardcopyTransferFromSequence", fields: [from_sequence_id], references: [sequence_id], onDelete: SetNull)
   destination_area_id        BigInt?
-  destination_area           Area?                     @relation("HardcopyTransferDestinationArea", fields: [destination_area_id], references: [area_id], onDelete: SetNull)
+  destination_area           Area?                          @relation("HardcopyTransferDestinationArea", fields: [destination_area_id], references: [area_id], onDelete: SetNull)
   destination_specific_id    BigInt?
-  destination_specific       Specific?                 @relation("HardcopyTransferDestinationSpecific", fields: [destination_specific_id], references: [specific_id], onDelete: SetNull)
+  destination_specific       Specific?                      @relation("HardcopyTransferDestinationSpecific", fields: [destination_specific_id], references: [specific_id], onDelete: SetNull)
   destination_asset_id       BigInt?
-  destination_asset          AssetNumber?              @relation("HardcopyTransferDestinationAsset", fields: [destination_asset_id], references: [asset_id], onDelete: SetNull)
+  destination_asset          AssetNumber?                   @relation("HardcopyTransferDestinationAsset", fields: [destination_asset_id], references: [asset_id], onDelete: SetNull)
   destination_location_id    BigInt?
-  destination_location       Location?                 @relation("HardcopyTransferDestinationLocation", fields: [destination_location_id], references: [location_id], onDelete: SetNull)
+  destination_location       Location?                      @relation("HardcopyTransferDestinationLocation", fields: [destination_location_id], references: [location_id], onDelete: SetNull)
   destination_sequence_id    BigInt?
-  destination_sequence       Sequence?                 @relation("HardcopyTransferDestinationSequence", fields: [destination_sequence_id], references: [sequence_id], onDelete: SetNull)
-  document_copy_number       String?                   @db.VarChar(100)
-  current_holder             String?                   @db.VarChar(220)
-  transfer_to                String?                   @db.VarChar(220)
+  destination_sequence       Sequence?                      @relation("HardcopyTransferDestinationSequence", fields: [destination_sequence_id], references: [sequence_id], onDelete: SetNull)
+  document_copy_number       String?                        @db.VarChar(100)
+  current_holder             String?                        @db.VarChar(220)
+  transfer_to                String?                        @db.VarChar(220)
   requested_by_user_id       BigInt
-  requester                  User                      @relation("TransferRequesters", fields: [requested_by_user_id], references: [user_id], onDelete: Restrict)
-  reason                     String                    @db.Text
+  requester                  User                           @relation("TransferRequesters", fields: [requested_by_user_id], references: [user_id], onDelete: Restrict)
+  reason                     String                         @db.Text
   approver_user_id           BigInt?
-  approver                   User?                     @relation("TransferApprovers", fields: [approver_user_id], references: [user_id], onDelete: SetNull)
+  approver                   User?                          @relation("TransferApprovers", fields: [approver_user_id], references: [user_id], onDelete: SetNull)
   approval_date              DateTime?
+  workflow_version_id        BigInt?
+  workflow_version_ref       WorkflowVersion?               @relation("HardcopyTransferWorkflowVersions", fields: [workflow_version_id], references: [workflow_version_id], onDelete: SetNull)
+  workflow_version           Int?
+  workflow_name              String?                        @db.VarChar(150)
+  workflow_snapshot          Json?
+  current_workflow_step_id   BigInt?                        @unique
+  current_workflow_step      HardcopyTransferWorkflowStep?  @relation("HardcopyTransferCurrentStep", fields: [current_workflow_step_id], references: [workflow_step_id], onDelete: SetNull)
   transfer_date              DateTime?
   assigned_recipient_user_id BigInt
-  assigned_recipient         User                      @relation("TransferRecipients", fields: [assigned_recipient_user_id], references: [user_id], onDelete: Restrict)
-  recipient_acceptance       RecipientAcceptanceStatus @default(PENDING)
+  assigned_recipient         User                           @relation("TransferRecipients", fields: [assigned_recipient_user_id], references: [user_id], onDelete: Restrict)
+  recipient_acceptance       RecipientAcceptanceStatus      @default(PENDING)
   accepted_by_user_id        BigInt?
-  accepted_by                User?                     @relation("TransferAcceptors", fields: [accepted_by_user_id], references: [user_id], onDelete: SetNull)
+  accepted_by                User?                          @relation("TransferAcceptors", fields: [accepted_by_user_id], references: [user_id], onDelete: SetNull)
   acceptance_at              DateTime?
-  comments                   String?                   @db.Text
-  status                     HardcopyTransferStatus    @default(Draft)
-  created_at                 DateTime                  @default(now())
-  updated_at                 DateTime                  @updatedAt
+  comments                   String?                        @db.Text
+  status                     HardcopyTransferStatus         @default(Draft)
+  created_at                 DateTime                       @default(now())
+  updated_at                 DateTime                       @updatedAt
   history                    HardcopyTransferHistory[]
+  workflow_steps             HardcopyTransferWorkflowStep[] @relation("HardcopyTransferWorkflowSteps")
 
   @@index([document_id, status])
   @@index([assigned_recipient_user_id, recipient_acceptance])
   @@map("hardcopy_transfer_requests")
+}
+
+model HardcopyTransferWorkflowStep {
+  workflow_step_id                 BigInt                                @id @default(autoincrement())
+  transfer_request_id              BigInt
+  transfer_request                 HardcopyTransferRequest               @relation("HardcopyTransferWorkflowSteps", fields: [transfer_request_id], references: [transfer_request_id], onDelete: Cascade)
+  current_for_transfer             HardcopyTransferRequest?              @relation("HardcopyTransferCurrentStep")
+  node_key                         String                                @db.VarChar(100)
+  sequence                         Int
+  stage                            String                                @db.VarChar(60)
+  stage_label                      String                                @db.VarChar(150)
+  assignment_type                  String?                               @db.VarChar(30)
+  assignment_source                String?                               @db.VarChar(50)
+  assigned_user_id                 BigInt
+  assignee                         User                                  @relation("TransferWorkflowStepAssignees", fields: [assigned_user_id], references: [user_id], onDelete: Restrict)
+  assigned_role_id                 BigInt?
+  assigned_role                    Role?                                 @relation("TransferWorkflowStepAssignedRoles", fields: [assigned_role_id], references: [role_id], onDelete: SetNull)
+  assigned_user_name_snapshot      String                                @db.VarChar(255)
+  assigned_position_title_snapshot String?                               @db.VarChar(150)
+  status                           HardcopyTransferWorkflowStepStatus    @default(QUEUED)
+  decision                         String?                               @db.VarChar(30)
+  comments                         String?                               @db.Text
+  acted_by_user_id                 BigInt?
+  actor                            User?                                 @relation("TransferWorkflowStepActors", fields: [acted_by_user_id], references: [user_id], onDelete: SetNull)
+  acted_at                         DateTime?
+  history                          HardcopyTransferWorkflowStepHistory[]
+  created_at                       DateTime                              @default(now())
+
+  @@unique([transfer_request_id, node_key])
+  @@index([assigned_user_id, status])
+  @@index([transfer_request_id, status])
+  @@map("hardcopy_transfer_workflow_steps")
+}
+
+model HardcopyTransferWorkflowStepHistory {
+  workflow_history_id  BigInt                              @id @default(autoincrement())
+  workflow_step_id     BigInt
+  workflow_step        HardcopyTransferWorkflowStep        @relation(fields: [workflow_step_id], references: [workflow_step_id], onDelete: Cascade)
+  previous_status      HardcopyTransferWorkflowStepStatus?
+  new_status           HardcopyTransferWorkflowStepStatus
+  action               String                              @db.VarChar(40)
+  performed_by_user_id BigInt
+  performed_by         User                                @relation("TransferWorkflowHistoryActors", fields: [performed_by_user_id], references: [user_id], onDelete: Restrict)
+  comments             String?                             @db.Text
+  created_at           DateTime                            @default(now())
+
+  @@index([workflow_step_id, created_at])
+  @@map("hardcopy_transfer_workflow_history")
 }
 
 model HardcopyTransferHistory {
@@ -866,20 +926,21 @@ model WorkflowDefinition {
 }
 
 model WorkflowVersion {
-  workflow_version_id    BigInt                @id @default(autoincrement())
-  workflow_definition_id BigInt
-  workflow_definition    WorkflowDefinition    @relation(fields: [workflow_definition_id], references: [workflow_definition_id], onDelete: Restrict)
-  version_number         Int
-  status                 WorkflowVersionStatus @default(DRAFT)
-  graph                  Json
-  created_by_user_id     BigInt
-  created_by             User                  @relation("WorkflowVersionCreators", fields: [created_by_user_id], references: [user_id], onDelete: Restrict)
-  published_by_user_id   BigInt?
-  published_by           User?                 @relation("WorkflowVersionPublishers", fields: [published_by_user_id], references: [user_id], onDelete: SetNull)
-  published_at           DateTime?
-  documents              Document[]
-  created_at             DateTime              @default(now())
-  updated_at             DateTime              @updatedAt
+  workflow_version_id        BigInt                    @id @default(autoincrement())
+  workflow_definition_id     BigInt
+  workflow_definition        WorkflowDefinition        @relation(fields: [workflow_definition_id], references: [workflow_definition_id], onDelete: Restrict)
+  version_number             Int
+  status                     WorkflowVersionStatus     @default(DRAFT)
+  graph                      Json
+  created_by_user_id         BigInt
+  created_by                 User                      @relation("WorkflowVersionCreators", fields: [created_by_user_id], references: [user_id], onDelete: Restrict)
+  published_by_user_id       BigInt?
+  published_by               User?                     @relation("WorkflowVersionPublishers", fields: [published_by_user_id], references: [user_id], onDelete: SetNull)
+  published_at               DateTime?
+  documents                  Document[]
+  hardcopy_transfer_requests HardcopyTransferRequest[] @relation("HardcopyTransferWorkflowVersions")
+  created_at                 DateTime                  @default(now())
+  updated_at                 DateTime                  @updatedAt
 
   @@unique([workflow_definition_id, version_number])
   @@index([status, published_at])
@@ -897,6 +958,14 @@ enum HardcopyTransferStatus {
   Returned
   Rejected
   Cancelled
+}
+
+enum HardcopyTransferWorkflowStepStatus {
+  QUEUED
+  PENDING
+  APPROVED
+  RETURNED
+  REJECTED
 }
 
 enum RecipientAcceptanceStatus {
