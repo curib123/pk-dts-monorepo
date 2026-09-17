@@ -13,7 +13,7 @@ type TransferWorkflowNode = {
   type: "APPROVAL" | "END";
   stage?: string;
   assignment?: {
-    type: "USER" | "ROLE" | "REQUESTER_LEADER";
+    type: "USER" | "ROLE" | "REQUESTER" | "REQUESTER_LEADER";
     user_id?: string;
     role_id?: string;
   };
@@ -516,9 +516,15 @@ export class HardcopyTransfersService {
       });
       user = requester?.leader || null;
       assignmentSource = "REQUESTER_LEADER";
+    } else if (assignment.type === "REQUESTER") {
+      user = await tx.user.findUnique({
+        where: { user_id: requesterId },
+        select: { user_id: true, firstname: true, lastname: true, position_title: true, role_id: true },
+      });
+      assignmentSource = "REQUESTER";
     }
     if (!user) throw new ConflictException(`Workflow step ${node.label} does not have an eligible approver.`);
-    if (user.user_id === requesterId) throw new ConflictException(`${node.label} cannot be assigned to the transfer requester.`);
+    if (user.user_id === requesterId && assignment.type !== "REQUESTER") throw new ConflictException(`${node.label} cannot be assigned to the transfer requester.`);
     if (usedAssigneeIds.has(user.user_id)) throw new ConflictException(`${node.label} must be assigned to a different user from the previous transfer step.`);
     return {
       assignedUserId: user.user_id,
