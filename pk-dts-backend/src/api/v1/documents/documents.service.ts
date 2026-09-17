@@ -2655,8 +2655,8 @@ export class DocumentsService {
     remarks?: string,
     actor?: AuthenticatedUser,
   ) {
-    if (action === "request-revision" && !remarks?.trim()) {
-      throw new BadRequestException("A reason is required when returning a request for revision.");
+    if (["approve", "request-revision", "reject", "complete"].includes(action) && !remarks?.trim()) {
+      throw new BadRequestException("A decision remark is required for this action.");
     }
     const documentId = toBigIntId(id, "document_id");
     const actorId = toBigIntId(actorUserId, "current_user_id");
