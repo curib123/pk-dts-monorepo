@@ -2,7 +2,7 @@ export type WorkflowDocumentType = 'SOFTCOPY' | 'HARDCOPY' | null;
 export type WorkflowVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 /** Editable assignment types exposed by the sequential Workflow Builder. */
-export type EditableWorkflowAssignmentType = 'USER' | 'ROLE' | 'REQUESTER_LEADER';
+export type EditableWorkflowAssignmentType = 'USER' | 'ROLE' | 'REQUESTER' | 'REQUESTER_LEADER';
 /** PERMISSION remains readable only for previously-published graph versions. */
 export type WorkflowAssignmentType = EditableWorkflowAssignmentType | 'PERMISSION';
 

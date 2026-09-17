@@ -81,7 +81,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                                 <div class="current-file-name"><i [class]="revisionIcon(current)" aria-hidden="true"></i><strong>{{ displayFileName(current.file_name) }}</strong></div>
                                 <button *ngIf="canAccessApprovedFile(current)" type="button" (click)="openRevision(current)"><i class="pi pi-external-link"></i>Open file</button>
                                 <button *ngIf="canAccessApprovedFile(current)" type="button" [disabled]="downloadInProgress" (click)="downloadRevision(current)"><i class="pi pi-download"></i>{{ downloadInProgress ? 'Downloading...' : 'Download file' }}</button>
-                                <small *ngIf="canAccessApprovedFile(current)" class="file-note">Only the approved document file is available for opening or download.</small>
+                                <small *ngIf="canAccessApprovedFile(current)" class="file-note">{{ fileAccessNote() }}</small>
                                 <small *ngIf="downloadError" class="download-error" role="alert"><i class="pi pi-exclamation-triangle"></i>{{ downloadError }}</small>
                             </div>
                             <p *ngIf="!canAccessFiles" class="access-note"><i class="pi pi-lock" aria-hidden="true"></i> You do not have permission to preview or download files.</p>
@@ -559,9 +559,19 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     }
 
     canAccessApprovedFile(revision: RevisionSummary) {
-        return this.canAccessFiles &&
-            ['Approved', 'Completed'].includes(this.document?.status || '') &&
+        if (!this.canAccessFiles) return false;
+        const status = this.document?.status || '';
+        const finalized = ['Approved', 'Completed'].includes(status) &&
             (Boolean(revision.approved_at) || revision.is_current === true);
+        const pendingApprovalReview = ['PendingApproval', 'ForNotedBy', 'ForPlantManagerApproval', 'ForDocumentControllerAdmin', 'ForApproval'].includes(status) &&
+            !revision.approved_at && Boolean(this.revisionLink(revision));
+        return finalized || pendingApprovalReview;
+    }
+
+    fileAccessNote() {
+        return ['Approved', 'Completed'].includes(this.document?.status || '')
+            ? 'Only the approved document file is available for opening or download.'
+            : 'The submitted document file is available for this approval review.';
     }
 
     async downloadRevision(revision: RevisionSummary) {

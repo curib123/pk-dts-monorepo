@@ -410,6 +410,8 @@ export class WorkflowBuilderPage implements OnInit {
                     ? { type: 'USER' as const, user_id: node.assignment.user_id }
                     : node.assignment?.type === 'ROLE'
                         ? { type: 'ROLE' as const, role_id: node.assignment.role_id }
+                        : node.assignment?.type === 'REQUESTER'
+                            ? { type: 'REQUESTER' as const }
                         : { type: 'REQUESTER_LEADER' as const };
                 return {
                     key: node.key,
