@@ -91,6 +91,41 @@ describe('Workflow Builder execution', () => {
     await expect(service.transition('1', '7', 'approve', '', actor)).resolves.toMatchObject({ status: 'Approved' });
   });
 
+  it('resolves a Requester assignment to the account that submitted the request', async () => {
+    const requesterGraph = {
+      schema_version: 2,
+      start_node_key: 'requester-review',
+      nodes: [
+        { key: 'requester-review', type: 'APPROVAL', label: 'Requester confirmation', stage: 'CUSTOM', assignment: { type: 'REQUESTER' } },
+        { key: 'end', type: 'END', label: 'Approved' },
+      ],
+      edges: [{ key: 'approve', from: 'requester-review', to: 'end', outcome: 'APPROVE' }],
+    };
+    prisma.document.findUnique.mockResolvedValue({
+      action_requested: 'CREATE',
+      business_document_type: null,
+      requested_by_name: null,
+      requested_by_user_id: 7n,
+      workflow_snapshot: requesterGraph,
+    });
+    prisma.user.findMany.mockResolvedValue([{
+      user_id: 7n,
+      firstname: 'Requester',
+      lastname: 'Account',
+      position_title: 'Staff',
+      role: { role_name: 'Staff', role_permissions: [] },
+    }]);
+
+    await expect(service.initializeWorkflowSteps(prisma, 1n, 7n, 'SOFTCOPY')).resolves.toHaveLength(1);
+    expect(prisma.documentWorkflowStep.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({
+        assigned_user_id: 7n,
+        assignment_source: 'REQUESTER',
+        assignment_type: 'REQUESTER',
+      })],
+    });
+  });
+
   it.each(['Cancelled', 'Draft', 'Rejected'])('cannot approve a stale pending step on a %s request', async status => {
     prisma.document.findUnique.mockResolvedValue({ document_id: 1n, document_type: 'HARDCOPY', created_by: 3n, status, workflow_steps: [
       { workflow_step_id: 10n, node_key: 'review', stage: 'CUSTOM', assigned_user_id: 7n, status: 'PENDING' },
