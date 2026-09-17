@@ -50,12 +50,12 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
     <p-dialog [(visible)]="decisionRemarkVisible" [modal]="true" [closable]="false" [draggable]="false" [resizable]="false" [header]="decisionRemarkTitle()" styleClass="return-remark-dialog">
         <div class="return-remark-content">
             <p>{{decisionRemarkDescription()}}</p>
-            <label for="decision-remark">Decision remark <span *ngIf="pendingDecision?.action === 'request-revision'">*</span></label>
-            <textarea id="decision-remark" data-decision-remark [(ngModel)]="decisionRemark" rows="5" maxlength="2000" autofocus [placeholder]="pendingDecision?.action === 'request-revision' ? 'Enter the correction needed...' : 'Add context for the audit trail...'" ></textarea>
-            <small>{{pendingDecision?.action === 'request-revision' ? 'Required and recorded with your name.' : 'Optional and recorded with your name.'}}</small>
+            <label for="decision-remark">Remarks *</label>
+            <textarea id="decision-remark" data-decision-remark [(ngModel)]="decisionRemark" rows="5" maxlength="2000" autofocus [placeholder]="pendingDecision?.action === 'request-revision' ? 'Explain the correction needed...' : 'Explain the decision...'" ></textarea>
+            <small>Required and recorded with your name.</small>
             <div class="return-remark-actions">
                 <p-button label="Cancel" severity="secondary" [outlined]="true" [disabled]="acting" (onClick)="clearDecision()" />
-                <p-button [label]="actionText(pendingDecision?.action)" icon="pi pi-check" [disabled]="acting || (pendingDecision?.action === 'request-revision' && !decisionRemark.trim())" (onClick)="submitDecisionRemark()" />
+                <p-button [label]="actionText(pendingDecision?.action)" icon="pi pi-check" [disabled]="acting || !decisionRemark.trim()" (onClick)="submitDecisionRemark()" />
             </div>
         </div>
     </p-dialog>
@@ -98,11 +98,11 @@ export class ApprovalReviewPage implements OnInit, OnDestroy {
     ngOnInit(){this.viewMode=this.systemSettings.defaultDataView();this.load();} load(){this.loading=true;this.documents.listPendingRequests().subscribe({next:x=>{this.requests.set(x);this.loading=false},error:(error)=>{this.loading=false;this.errorMessage.set(error?.error?.message || "Unable to load the approval queue.")}});if(this.canReviewDisposals())this.documents.listDisposalRequests().subscribe({next:x=>this.disposalRequests.set(x??[]),error:()=>this.disposalRequests.set([])});}
     decisionRemark = '';
     openDecision(item:DocumentSummary,action:'approve'|'request-revision'|'reject'|'complete'){this.errorMessage.set('');this.pendingDecision={item,action,remarks:''};this.decisionRemark='';this.decisionRemarkVisible=true;}
-    submitDecisionRemark(){const decision=this.pendingDecision;const remarks=this.decisionRemark.trim();if(!decision|| (decision.action==='request-revision' && !remarks))return;decision.remarks=remarks;this.decisionRemarkVisible=false;this.confirmDecision();}
+    submitDecisionRemark(){const decision=this.pendingDecision;const remarks=this.decisionRemark.trim();if(!decision||!remarks)return;decision.remarks=remarks;this.decisionRemarkVisible=false;this.confirmDecision();}
     confirmDecision(){const decision=this.pendingDecision;if(!decision||this.acting)return;this.acting=true;this.documents.workflowAction(decision.item.document_id,decision.action,decision.remarks).subscribe({next:()=>{this.requests.update(items=>items.filter(item=>item.document_id!==decision.item.document_id));this.acting=false;this.clearDecision();this.alerts.success('Request updated',`${decision.item.document_number || decision.item.document_title} was ${this.actionOutcome(decision.action)} successfully.`);this.load();},error:(error)=>{this.acting=false;const message=error?.error?.message;this.errorMessage.set(Array.isArray(message)?message.join(' '):message||`Unable to ${this.actionText(decision.action).toLowerCase()} this request.`);this.decisionRemarkVisible=true;}});}
     clearDecision(){this.pendingDecision=null;this.decisionRemark='';this.decisionRemarkVisible=false;}
-    decisionRemarkTitle(){return this.pendingDecision?.action==='request-revision'?'Return for revision':`${this.actionText(this.pendingDecision?.action)} request`;}
-    decisionRemarkDescription(){return this.pendingDecision?.action==='request-revision'?'Explain what needs to be corrected before returning this request.':'Add an optional note for the decision audit trail.';}
+    decisionRemarkTitle(){return 'Document decision';}
+    decisionRemarkDescription(){return 'Add the required decision remark for the audit trail.';}
     openDisposalDecision(item:DisposalRequestSummary,action:'approve'|'reject',remarks:string){this.pendingDisposalDecision={item,action,remarks};this.disposalDecisionVisible=true;}
     confirmDisposalDecision(){const decision=this.pendingDisposalDecision;if(!decision||this.acting)return;this.acting=true;this.documents.reviewDisposalRequest(decision.item.disposal_request_id,decision.action,decision.remarks).subscribe({next:()=>{this.acting=false;this.clearDisposalDecision();this.alerts.success(decision.action==='approve'?'Disposal approved':'Disposal rejected',`${decision.item.document.document_number||decision.item.document.document_title} was ${decision.action==='approve'?'disposed':'not disposed'}.`);this.load();},error:()=>{this.acting=false;this.errorMessage.set('Unable to review this disposal request.');}});}
     clearDisposalDecision(){this.pendingDisposalDecision=null;this.disposalDecisionVisible=false;}
