@@ -29,6 +29,7 @@ import { RevisionUploadDialogComponent } from './components/revision-upload-dial
 import { SoftcopyFolderUploadDialogComponent } from './components/softcopy-folder-upload-dialog/softcopy-folder-upload-dialog.component';
 import { DocumentAssignmentDialogComponent } from './components/document-assignment-dialog/document-assignment-dialog.component';
 import { DocumentsService } from './documents.service';
+import { folderIdsToExpandForDocuments } from './folder-tree-navigation';
 import {
     AreaReference,
     AssetReference,
@@ -1548,6 +1549,20 @@ export class DocumentsPage implements OnInit, OnDestroy {
         return folder.documents.length + folder.children.reduce((total, child) => total + this.folderDocumentCount(child), 0);
     }
 
+    private syncFolderExpansionForSearch() {
+        if (this.viewMode !== 'folder') return;
+
+        if (!this.searchTerm.trim()) {
+            this.expandedFolders.clear();
+            return;
+        }
+
+        const matchingDocumentIds = new Set(this.filteredDocuments().map((document) => document.document_id));
+        const folderIds = folderIdsToExpandForDocuments(this.documentFolders(), matchingDocumentIds);
+        this.expandedFolders.clear();
+        folderIds.forEach((folderId) => this.expandedFolders.add(folderId));
+    }
+
     toggleFolder(folderId: string) {
         if (this.expandedFolders.has(folderId)) this.expandedFolders.delete(folderId);
         else this.expandedFolders.add(folderId);
@@ -1760,6 +1775,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
             if (query !== this.searchTerm) {
                 this.searchTerm = query;
                 this.resetPagination();
+                this.syncFolderExpansionForSearch();
             }
 
             const documentId = params.get('document') ?? '';
@@ -1774,7 +1790,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
     setViewMode(mode: DocumentWorkspaceViewMode) {
         this.viewMode = mode;
         this.first = 0;
-        if (mode === 'folder') this.expandedFolders.clear();
+        if (mode === 'folder') {
+            this.expandedFolders.clear();
+            this.syncFolderExpansionForSearch();
+        }
     }
 
     ngOnDestroy() {
@@ -1797,6 +1816,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.documents.set(documents ?? []);
                 this.isLoading.set(false);
                 this.clampPagination();
+                this.syncFolderExpansionForSearch();
             },
             error: (error: unknown) => {
                 if (requestId !== this.dataLoadRequest) return;
@@ -1825,6 +1845,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.locations.set(locations ?? []);
                 this.sequences.set(sequences ?? []);
                 this.softcopyCategories.set((softcopyCategories ?? []).filter((category) => category.is_active !== false));
+                this.syncFolderExpansionForSearch();
                 if (referenceIssues.length) {
                     this.referenceWarningMessage.set(
                         `The document list loaded, but ${referenceIssues.join('; ')} could not be loaded. Filters and dialogs may be limited until those endpoints recover.`
@@ -1880,6 +1901,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     onTableSearchChange() {
         this.resetPagination();
+        this.syncFolderExpansionForSearch();
     }
 
     onTypeFilterChange() {
