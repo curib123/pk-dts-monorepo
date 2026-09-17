@@ -21,7 +21,6 @@ describe('panel access configuration', () => {
             'document-requests.view',
             'document-requests.view-own',
             'document-requests.create',
-            'softcopy-folders.view',
             'document-access-requests.catalog',
             'document-access-requests.view-own',
             'document-disposal.request'
@@ -29,7 +28,7 @@ describe('panel access configuration', () => {
         const context = { roleName: 'Staff', permissions };
 
         expect(shouldShowPanelItem(item('softcopy-documents'), context)).toBeTrue();
-        expect(shouldShowPanelItem(item('softcopy-folders'), context)).toBeTrue();
+        expect(shouldShowPanelItem(item('softcopy-folders'), context)).toBeFalse();
         expect(shouldShowPanelItem(item('my-document-requests'), context)).toBeTrue();
         expect(shouldShowPanelItem(item('my-access-requests'), context)).toBeTrue();
         expect(shouldShowPanelItem(item('my-disposal-requests'), context)).toBeTrue();
