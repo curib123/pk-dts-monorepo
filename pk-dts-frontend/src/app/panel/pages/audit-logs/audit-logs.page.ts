@@ -32,8 +32,6 @@ interface AuditItem {
             <div class="hero-mark"><i class="pi pi-shield"></i></div>
             <div class="hero-copy">
                 <span>System accountability</span>
-                <h1>Audit and activity logs</h1>
-                <p>Review who performed each authenticated document and administration action.</p>
             </div>
             <div class="hero-stat">
                 <strong>{{ total() }}</strong
