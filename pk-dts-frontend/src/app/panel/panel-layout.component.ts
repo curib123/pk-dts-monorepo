@@ -320,6 +320,10 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
                 return 'Approval Requests';
             case 'my-disposal-requests':
                 return 'My Disposal Requests';
+            case 'hardcopy-transfers':
+                return 'Hardcopy Transfer Requests';
+            case 'hardcopy-transfer-review':
+                return 'Hardcopy Transfer Review';
             case 'storage':
             case 'classification':
                 return 'Storage and Classification';

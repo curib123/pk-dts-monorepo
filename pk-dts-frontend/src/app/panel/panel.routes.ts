@@ -17,6 +17,7 @@ import { WorkflowBuilderPage } from './pages/workflow-builder/workflow-builder.p
 import { MyDisposalRequestsPage } from './pages/my-disposal-requests/my-disposal-requests.page';
 import { MyProfilePage } from './pages/my-profile/my-profile.page';
 import { SoftcopyFoldersPage } from './pages/softcopy-folders/softcopy-folders.page';
+import { HardcopyTransfersPage } from './pages/hardcopy-transfers/hardcopy-transfers.page';
 
 export const panelRoutes: Routes = [
     {
@@ -35,6 +36,8 @@ export const panelRoutes: Routes = [
             { path: 'access-review', component: DocumentAccessRequestsPage, data: { mode: 'reviewer', title: 'Access Request Review', subtitle: 'Review and process document access requests assigned to authorized reviewers.', permissions: PANEL_ROUTE_PERMISSIONS.accessReview } },
             { path: 'document-access-requests', component: DocumentAccessRequestsPage, data: { mode: 'all', title: 'Document Access Requests', subtitle: 'Request document assignments and review pending access approvals.', permissions: PANEL_ROUTE_PERMISSIONS.allAccessRequests } },
             { path: 'my-disposal-requests', component: MyDisposalRequestsPage, data: { title: 'My Disposal Requests', subtitle: 'Track only the document disposal requests submitted by your account.', permissions: PANEL_ROUTE_PERMISSIONS.myDisposalRequests } },
+            { path: 'hardcopy-transfers', component: HardcopyTransfersPage, data: { mode: 'requester', title: 'Hardcopy Transfer Requests', subtitle: 'Request and confirm physical hardcopy document transfers.', permissions: PANEL_ROUTE_PERMISSIONS.hardcopyTransfers } },
+            { path: 'hardcopy-transfer-review', component: HardcopyTransfersPage, data: { mode: 'reviewer', title: 'Hardcopy Transfer Review', subtitle: 'Review hardcopy transfer stages assigned to your account.', permissions: PANEL_ROUTE_PERMISSIONS.hardcopyTransferReview } },
             { path: 'approval-review', component: ApprovalReviewPage, data: { title: 'Approval Requests', subtitle: 'Review document requests assigned to your workflow approval stage.', permissions: PANEL_ROUTE_PERMISSIONS.approvalReview, allowAssignedWorkflowTask: true } },
             { path: 'disposal', component: DocumentDisposalPage, data: { title: 'Document Disposal', subtitle: 'Review disposed documents, disposal requests, remarks, and restore records when permitted.', permissions: PANEL_ROUTE_PERMISSIONS.disposalWorkspace } },
             {

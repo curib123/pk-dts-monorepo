@@ -35,6 +35,8 @@ const MY_DOCUMENT_REQUEST_PERMISSIONS = ['document-requests.view-own'];
 const MY_ACCESS_REQUEST_PERMISSIONS = ['document-access-requests.catalog', 'document-access-requests.view-own'];
 const ACCESS_REVIEW_PERMISSIONS = ['document-access-requests.review'];
 const APPROVAL_REVIEW_PERMISSIONS = ['document-requests.review'];
+const HARDCOPY_TRANSFER_PERMISSIONS = ['hardcopy-transfers.view-own', 'hardcopy-transfers.create'];
+const HARDCOPY_TRANSFER_REVIEW_PERMISSIONS = ['hardcopy-transfers.review'];
 const DISPOSAL_WORKSPACE_PERMISSIONS = ['document-disposal.view', 'document-disposal.review', 'document-disposal.manage'];
 const STORAGE_ADMIN_PERMISSIONS = [
     'storage-classification.view',
@@ -59,6 +61,8 @@ export const PANEL_ROUTE_PERMISSIONS = {
     allAccessRequests: [...MY_ACCESS_REQUEST_PERMISSIONS, ...ACCESS_REVIEW_PERMISSIONS],
     myDisposalRequests: ['document-disposal.request'],
     approvalReview: APPROVAL_REVIEW_PERMISSIONS,
+    hardcopyTransfers: HARDCOPY_TRANSFER_PERMISSIONS,
+    hardcopyTransferReview: HARDCOPY_TRANSFER_REVIEW_PERMISSIONS,
     disposalWorkspace: DISPOSAL_WORKSPACE_PERMISSIONS,
     storageAdmin: STORAGE_ADMIN_PERMISSIONS,
     userManagement: USER_MANAGEMENT_PERMISSIONS,
@@ -140,6 +144,15 @@ export const PANEL_NAVIGATION: { dashboard: PanelNavItem; categories: PanelNavCa
                     hideForRoles: hidePersonalFromAdmin
                 },
                 {
+                    key: 'hardcopy-transfers',
+                    label: 'Hardcopy Transfers',
+                    icon: 'pi pi-arrows-h',
+                    route: '/panel/hardcopy-transfers',
+                    permissions: PANEL_ROUTE_PERMISSIONS.hardcopyTransfers,
+                    notificationKey: 'hardcopy_transfers',
+                    hideForRoles: hidePersonalFromAdmin
+                },
+                {
                     key: 'my-profile',
                     label: 'My Profile',
                     icon: 'pi pi-user',
@@ -162,6 +175,14 @@ export const PANEL_NAVIGATION: { dashboard: PanelNavItem; categories: PanelNavCa
                     permissions: PANEL_ROUTE_PERMISSIONS.approvalReview,
                     notificationKey: 'approval_review',
                     requiresAssignedApproval: true
+                },
+                {
+                    key: 'hardcopy-transfer-review',
+                    label: 'Hardcopy Transfer Review',
+                    icon: 'pi pi-arrows-h',
+                    route: '/panel/hardcopy-transfer-review',
+                    permissions: PANEL_ROUTE_PERMISSIONS.hardcopyTransferReview,
+                    notificationKey: 'hardcopy_transfers'
                 },
                 {
                     key: 'access-review',

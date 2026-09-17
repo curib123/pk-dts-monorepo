@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -392,7 +392,9 @@ interface DocumentFolderNode {
                                 <td class="px-4 py-3">
                                     <div class="document-row-actions">
                                         <p-button title="View document" icon="pi pi-eye" size="small" [rounded]="true" [outlined]="true" (onClick)="openDetailDialog(document)" />
+                                        <p-button *ngIf="canRequestHardcopyTransfer(document)" title="Request hardcopy transfer" icon="pi pi-arrows-h" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openHardcopyTransfer(document)" />
                                         <p-button *ngIf="canAttachToDocument(document)" title="Attach scanned documents" icon="pi pi-paperclip" size="small" [rounded]="true" [outlined]="true" severity="success" (onClick)="openAttachmentDialog(document)" />
+                                        <p-button *ngIf="canRequestHardcopyTransfer(document)" title="Request hardcopy transfer" icon="pi pi-arrows-h" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openHardcopyTransfer(document)" />
                                         <p-button *ngIf="canAssignDocuments()" title="Assign users" icon="pi pi-users" size="small" [rounded]="true" styleClass="assignment-action-button" (onClick)="openAssignmentDialog(document)" />
                                         <p-button *ngIf="canManageDocument(document)" title="Edit document" icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" (onClick)="openDocumentDialog(document)" />
                                         <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canCorrectRevision(document)" title="Correct controlled file" icon="pi pi-file-edit" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openRevisionDialog(document)" />
@@ -501,7 +503,9 @@ interface DocumentFolderNode {
 
                         <div class="document-card-actions">
                             <p-button title="View document" icon="pi pi-eye" size="small" [rounded]="true" [outlined]="true" (onClick)="openDetailDialog(document)" />
+                            <p-button *ngIf="canRequestHardcopyTransfer(document)" title="Request hardcopy transfer" icon="pi pi-arrows-h" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openHardcopyTransfer(document)" />
                             <p-button *ngIf="canAttachToDocument(document)" title="Attach scanned documents" icon="pi pi-paperclip" size="small" [rounded]="true" [outlined]="true" severity="success" (onClick)="openAttachmentDialog(document)" />
+                            <p-button *ngIf="canRequestHardcopyTransfer(document)" title="Request hardcopy transfer" icon="pi pi-arrows-h" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openHardcopyTransfer(document)" />
                             <p-button *ngIf="canAssignDocuments()" title="Assign users" icon="pi pi-users" size="small" [rounded]="true" styleClass="assignment-action-button" (onClick)="openAssignmentDialog(document)" />
                             <p-button *ngIf="canChangeDocumentStatus(document)" [title]="document.status === 'Disposed' ? 'Restore document' : 'Dispose document'" [icon]="document.status === 'Disposed' ? 'pi pi-replay' : 'pi pi-ban'" size="small" [rounded]="true" [outlined]="true" [severity]="document.status === 'Disposed' ? 'success' : 'danger'" (onClick)="openStatusDialog(document)" />
                             <p-button *ngIf="canManageDocument(document)" title="Edit document" icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" (onClick)="openDocumentDialog(document)" />
@@ -1238,6 +1242,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     @ViewChild('assignmentDialog') assignmentDialog?: DocumentAssignmentDialogComponent;
     protected auth = inject(AuthService);
     private route = inject(ActivatedRoute);
+    private router = inject(Router);
     private documentsService = inject(DocumentsService);
     private systemSettings = inject(SystemSettingsService);
     private alerts = inject(AlertDialogService);
@@ -1394,6 +1399,13 @@ export class DocumentsPage implements OnInit, OnDestroy {
         if (this.auth.hasPermission('documents.edit')) return true;
         const userId = this.auth.user()?.user_id;
         return !!userId && this.auth.hasPermission('documents.manage-own') && (document.creator?.user_id === userId || document.assignments?.some((assignment) => assignment.user.user_id === userId));
+    }
+    canRequestHardcopyTransfer(document: DocumentSummary) {
+        return document.document_type === 'HARDCOPY' && ['Approved', 'Completed'].includes(document.status || '') && this.auth.hasPermission('hardcopy-transfers.create');
+    }
+    openHardcopyTransfer(document: DocumentSummary) {
+        if (!this.canRequestHardcopyTransfer(document)) return;
+        this.router.navigate(['/panel/hardcopy-transfers'], { queryParams: { document: document.document_id } });
     }
     canAttachToDocument(document: DocumentSummary) { return document.document_type === 'SOFTCOPY' && this.canAttachScans() && this.canManageDocument(document); }
     canUploadRevision(document: DocumentSummary) {
@@ -1783,6 +1795,8 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.pendingDocumentId = documentId;
                 this.openDetailDialogById(documentId);
             }
+            const transferDocumentId = params.get('transferDocument') ?? '';
+            if (transferDocumentId) this.router.navigate(['/panel/hardcopy-transfers'], { queryParams: { document: transferDocumentId } });
         });
         this.loadData();
     }
