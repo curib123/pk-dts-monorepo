@@ -39,7 +39,7 @@ type TransferAction = 'approve' | 'return' | 'reject' | 'complete';
                     <label><span>Transfer destination location</span><app-searchable-dropdown inputId="hardcopy-transfer-destination" [value]="transferDestinationValue" [options]="locationOptions()" placeholder="Select transfer location (optional)" filterPlaceholder="Search transfer locations" emptyMessage="No transfer locations available." emptyFilterMessage="No matching transfer location found." [loading]="referenceLoading" [disabled]="saving" [showClear]="true" (valueChange)="selectTransferDestination($event)" /></label>
                     <label class="wide"><span>Reason</span><textarea [(ngModel)]="form.reason" rows="3" maxlength="2000" placeholder="Why must this hardcopy be moved?"></textarea></label>
                 </div>
-                <div class="form-actions"><button type="button" class="quiet" (click)="resetForm()">Clear</button><button type="button" class="primary" [disabled]="saving || !canSubmitForm()" (click)="create()"><i class="pi" [ngClass]="saving ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ saving ? 'Submitting…' : 'Create request' }}</button></div>
+                <div class="form-actions"><button type="button" class="quiet" (click)="resetForm()">Clear</button><button type="button" class="primary" [disabled]="saving || !canSubmitForm()" (click)="create()"><i class="pi" [ngClass]="saving ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ saving ? 'Submitting…' : 'Submit transfer request' }}</button></div>
             </section>
 
             <section class="surface-card transfer-list">
@@ -121,7 +121,17 @@ export class HardcopyTransfersPage implements OnInit {
         if (!this.canSubmitForm() || this.saving) return;
         this.saving = true;
         this.service.create({ ...this.form, document_id: this.form.document_id.trim(), destination_location_id: this.form.destination_location_id.trim(), reason: this.form.reason.trim(), transfer_to: this.form.transfer_to?.trim() || undefined }).subscribe({
-            next: () => { this.saving = false; this.formOpen = false; this.message.set('Transfer request created. Submit it when the destination details are ready.'); this.resetForm(); this.load(); },
+            next: transfer => {
+                if (!transfer?.transfer_request_id) {
+                    this.saving = false;
+                    this.error.set('The transfer request was created without an ID and could not be submitted.');
+                    return;
+                }
+                this.service.action(transfer.transfer_request_id, 'submit').subscribe({
+                    next: () => { this.saving = false; this.formOpen = false; this.message.set('Transfer request submitted to the Plant Manager workflow.'); this.resetForm(); this.load(); },
+                    error: error => { this.saving = false; this.error.set(this.errorText(error)); this.load(); }
+                });
+            },
             error: error => { this.saving = false; this.error.set(this.errorText(error)); }
         });
     }
