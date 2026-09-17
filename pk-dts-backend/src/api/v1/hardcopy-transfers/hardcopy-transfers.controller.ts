@@ -58,6 +58,10 @@ export class HardcopyTransfersController {
   @RequirePermissions("hardcopy-transfers.dispatch")
   awaitAcceptance(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) { return this.service.awaitAcceptance(id, user); }
 
+  @Post(":id/complete")
+  @RequirePermissions("hardcopy-transfers.create")
+  complete(@Param("id") id: string, @Body() dto: WorkflowActionDto, @CurrentUser() user: AuthenticatedUser) { return this.service.complete(id, user, dto.remarks); }
+
   @Post(":id/accept")
   @RequirePermissions("hardcopy-transfers.accept")
   accept(@Param("id") id: string, @Body() dto: WorkflowActionDto, @CurrentUser() user: AuthenticatedUser) { return this.service.accept(id, user, dto.remarks); }
