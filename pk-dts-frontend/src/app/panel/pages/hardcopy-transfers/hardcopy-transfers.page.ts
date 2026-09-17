@@ -162,7 +162,7 @@ export class HardcopyTransfersPage implements OnInit {
     selectDestinationLocation(value: SearchableDropdownValue) {
         this.form.destination_location_id = value === null ? '' : String(value);
         const location = this.selectedDestinationLocation();
-        const specific = location?.specific;
+        const specific = this.destinationSpecific(location);
         this.form.destination_area_id = specific?.area?.area_id || '';
         this.form.destination_specific_id = specific?.specific_id || location?.specific_id || '';
     }
@@ -173,8 +173,9 @@ export class HardcopyTransfersPage implements OnInit {
         this.form.transfer_to = location?.location_name || '';
     }
     selectedDestinationLocation() { return this.locations().find(location => location.location_id === this.form.destination_location_id); }
-    selectedDestinationAreaName() { return this.selectedDestinationLocation()?.specific?.area?.area_name || 'Will be derived from location'; }
-    selectedDestinationSpecificName() { return this.selectedDestinationLocation()?.specific?.specific_name || 'Will be derived from location'; }
+    private destinationSpecific(location?: LocationReference) { return location?.specific || location?.asset?.specific; }
+    selectedDestinationAreaName() { return this.destinationSpecific(this.selectedDestinationLocation())?.area?.area_name || 'Will be derived from location'; }
+    selectedDestinationSpecificName() { return this.destinationSpecific(this.selectedDestinationLocation())?.specific_name || 'Will be derived from location'; }
     isRequester(transfer: HardcopyTransfer) { return transfer.requested_by_user_id === this.auth.user()?.user_id; }
     canReview(transfer: HardcopyTransfer) { const step = transfer.current_workflow_step || transfer.workflow_steps?.find(item => item.status === 'PENDING'); return this.reviewerMode && transfer.status === 'ForApproval' && step?.assigned_user_id === this.auth.user()?.user_id; }
     currentOwner(transfer: HardcopyTransfer) { const step = transfer.current_workflow_step || transfer.workflow_steps?.find(item => item.status === 'PENDING'); return step?.assigned_user_name_snapshot || (transfer.status === 'ForTransfer' ? 'Requester' : 'Not assigned'); }
