@@ -79,14 +79,6 @@ export class DocumentsService {
         return this.http.get<ApiResponse<RevisionSummary[]>>(`${DOCUMENTS_API}/${id}/revisions`).pipe(map((response) => this.unwrap(response)));
     }
 
-    downloadStampedRevision(documentId: string, revisionId: string) {
-        return this.http.get(`${DOCUMENTS_API}/${documentId}/revisions/${revisionId}/stamped`, { responseType: 'blob' });
-    }
-
-    downloadUncontrolledRevision(documentId: string, revisionId: string) {
-        return this.http.get(`${DOCUMENTS_API}/${documentId}/revisions/${revisionId}/uncontrolled`, { responseType: 'blob' });
-    }
-
     reassignWorkflowStep(documentId: string, workflowStepId: string, userId: string, reason: string) {
         return this.http.patch<ApiResponse<import('./documents.types').DocumentWorkflowStepSummary>>(
             `${DOCUMENTS_API}/${documentId}/workflow-steps/${workflowStepId}/assignee`,

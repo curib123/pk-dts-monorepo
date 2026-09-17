@@ -7,7 +7,6 @@ import { DialogModule } from 'primeng/dialog';
 import { TabsModule } from 'primeng/tabs';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
-import { firstValueFrom } from 'rxjs';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { SoftcopyAttachmentSummary, DocumentDetail, DocumentUserSummary, DocumentWorkflowStepSummary, RevisionSummary } from '../../documents.types';
 import { DocumentsService } from '../../documents.service';
@@ -80,11 +79,9 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                             <p *ngIf="!document.softcopy?.current_revision" class="empty-state">No current file is available. View uploaded versions in the Files tab.</p>
                             <div *ngIf="document.softcopy?.current_revision as current" class="digital-file-actions">
                                 <div class="current-file-name"><i [class]="revisionIcon(current)" aria-hidden="true"></i><strong>{{ current.file_name }}</strong></div>
-                                <button *ngIf="canAccessFiles" type="button" (click)="openRevision(current)"><i class="pi pi-eye" aria-hidden="true"></i>Preview file</button>
-                                <button *ngIf="canAccessFiles && isStampableOfficeRevision(current)" type="button" [disabled]="downloadInProgress" (click)="downloadRevision(current, 'controlled')"><i class="pi pi-shield"></i>{{ downloadInProgress ? 'Preparing copy...' : 'Download controlled copy' }}</button>
-                                <button *ngIf="canAccessFiles" type="button" [disabled]="downloadInProgress" (click)="downloadRevision(current, 'uncontrolled')"><i class="pi pi-download"></i>{{ downloadInProgress ? 'Preparing copy...' : 'Download uncontrolled copy' }}</button>
-                                <small *ngIf="isStampableOfficeRevision(current)" class="controlled-file-note">Downloads include the selected copy stamp.</small>
-                                <small *ngIf="!isStampableOfficeRevision(current)" class="controlled-file-note">Downloads use the original file format.</small>
+                                <button *ngIf="canAccessApprovedFile(current)" type="button" (click)="openRevision(current)"><i class="pi pi-external-link"></i>Open file</button>
+                                <button *ngIf="canAccessApprovedFile(current)" type="button" [disabled]="downloadInProgress" (click)="downloadRevision(current)"><i class="pi pi-download"></i>{{ downloadInProgress ? 'Downloading...' : 'Download file' }}</button>
+                                <small *ngIf="canAccessApprovedFile(current)" class="file-note">Only the approved document file is available for opening or download.</small>
                                 <small *ngIf="downloadError" class="download-error" role="alert"><i class="pi pi-exclamation-triangle"></i>{{ downloadError }}</small>
                             </div>
                             <p *ngIf="!canAccessFiles" class="access-note"><i class="pi pi-lock" aria-hidden="true"></i> You do not have permission to preview or download files.</p>
@@ -193,7 +190,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                     </ng-container>
 
                     <ng-container *ngIf="document.document_type === 'SOFTCOPY'">
-                    <div class="revisions-title revision-heading"><div><span>Controlled files</span><h3>Revision history</h3><small class="section-subtitle">Approved versions stay preserved for traceability.</small></div><strong>{{ revisions.length }} file{{ revisions.length === 1 ? '' : 's' }}</strong></div>
+                    <div class="revisions-title revision-heading"><div><span>Document files</span><h3>Revision history</h3><small class="section-subtitle">Approved versions stay preserved for traceability.</small></div><strong>{{ revisions.length }} file{{ revisions.length === 1 ? '' : 's' }}</strong></div>
 
                     <div *ngIf="revisions.length; else noRevisions" class="revision-list">
                         <details *ngFor="let revision of revisions; trackBy: trackRevision" class="revision-card">
@@ -215,10 +212,9 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                                     <div *ngFor="let item of revisionRows(revision)" class="revision-detail-item" [class.revision-detail-wide]="item.wide"><span>{{ item.label }}</span><strong [class.breakable]="item.breakable">{{ item.value || 'Not recorded' }}</strong></div>
                                 </div>
                                 <p *ngIf="downloadError" class="download-error" role="alert">{{ downloadError }}</p>
-                                <div *ngIf="canAccessFiles" class="revision-actions" (click)="$event.stopPropagation()">
-                                    <button type="button" title="Open" (click)="openRevision(revision)"><i class="pi pi-eye" aria-hidden="true"></i>Preview file</button>
-                                <button *ngIf="isStampableOfficeRevision(revision)" type="button" title="Download controlled copy" [disabled]="downloadInProgress" (click)="downloadRevision(revision, 'controlled')"><i class="pi pi-shield" aria-hidden="true"></i>{{ downloadInProgress ? 'Preparing copy…' : 'Download controlled copy' }}</button>
-                                <button type="button" title="Download uncontrolled copy" [disabled]="downloadInProgress" (click)="downloadRevision(revision, 'uncontrolled')"><i class="pi pi-download" aria-hidden="true"></i>{{ downloadInProgress ? 'Preparing copy…' : 'Download uncontrolled copy' }}</button>
+                                <div *ngIf="canAccessApprovedFile(revision)" class="revision-actions" (click)="$event.stopPropagation()">
+                                    <button type="button" title="Open approved file" (click)="openRevision(revision)"><i class="pi pi-external-link" aria-hidden="true"></i>Open file</button>
+                                    <button type="button" title="Download approved file" [disabled]="downloadInProgress" (click)="downloadRevision(revision)"><i class="pi pi-download" aria-hidden="true"></i>{{ downloadInProgress ? 'Downloading…' : 'Download file' }}</button>
                                 </div>
                             </div>
                         </details>
@@ -340,15 +336,12 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
         this.previewHtml = '';
         this.previewError = '';
         const link = this.revisionLink(revision);
-        const stampable = this.isStampableOfficeRevision(revision);
-        if (!link && !stampable) { this.previewKind = 'error'; this.previewError = 'No served file URL is available for this revision.'; return; }
+        if (!link) { this.previewKind = 'error'; this.previewError = 'No served file URL is available for this revision.'; return; }
 
         const request = ++this.previewRequest;
         this.previewKind = 'loading';
         try {
-            const blob = stampable
-                ? await this.loadStampedRevision(revision)
-                : await this.loadOriginalRevision(link);
+            const blob = await this.loadOriginalRevision(this.absoluteUrl(link));
             if (request !== this.previewRequest) return;
             const name = revision.file_name || link;
 
@@ -436,7 +429,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     private actionRequestedLabel(value?: string | null) { return value === 'CREATE' ? 'Create Document' : value === 'REVISE' ? 'Revise Document' : value === 'CREATE_REVISE' ? 'Create / Revise Document (legacy)' : value === 'CANCELLATION' ? 'Cancellation' : value; }
     private changeReasonLabel(value?: string | null) { return value === 'CorrectionOfPreviousReleases' ? 'Correction of Previous Releases' : value; }
     revisionStatusLabel(revision: RevisionSummary) {
-        if (this.document?.softcopy?.current_revision?.revision_id === revision.revision_id || revision.is_current) return 'Current controlled revision';
+        if (this.document?.softcopy?.current_revision?.revision_id === revision.revision_id || revision.is_current) return 'Current revision';
         if (revision.is_historical) return 'Superseded revision';
         if (revision.approved_at) return 'Approved revision';
         return 'Pending approval';
@@ -462,7 +455,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
             { label: 'Subfolder', value: subfolder, icon: 'pi pi-folder' },
             { label: 'Revision', value: current?.revision_number ? `Revision ${current.revision_number}` : '', icon: 'pi pi-history' },
             { label: 'Updated', value: current?.created_at ? this.formatDate(current.created_at) : '', icon: 'pi pi-clock' },
-            { label: 'Controlled file', value: current?.file_name, icon: this.revisionIcon(current || null) }
+            { label: 'Approved file', value: current?.file_name, icon: this.revisionIcon(current || null) }
         ].filter((step): step is { label: string; value: string; icon: string } => Boolean(step.value));
     }
     hasHardcopyRoute() { return this.hardcopyRouteSteps().length > 0; }
@@ -524,7 +517,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     digitalJourneyStatus() {
         const steps = this.softcopyJourneySteps();
         if (!steps.length) return 'No digital path available';
-        if (this.digitalJourneyComplete) return `Controlled file ready: ${steps[steps.length - 1].value}`;
+        if (this.digitalJourneyComplete) return `Approved file ready: ${steps[steps.length - 1].value}`;
         const currentIndex = Math.min(this.digitalJourneyStage, steps.length - 1);
         const next = steps[currentIndex + 1];
         return next ? `Moving from ${steps[currentIndex].label} to ${next.label}` : `Verifying ${steps[currentIndex].label}`;
@@ -564,24 +557,22 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
         await selection;
     }
 
-    async downloadRevision(revision: RevisionSummary, artifactType: 'controlled' | 'uncontrolled' = 'uncontrolled') {
+    canAccessApprovedFile(revision: RevisionSummary) {
+        return this.canAccessFiles &&
+            ['Approved', 'Completed'].includes(this.document?.status || '') &&
+            (Boolean(revision.approved_at) || revision.is_current === true);
+    }
+
+    async downloadRevision(revision: RevisionSummary) {
         const link = this.revisionLink(revision);
-        const stampable = this.isStampableOfficeRevision(revision);
-        if (!link && !stampable) return;
+        if (!link || !this.canAccessApprovedFile(revision)) return;
 
         this.downloadError = '';
-        if (!stampable && link) {
-            this.triggerDownload(this.absoluteUrl(link), this.uncontrolledDownloadName(revision.file_name || `revision-${revision.revision_number}`));
-            return;
-        }
-
         this.downloadInProgress = true;
         try {
-            const blob = artifactType === 'controlled'
-                ? await this.loadStampedRevision(revision)
-                : await this.loadUncontrolledRevision(revision);
+            const blob = await this.loadOriginalRevision(this.absoluteUrl(link));
             const objectUrl = URL.createObjectURL(blob);
-            this.triggerDownload(objectUrl, this.stampedDownloadName(revision.file_name || `revision-${revision.revision_number}`, artifactType));
+            this.triggerDownload(objectUrl, revision.file_name || `revision-${revision.revision_number}`);
             window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
         } catch (error) {
             this.downloadError = error instanceof Error ? error.message : 'The file could not be downloaded.';
@@ -604,43 +595,13 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     private isImage(name: string, mime: string) { return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name) || mime.startsWith('image/'); }
     private isExcelRevision(revision: RevisionSummary) { return /\.(xlsx|xls)$/i.test(revision.file_name || this.revisionLink(revision)); }
     private isModernOfficeRevision(revision: RevisionSummary) { return /\.(xlsx|xls|docx|pptx)$/i.test(revision.file_name || this.revisionLink(revision)); }
-    isStampableOfficeRevision(revision: RevisionSummary) { return !revision.revision_id.startsWith('attachment-') && /\.(pdf|xlsx|xls|docx)$/i.test(revision.file_name || this.revisionLink(revision)); }
     private officeProtocol(revision: RevisionSummary) { const name = revision.file_name || this.revisionLink(revision); if (/\.(xlsx|xls|csv)$/i.test(name)) return 'ms-excel'; if (/\.(docx|doc|rtf)$/i.test(name)) return 'ms-word'; if (/\.(pptx|ppt)$/i.test(name)) return 'ms-powerpoint'; return ''; }
     private absoluteUrl(link: string) { return new URL(link, window.location.href).href; }
-
-    openRevisionLink(event: Event, revision: RevisionSummary) {
-        if (!this.isStampableOfficeRevision(revision)) return;
-        event.preventDefault();
-        void this.openRevision(revision);
-    }
 
     private async loadOriginalRevision(link: string) {
         const response = await fetch(link);
         if (!response.ok) throw new Error(`Unable to load file (${response.status}).`);
         return response.blob();
-    }
-
-    private async loadStampedRevision(revision: RevisionSummary) {
-        if (!this.document?.document_id) throw new Error('The document identifier is unavailable.');
-        return firstValueFrom(this.documentsService.downloadStampedRevision(this.document.document_id, revision.revision_id));
-    }
-
-    private async loadUncontrolledRevision(revision: RevisionSummary) {
-        if (!this.document?.document_id) throw new Error('The document identifier is unavailable.');
-        return firstValueFrom(this.documentsService.downloadUncontrolledRevision(this.document.document_id, revision.revision_id));
-    }
-
-    private uncontrolledDownloadName(fileName: string) {
-        const extension = fileName.match(/\.[^.]+$/)?.[0] || '';
-        const baseName = extension ? fileName.slice(0, -extension.length) : fileName;
-        return `${baseName}-uncontrolled${extension}`;
-    }
-
-    private stampedDownloadName(fileName: string, artifactType: 'controlled' | 'uncontrolled') {
-        const extension = fileName.match(/\.[^.]+$/)?.[0] || '';
-        const outputExtension = extension.toLowerCase() === '.xls' ? '.xlsx' : extension;
-        const baseName = extension ? fileName.slice(0, -extension.length) : fileName;
-        return `${baseName}-${artifactType}${outputExtension}`;
     }
 
     private async buildOfficePreview(buffer: ArrayBuffer, revision: RevisionSummary) {
@@ -650,7 +611,6 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
         const stampNode = stampXml ? new DOMParser().parseFromString(stampXml, 'application/xml').documentElement : null;
         const color = stampNode?.getAttribute('color') || '';
         const stamp = stampNode && /^[0-9A-F]{6}$/i.test(color) ? { text: stampNode.textContent || '', color } : null;
-        if (this.isStampableOfficeRevision(revision) && !stamp) throw new Error('The generated copy is missing its control stamp. Please retry.');
         if (this.isExcelRevision(revision)) {
             const workbook = XLSX.read(buffer, { type: 'array', sheetRows: 200 });
             const sheets = workbook.SheetNames.slice(0, 10).map((name) => `<section><h4>${this.escapeHtml(name)}</h4>${this.buildWorksheetPreview(workbook.Sheets[name])}${this.stampMarkup(stamp)}</section>`).join('');
@@ -698,7 +658,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     private async renderModernOfficeRevision(revision: RevisionSummary, target: Window) {
         try {
             const link = this.revisionLink(revision);
-            const body = await this.buildOfficePreview(await (this.isStampableOfficeRevision(revision) ? (await this.loadStampedRevision(revision)).arrayBuffer() : (await this.loadOriginalRevision(link)).arrayBuffer()), revision);
+            const body = await this.buildOfficePreview(await (await this.loadOriginalRevision(link)).arrayBuffer(), revision);
             const stamp = body.match(/<div class="electronic-stamp inline"[\s\S]*?<\/div>/)?.[0]?.replace('electronic-stamp inline', 'electronic-stamp fixed') || '';
             target.document.open(); target.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${this.escapeHtml(revision.file_name || 'Preview')}</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px;padding-bottom:46px}h4{border-bottom:2px solid currentColor;padding-bottom:8px}section{margin-bottom:24px;break-after:page}section:last-child{break-after:auto}table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aaa;padding:5px 7px}p{margin:5px 0;line-height:1.5}.electronic-stamp.inline{margin-top:18px;padding-top:8px;border-top:2px solid currentColor;text-align:center;font:700 11px Arial,sans-serif}.electronic-stamp.fixed{display:none}@media print{.electronic-stamp.inline{display:none}.electronic-stamp.fixed{display:block;position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;border-top:2px solid currentColor;background:#fff;text-align:center;font:700 11px Arial,sans-serif}}</style></head><body>${body}${stamp}</body></html>`); target.document.close();
         } catch (error) { this.showPreviewError(target, error); }
