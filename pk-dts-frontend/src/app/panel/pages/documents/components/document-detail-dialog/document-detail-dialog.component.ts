@@ -78,7 +78,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                             </dl>
                             <p *ngIf="!document.softcopy?.current_revision" class="empty-state">No current file is available. View uploaded versions in the Files tab.</p>
                             <div *ngIf="document.softcopy?.current_revision as current" class="digital-file-actions">
-                                <div class="current-file-name"><i [class]="revisionIcon(current)" aria-hidden="true"></i><strong>{{ current.file_name }}</strong></div>
+                                <div class="current-file-name"><i [class]="revisionIcon(current)" aria-hidden="true"></i><strong>{{ displayFileName(current.file_name) }}</strong></div>
                                 <button *ngIf="canAccessApprovedFile(current)" type="button" (click)="openRevision(current)"><i class="pi pi-external-link"></i>Open file</button>
                                 <button *ngIf="canAccessApprovedFile(current)" type="button" [disabled]="downloadInProgress" (click)="downloadRevision(current)"><i class="pi pi-download"></i>{{ downloadInProgress ? 'Downloading...' : 'Download file' }}</button>
                                 <small *ngIf="canAccessApprovedFile(current)" class="file-note">Only the approved document file is available for opening or download.</small>
@@ -163,7 +163,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                         </p-tabpanel>
                         <p-tabpanel value="files">
                 <section *ngIf="selectedRevision" class="file-preview-panel" aria-label="Document file preview">
-                    <div class="preview-heading"><div><span class="field-label">File preview</span><h3>{{ selectedRevision.file_name }}</h3></div><button type="button" class="secondary-action" (click)="closePreview()">Close preview</button></div>
+                    <div class="preview-heading"><div><span class="field-label">File preview</span><h3>{{ displayFileName(selectedRevision.file_name) }}</h3></div><button type="button" class="secondary-action" (click)="closePreview()">Close preview</button></div>
                     <p *ngIf="previewKind === 'loading'" role="status">Loading document preview…</p>
                     <p *ngIf="previewKind === 'error'" role="alert">{{ previewError }}</p>
                     <p *ngIf="previewKind === 'unsupported'">Preview is unavailable for this format. Use Download to inspect the original file.</p>
@@ -201,7 +201,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
                                     <div><span>Revision</span><strong>{{ revision.revision_number }}</strong></div>
                                     <span class="revision-state-badge" [class.current]="document.softcopy?.current_revision?.revision_id === revision.revision_id || revision.is_current">{{ revisionStatusLabel(revision) }}</span>
                                 </div>
-                                <h4>{{ revision.file_name || 'Unnamed file' }}</h4>
+                                <h4>{{ displayFileName(revision.file_name) }}</h4>
                                 <div class="revision-meta"><span><i class="pi pi-user"></i>{{ fullName(revision.uploader) || 'Unknown' }}</span><span><i class="pi pi-clock"></i>{{ formatDate(revision.created_at) }}</span></div>
                                 <p><i class="pi pi-comment"></i>{{ revision.reason_of_revision || 'No reason provided' }}</p>
                             </div>
@@ -406,7 +406,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
             this.detailRow('Revision number', revision.revision_number),
             this.detailRow('Revision status', this.revisionStatusLabel(revision)),
             this.detailRow('Document title', revision.document_title, true, true),
-            this.detailRow('File name', revision.file_name, true, true),
+            this.detailRow('File name', this.displayFileName(revision.file_name), true, true),
             this.detailRow('File type', revision.mime_type, false, true),
             this.detailRow('Uploaded by', this.fullName(revision.uploader), false, true),
             this.detailRow('Uploaded at', this.formatDate(revision.created_at)),
@@ -541,6 +541,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     assignmentUsersLabel() { const assignments=this.document?.assignments??[]; if(!assignments.length)return 'Unassigned'; return assignments.map((item)=>this.fullName(item.user)||item.user.username||'User').join(', '); }
     assignmentActorLabel() { const assignments=this.document?.assignments??[]; if(!assignments.length)return 'No user-specific access assigned'; const latest=[...assignments].sort((a,b)=>new Date(b.assigned_at??0).getTime()-new Date(a.assigned_at??0).getTime())[0]; return `Assigned by ${this.fullName(latest.assigner)||latest.assigner?.username||'Administrator'}${latest.assigned_at?` · ${this.formatDate(latest.assigned_at)}`:''}`; }
     fileExtension(revision: RevisionSummary) { const match = (revision.file_name || '').match(/\.([^.]+)$/); return (match?.[1] || 'FILE').toUpperCase(); }
+    displayFileName(fileName?: string | null) { return (fileName || '').replace(/-(controlled|uncontrolled|stamped)(?=\.[^.]+$)/i, '') || 'Unnamed file'; }
     revisionIcon(revision: RevisionSummary | null) { const name = revision?.file_name || ''; if (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name)) return 'pi pi-image'; if (/\.pdf$/i.test(name)) return 'pi pi-file-pdf'; if (/\.(xlsx|xls|csv)$/i.test(name)) return 'pi pi-table'; if (/\.(docx|doc|rtf)$/i.test(name)) return 'pi pi-file-word'; if (/\.(pptx|ppt)$/i.test(name)) return 'pi pi-desktop'; return 'pi pi-file'; }
     fileTone(revision: RevisionSummary) { const name = revision.file_name || ''; if (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name)) return 'image'; if (/\.pdf$/i.test(name)) return 'pdf'; if (/\.(xlsx|xls|docx|doc|pptx|ppt)$/i.test(name)) return 'office'; return 'generic'; }
 
@@ -572,7 +573,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
         try {
             const blob = await this.loadOriginalRevision(this.absoluteUrl(link));
             const objectUrl = URL.createObjectURL(blob);
-            this.triggerDownload(objectUrl, revision.file_name || `revision-${revision.revision_number}`);
+            this.triggerDownload(objectUrl, this.displayFileName(revision.file_name || `revision-${revision.revision_number}`));
             window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
         } catch (error) {
             this.downloadError = error instanceof Error ? error.message : 'The file could not be downloaded.';
@@ -605,7 +606,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     }
 
     private async buildOfficePreview(buffer: ArrayBuffer, revision: RevisionSummary) {
-        const title = this.escapeHtml(revision.file_name || `Revision ${revision.revision_number}`);
+        const title = this.escapeHtml(this.displayFileName(revision.file_name || `Revision ${revision.revision_number}`));
         const archive = await JSZip.loadAsync(buffer);
         const stampXml = await archive.file('customXml/dts-stamp.xml')?.async('string');
         const stampNode = stampXml ? new DOMParser().parseFromString(stampXml, 'application/xml').documentElement : null;
@@ -660,7 +661,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
             const link = this.revisionLink(revision);
             const body = await this.buildOfficePreview(await (await this.loadOriginalRevision(link)).arrayBuffer(), revision);
             const stamp = body.match(/<div class="electronic-stamp inline"[\s\S]*?<\/div>/)?.[0]?.replace('electronic-stamp inline', 'electronic-stamp fixed') || '';
-            target.document.open(); target.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${this.escapeHtml(revision.file_name || 'Preview')}</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px;padding-bottom:46px}h4{border-bottom:2px solid currentColor;padding-bottom:8px}section{margin-bottom:24px;break-after:page}section:last-child{break-after:auto}table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aaa;padding:5px 7px}p{margin:5px 0;line-height:1.5}.electronic-stamp.inline{margin-top:18px;padding-top:8px;border-top:2px solid currentColor;text-align:center;font:700 11px Arial,sans-serif}.electronic-stamp.fixed{display:none}@media print{.electronic-stamp.inline{display:none}.electronic-stamp.fixed{display:block;position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;border-top:2px solid currentColor;background:#fff;text-align:center;font:700 11px Arial,sans-serif}}</style></head><body>${body}${stamp}</body></html>`); target.document.close();
+            target.document.open(); target.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${this.escapeHtml(this.displayFileName(revision.file_name || 'Preview'))}</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px;padding-bottom:46px}h4{border-bottom:2px solid currentColor;padding-bottom:8px}section{margin-bottom:24px;break-after:page}section:last-child{break-after:auto}table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aaa;padding:5px 7px}p{margin:5px 0;line-height:1.5}.electronic-stamp.inline{margin-top:18px;padding-top:8px;border-top:2px solid currentColor;text-align:center;font:700 11px Arial,sans-serif}.electronic-stamp.fixed{display:none}@media print{.electronic-stamp.inline{display:none}.electronic-stamp.fixed{display:block;position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px 12px;border-top:2px solid currentColor;background:#fff;text-align:center;font:700 11px Arial,sans-serif}}</style></head><body>${body}${stamp}</body></html>`); target.document.close();
         } catch (error) { this.showPreviewError(target, error); }
     }
 

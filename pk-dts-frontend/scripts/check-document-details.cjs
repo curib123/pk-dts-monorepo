@@ -10,12 +10,12 @@ const { chromium } = require(process.argv[2] || 'playwright');
 const root = path.resolve(__dirname, '../dist/sakai-ng/browser');
 const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'dts-details-check-'));
 const user = { user_id: 'reviewer', username: 'reviewer', firstname: 'Alex', lastname: 'Reyes', role: { role_id: 'admin', role_name: 'Admin', permissions: [] } };
-const revision = { revision_id: 'rev-1', revision_number: '02', file_name: 'Document control procedure.pdf', file_url: '/test.pdf', mime_type: 'application/pdf', created_at: '2026-09-09T02:00:00Z', uploader: user, is_current: true };
+const revision = { revision_id: 'rev-1', revision_number: '02', file_name: 'Warehouse Records - stock Releasing Form-uncontrolled.xlsx', file_url: '/test.xlsx', mime_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', created_at: '2026-09-09T02:00:00Z', approved_at: '2026-09-09T02:05:00Z', uploader: user, is_current: true };
 const attachment = { attachment_id: 'scan-1', file_name: 'Approval scan.png', file_url: '/test.png', mime_type: 'image/png', status: 'Approved', created_at: revision.created_at };
 const step = { workflow_step_id: 'step-1', stage: 'NOTED_BY', stage_label: 'Department review', status: 'PENDING', assignee: user };
 let record = {
     document_id: 'doc-1', document_title: 'Document control procedure and records management',
-    document_number: 'DTS-QA-001', document_type: 'SOFTCOPY', status: 'PendingApproval',
+    document_number: 'DTS-QA-001', document_type: 'SOFTCOPY', status: 'Completed',
     created_at: revision.created_at, creator: user, requester: user,
     workflow_steps: [step], approver_configuration: { workflow_name: 'Document approval', workflow_version: 6 },
     softcopy: { current_revision: revision, revisions: [revision], category: { category_name: 'Quality / Procedures' }, attachments: [attachment] },
@@ -56,9 +56,6 @@ const server = http.createServer((req, res) => {
             if (route.request().method() !== 'GET') {
                 return route.fulfill({ status: 409, json: { message: 'Approver changed. Refresh and try again.' } });
             }
-            if (endpoint.endsWith('/stamped') || endpoint.endsWith('/uncontrolled')) {
-                return route.fulfill({ status: 404, json: { message: 'File unavailable in test fixture.' } });
-            }
             return route.fulfill({ json: { success: true, data } });
         });
         const open = async () => {
@@ -98,7 +95,7 @@ const server = http.createServer((req, res) => {
         await dialog.locator('.workflow-reassign-controls summary').click();
         await switchTab('Overview');
         await dialog.locator('.metadata-section-heading').click();
-        await dialog.locator('.digital-file-actions').getByRole('button', { name: 'Preview file' }).click();
+        await dialog.locator('.digital-file-actions').getByRole('button', { name: 'Open file' }).click();
         await dialog.locator('.file-preview-panel [role=alert]').waitFor();
         await page.locator('.modern-alert-dialog').getByRole('button', { name: 'Close', exact: true }).click();
         await page.locator('.modern-alert-dialog').waitFor({ state: 'hidden' });
@@ -106,7 +103,10 @@ const server = http.createServer((req, res) => {
         await dialog.locator('.file-preview-panel').waitFor({ state: 'detached' });
         assert.equal(await dialog.locator('.file-preview-panel').count(), 0);
         await dialog.locator('.revision-summary').click();
-        assert(await dialog.locator('.revision-actions').getByRole('button', { name: 'Download controlled copy' }).isVisible());
+        assert(await dialog.locator('.revision-actions').getByRole('button', { name: 'Open file' }).isVisible());
+        assert(await dialog.locator('.revision-actions').getByRole('button', { name: 'Download file' }).isVisible());
+        assert.equal(await dialog.locator('.revision-actions').getByRole('button', { name: /controlled|uncontrolled/i }).count(), 0);
+        assert(!/controlled|uncontrolled/i.test(await dialog.locator('.revision-card').innerText()), 'Legacy copy labels must not be shown');
         await dialog.locator('.revision-summary').click();
         await switchTab('Overview');
         await dialog.locator('.p-dialog-content').evaluate(el => el.scrollTop = 0);
@@ -130,7 +130,7 @@ const server = http.createServer((req, res) => {
         await dialog.getByRole('button', { name: 'Close', exact: true }).last().click();
         await dialog.waitFor({ state: 'hidden' });
         assert.deepEqual(errors, []);
-        console.log('PASS: desktop/mobile layout, keyboard disclosure, workflow error, preview error/close, revision actions, attachment targets, Escape and Close.');
+        console.log('PASS: desktop/mobile layout, keyboard disclosure, workflow error, approved file actions, attachment targets, Escape and Close.');
         console.log('Screenshots: ' + artifacts);
     } catch (error) {
         const page = browser.contexts()[0]?.pages()[0];

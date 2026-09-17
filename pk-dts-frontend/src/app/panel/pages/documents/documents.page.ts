@@ -384,7 +384,7 @@ interface DocumentFolderNode {
                                     </div>
                                     <ng-template #softcopyCell>
                                         <div class="document-facts">
-                                            <div class="fact-primary"><i [class]="documentPreviewIcon(document)"></i><span><small>Current file</small><strong>{{ document.softcopy?.current_revision?.file_name || 'No current file' }}</strong></span></div>
+                                            <div class="fact-primary"><i [class]="documentPreviewIcon(document)"></i><span><small>Current file</small><strong>{{ displayRevisionFileName(document.softcopy?.current_revision?.file_name) }}</strong></span></div>
                                             <div class="fact-tags"><span>Rev {{ document.softcopy?.current_revision?.revision_number || 'None' }}</span><span>{{ document.softcopy?.category?.category_name || 'Uncategorized' }}</span></div>
                                         </div>
                                     </ng-template>
@@ -437,7 +437,7 @@ interface DocumentFolderNode {
                                     <button class="folder-document-main" type="button" (click)="openDetailDialog(document)">
                                     <i [class]="documentPreviewIcon(document)"></i>
                                     <span><strong>{{ document.document_type === 'HARDCOPY' ? 'Hardcopy record' : (document.document_number || 'No document number') }}</strong><small>{{ document.document_title }}</small><small class="assignment-inline">{{ assignmentUsersLabel(document) }} · {{ assignmentActorLabel(document) }}</small></span>
-                                    <em *ngIf="document.document_type === 'SOFTCOPY'">{{ document.softcopy?.current_revision?.file_name || 'No file' }}</em>
+                                    <em *ngIf="document.document_type === 'SOFTCOPY'">{{ displayRevisionFileName(document.softcopy?.current_revision?.file_name, 'No file') }}</em>
                                     <em *ngIf="document.document_type === 'HARDCOPY'"><span>{{ document.hardcopy?.asset?.asset_number || 'No asset number' }}</span><small *ngIf="document.hardcopy?.retention">{{ document.hardcopy?.retention?.label }}</small></em>
                                     </button>
                                     <div class="folder-document-actions">
@@ -489,7 +489,7 @@ interface DocumentFolderNode {
                                 <div class="document-card-meta">
                                     <div><span>Revision</span><strong>{{ document.softcopy?.current_revision?.revision_number || 'None' }}</strong></div>
                                     <div><span>Folder</span><strong>{{ document.softcopy?.category?.category_name || 'Uncategorized' }}</strong></div>
-                                    <div class="wide"><span>Current file</span><strong>{{ document.softcopy?.current_revision?.file_name || 'No current file' }}</strong></div>
+                                    <div class="wide"><span>Current file</span><strong>{{ displayRevisionFileName(document.softcopy?.current_revision?.file_name) }}</strong></div>
                                 </div>
                             </ng-template>
 
@@ -2596,7 +2596,11 @@ export class DocumentsPage implements OnInit, OnDestroy {
         if (document.document_type === 'HARDCOPY') {
             return [document.hardcopy?.area?.area_name, document.hardcopy?.location?.location_name].filter(Boolean).join(' · ') || 'Physical document record';
         }
-        return document.softcopy?.current_revision?.file_name || 'No current file uploaded';
+        return this.displayRevisionFileName(document.softcopy?.current_revision?.file_name, 'No current file uploaded');
+    }
+
+    displayRevisionFileName(fileName?: string | null, fallback = 'No current file') {
+        return (fileName || '').replace(/-(controlled|uncontrolled|stamped)(?=\.[^.]+$)/i, '') || fallback;
     }
 
     documentPreviewTone(document: DocumentSummary) {
