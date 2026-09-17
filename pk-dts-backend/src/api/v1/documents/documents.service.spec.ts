@@ -305,6 +305,16 @@ describe('DocumentsService', () => {
     expect(prisma.document.findUnique).not.toHaveBeenCalled();
   });
 
+  it.each(['approve', 'request-revision', 'reject', 'complete'] as const)(
+    'requires a decision remark for %s',
+    async (action) => {
+      await expect(
+        service.transition('1', '7', action, '   ', regularUser),
+      ).rejects.toThrow('A decision remark is required for this action.');
+      expect(prisma.document.findUnique).not.toHaveBeenCalled();
+    },
+  );
+
   it('returns revision work to the previous workflow holder before the requester', async () => {
     const plantManager = {
       ...regularUser,
