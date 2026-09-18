@@ -1062,24 +1062,23 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             /* Keep registration visually aligned with the focused login shell. */
             .registration-shell {
                 min-height: 100svh;
-                padding: 2rem clamp(1rem, 4vw, 4rem);
-                background: #f6f8fb;
+                padding: 7rem clamp(1.25rem, 5vw, 5rem) 4.5rem;
+                background: #080c14;
             }
 
             .registration-cover {
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: auto;
-                width: 43%;
+                inset: 0;
+                width: auto;
                 background-position: center;
-                opacity: 0.9;
+                opacity: 1;
             }
 
             .registration-overlay {
-                left: auto;
-                width: 43%;
-                background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(127, 29, 29, 0.68));
+                inset: 0;
+                width: auto;
+                background:
+                    linear-gradient(90deg, rgba(5, 9, 16, 0.97) 0%, rgba(5, 9, 16, 0.88) 46%, rgba(5, 9, 16, 0.62) 100%),
+                    linear-gradient(180deg, rgba(5, 9, 16, 0.28) 0%, rgba(5, 9, 16, 0.24) 55%, rgba(5, 9, 16, 0.92) 100%);
             }
 
             .registration-card {
@@ -1144,9 +1143,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             .registration-content > footer { border-top: 1px solid #edf0f4; padding-top: 1rem; }
 
             @media (max-width: 900px) {
-                .registration-cover, .registration-overlay { width: 100%; }
-                .registration-cover { height: 38%; bottom: auto; }
-                .registration-overlay { height: 38%; bottom: auto; }
+                .registration-cover, .registration-overlay { inset: 0; width: auto; height: auto; }
                 .registration-card { grid-template-columns: 1fr; width: min(700px, 100%); }
                 .registration-intro { min-height: 300px; padding: 2.4rem 2rem; }
                 .registration-content { padding: 2rem; }
