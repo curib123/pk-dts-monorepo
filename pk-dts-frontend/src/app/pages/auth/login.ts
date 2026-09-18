@@ -786,6 +786,176 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 .login-logo { width: 4.05rem; height: 2.7rem; }
             }
         `
+        ,`
+            /* SaaS auth refinement: focused form, restrained chrome, responsive split shell. */
+            .login-shell {
+                min-height: 100svh;
+                padding: 6.6rem clamp(1rem, 4vw, 4rem) 2rem;
+                background: #f6f8fb;
+                color: #172033;
+            }
+
+            .login-shell::before {
+                inset: 0;
+                background:
+                    radial-gradient(circle at 82% 12%, rgba(185, 28, 28, 0.08), transparent 24rem),
+                    radial-gradient(circle at 12% 90%, rgba(30, 64, 175, 0.06), transparent 28rem),
+                    #f6f8fb;
+                filter: none;
+                transform: none;
+            }
+
+            .login-cover {
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: auto;
+                width: 43%;
+                background-position: center;
+                clip-path: inset(0 0 0 0 round 0);
+                opacity: 0.9;
+            }
+
+            .login-overlay {
+                left: auto;
+                width: 43%;
+                background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(127, 29, 29, 0.68));
+            }
+
+            .landing-nav {
+                min-height: 4.8rem;
+                padding: 0.75rem clamp(1rem, 4vw, 4rem);
+                border-bottom: 1px solid #e6eaf0;
+                background: rgba(255, 255, 255, 0.88);
+                box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
+            }
+
+            .landing-brand { color: #172033; }
+            .landing-brand small { color: #7b8495; }
+            .landing-brand strong { color: #172033; }
+            .landing-nav-meta {
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                color: #475569;
+                box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+            }
+            .landing-nav-meta i { color: #16a34a; }
+
+            .login-panel {
+                width: min(1120px, 100%);
+                grid-template-columns: minmax(0, 1.02fr) minmax(390px, 0.98fr);
+                align-items: stretch;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.65rem;
+                background: transparent;
+                box-shadow: 0 26px 70px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+
+            .login-hero {
+                min-height: 620px;
+                padding: clamp(2rem, 5vw, 4rem);
+                align-items: flex-end;
+                background: linear-gradient(160deg, rgba(15, 23, 42, 0.34), rgba(15, 23, 42, 0.9));
+            }
+
+            .login-hero::after {
+                background: linear-gradient(180deg, rgba(15, 23, 42, 0.02) 20%, rgba(15, 23, 42, 0.72));
+            }
+
+            .hero-copy { max-width: 32rem; }
+            .hero-kicker {
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 0.55rem;
+                background: rgba(255, 255, 255, 0.14);
+                box-shadow: none;
+            }
+            .hero-copy h1 {
+                max-width: 31rem;
+                margin-top: 1.1rem;
+                font-size: clamp(2.4rem, 4vw, 4rem);
+                line-height: 1.02;
+                text-shadow: none;
+            }
+            .hero-copy p { max-width: 29rem; color: rgba(255, 255, 255, 0.78); }
+            .workflow-points { grid-template-columns: 1fr; gap: 0.55rem; margin-top: 1.7rem; }
+            .workflow-points > div {
+                grid-template-columns: 2.2rem minmax(0, 1fr);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 0.8rem;
+                background: rgba(15, 23, 42, 0.34);
+                padding: 0.7rem;
+            }
+            .workflow-points > div > i { background: rgba(255, 255, 255, 0.14); }
+
+            .login-card {
+                min-height: 620px;
+                padding: clamp(2rem, 4vw, 3.3rem);
+                border-radius: 0;
+                background: #fff;
+                box-shadow: none;
+            }
+            .portal-label { margin-bottom: 1rem; color: #7b8495; font-size: 0.62rem; }
+            .portal-label span { background: var(--login-brand); }
+            .login-card-header { gap: 0.85rem; margin-bottom: 1.8rem; }
+            .login-logo { width: 3.8rem; height: 2.55rem; border-radius: 0.7rem; }
+            .login-title { color: #172033; font-size: 1.75rem; }
+            .login-subtitle { max-width: 18rem; color: #7b8495; font-size: 0.88rem; }
+            .login-form { gap: 1rem; }
+            .field { gap: 0.42rem; }
+            .field label { color: #334155; font-size: 0.78rem; }
+            .field input[pinputtext],
+            :host ::ng-deep .login-form .p-password-input {
+                min-height: 3.05rem;
+                border: 1px solid #dbe1e9;
+                border-radius: 0.7rem;
+                background: #fbfcfe;
+                box-shadow: none;
+            }
+            .field input[pinputtext]:focus,
+            :host ::ng-deep .login-form .p-password-input:enabled:focus {
+                border-color: color-mix(in srgb, var(--login-brand) 58%, #cbd5e1);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--login-brand) 12%, transparent);
+            }
+            .login-meta { margin-top: 0.1rem; }
+            .remember { color: #64748b; font-size: 0.8rem; }
+            :host ::ng-deep .login-form .p-button {
+                min-height: 3.15rem;
+                border-radius: 0.7rem;
+                background: var(--login-brand-deep);
+                box-shadow: 0 12px 24px color-mix(in srgb, var(--login-brand-deep) 18%, transparent);
+            }
+            :host ::ng-deep .login-form .p-button:not(:disabled):hover { background: var(--login-brand); }
+            .error-message { border-radius: 0.75rem; background: #fff5f5; color: #b91c1c; }
+            .registration-links { margin-top: 1.25rem; padding-top: 1rem; border-color: #edf0f4; font-size: 0.8rem; }
+            .registration-links a { color: var(--login-brand-deep); }
+            .access-note { color: #94a3b8; font-size: 0.64rem; }
+            .landing-footer { color: #94a3b8; }
+
+            @media (max-width: 960px) {
+                .login-cover, .login-overlay { width: 100%; }
+                .login-cover { height: 46%; bottom: auto; }
+                .login-overlay { height: 46%; bottom: auto; }
+                .login-panel { grid-template-columns: 1fr; width: min(620px, 100%); }
+                .login-hero { min-height: 360px; padding: 2.4rem 2rem; }
+                .login-card { min-height: auto; border-radius: 0; }
+                .workflow-points { display: none; }
+            }
+
+            @media (max-width: 640px) {
+                .login-shell { padding: 5.8rem 0.75rem 1rem; }
+                .login-panel { border-radius: 1.15rem; }
+                .login-hero { min-height: 300px; padding: 2rem 1.25rem; }
+                .hero-copy h1 { font-size: 2.15rem; }
+                .login-card { padding: 1.55rem 1.15rem; }
+                .landing-nav-meta span { display: none; }
+                .landing-nav-meta { width: 2.45rem; height: 2.45rem; justify-content: center; padding: 0; }
+            }
+        `
     ]
 })
 export class Login {
