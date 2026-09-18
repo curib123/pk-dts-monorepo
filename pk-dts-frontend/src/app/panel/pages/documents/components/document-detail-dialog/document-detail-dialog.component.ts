@@ -617,19 +617,25 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
 
     private async buildOfficePreview(buffer: ArrayBuffer, revision: RevisionSummary) {
         const title = this.escapeHtml(this.displayFileName(revision.file_name || `Revision ${revision.revision_number}`));
-        const archive = await JSZip.loadAsync(buffer);
-        const stampXml = await archive.file('customXml/dts-stamp.xml')?.async('string');
-        const stampNode = stampXml ? new DOMParser().parseFromString(stampXml, 'application/xml').documentElement : null;
-        const color = stampNode?.getAttribute('color') || '';
-        const stamp = stampNode && /^[0-9A-F]{6}$/i.test(color) ? { text: stampNode.textContent || '', color } : null;
-        if (this.isExcelRevision(revision)) {
+        const isExcel = this.isExcelRevision(revision);
+        const isLegacyExcel = /\.xls$/i.test(revision.file_name || this.revisionLink(revision));
+        let archive: Awaited<ReturnType<typeof JSZip.loadAsync>> | null = null;
+        let stamp: { text: string; color: string } | null = null;
+        if (!isLegacyExcel) {
+            archive = await JSZip.loadAsync(buffer);
+            const stampXml = await archive.file('customXml/dts-stamp.xml')?.async('string');
+            const stampNode = stampXml ? new DOMParser().parseFromString(stampXml, 'application/xml').documentElement : null;
+            const color = stampNode?.getAttribute('color') || '';
+            stamp = stampNode && /^[0-9A-F]{6}$/i.test(color) ? { text: stampNode.textContent || '', color } : null;
+        }
+        if (isExcel) {
             const workbook = XLSX.read(buffer, { type: 'array', sheetRows: 200 });
             const sheets = workbook.SheetNames.slice(0, 10).map((name) => `<section><h4>${this.escapeHtml(name)}</h4>${this.buildWorksheetPreview(workbook.Sheets[name])}${this.stampMarkup(stamp)}</section>`).join('');
             return `<h4>${title}</h4>${sheets || '<p>This workbook has no worksheets.</p>'}`;
         }
 
         const isWord = /\.docx$/i.test(revision.file_name || '');
-        const entries = Object.values(archive.files)
+        const entries = Object.values(archive?.files || {})
             .filter((entry) => !entry.dir && (isWord ? /word\/document\.xml$/i.test(entry.name) : /ppt\/slides\/slide\d+\.xml$/i.test(entry.name)))
             .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
         if (!entries.length) throw new Error('No previewable Office content was found.');
