@@ -11,6 +11,8 @@ import { DashboardService } from './pages/dashboard/dashboard.service';
 import { NavigationNotificationCounts } from './pages/dashboard/dashboard.types';
 import { NotificationsService, UserNotification } from './notifications.service';
 
+const PANEL_BACKGROUND_POLL_DELAY_MS = 250;
+
 @Component({
     selector: 'app-panel-layout',
     standalone: true,
@@ -186,13 +188,13 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
         });
         this.syncPageMeta();
         this.openActiveCategory();
-        timer(0, 30_000)
+        timer(PANEL_BACKGROUND_POLL_DELAY_MS, 30_000)
             .pipe(
                 switchMap(() => this.dashboardService.getNavigationCounts().pipe(catchError(() => of(null)))),
                 takeUntil(this.destroy$)
             )
             .subscribe((counts) => { if (counts) this.notificationCounts.set(counts); });
-        timer(0, 30_000).pipe(switchMap(() => this.notificationsService.list().pipe(catchError(() => of(null)))), takeUntil(this.destroy$)).subscribe((feed) => { if (feed) { this.notifications.set(feed.items); this.unreadCount.set(feed.unread_count); } });
+        timer(PANEL_BACKGROUND_POLL_DELAY_MS, 30_000).pipe(switchMap(() => this.notificationsService.list().pipe(catchError(() => of(null)))), takeUntil(this.destroy$)).subscribe((feed) => { if (feed) { this.notifications.set(feed.items); this.unreadCount.set(feed.unread_count); } });
 
         this.router.events
             .pipe(
