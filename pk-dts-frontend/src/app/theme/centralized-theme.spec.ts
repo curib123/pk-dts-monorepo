@@ -1,16 +1,14 @@
+import { BrandPreset } from './brand-preset';
+
 describe('centralized deep-maroon theme', () => {
-    it('keeps document compatibility tokens bound to the centralized brand tokens', () => {
-        const styles = getComputedStyle(document.documentElement);
+    it('keeps the centralized brand preset bound to the document compatibility palette', () => {
+        const preset = BrandPreset as any;
 
-        expect(styles.getPropertyValue('--dts-accent').trim()).toBe('var(--brand-primary)');
-        expect(styles.getPropertyValue('--dts-accent-deep').trim()).toBe('var(--brand-primary-deep)');
-        expect(styles.getPropertyValue('--dts-accent-soft').trim()).toBe('var(--brand-soft-strong)');
-    });
-
-    it('uses the white primary contrast for filled danger actions', () => {
-        const styles = getComputedStyle(document.documentElement);
-
-        expect(styles.getPropertyValue('--brand-contrast').trim()).toBe('var(--p-primary-contrast-color)');
+        expect(preset.semantic.primary[500]).toBe('#800000');
+        expect(preset.semantic.colorScheme.light.primary.color).toBe('{primary.500}');
+        expect(preset.semantic.colorScheme.light.primary.contrastColor).toBe('#ffffff');
+        expect(preset.semantic.colorScheme.light.primary.hoverColor).toBe('{primary.600}');
+        expect(preset.semantic.colorScheme.light.primary.activeColor).toBe('{primary.700}');
     });
 
     it('keeps filled default primary button content light', () => {

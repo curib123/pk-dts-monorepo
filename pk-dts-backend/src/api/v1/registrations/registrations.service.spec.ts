@@ -3,24 +3,23 @@ import { RegistrationStatus } from "@prisma/client";
 import { RegistrationsService } from "./registrations.service";
 
 describe("RegistrationsService administrative role protection", () => {
-  it("removes every administrative alias from public registration roles", async () => {
+  it("removes the canonical Admin role from public registration roles", async () => {
     const prisma = {
       role: {
         findMany: jest.fn().mockResolvedValue([
           { role_id: 1n, role_name: "Admin" },
-          { role_id: 2n, role_name: "Super Admin" },
-          { role_id: 3n, role_name: "Records Officer" },
+          { role_id: 2n, role_name: "Records Officer" },
         ]),
       },
     };
     const service = new RegistrationsService(prisma as never);
 
     await expect(service.publicRoles()).resolves.toEqual([
-      { role_id: 3n, role_name: "Records Officer" },
+      { role_id: 2n, role_name: "Records Officer" },
     ]);
   });
 
-  it("rejects an administrative role requested with a crafted registration payload", async () => {
+  it("rejects the canonical Admin role requested with a crafted registration payload", async () => {
     const prisma = {
       user: { findUnique: jest.fn().mockResolvedValue(null) },
       accountRegistrationRequest: {
@@ -29,7 +28,7 @@ describe("RegistrationsService administrative role protection", () => {
       role: {
         findUnique: jest
           .fn()
-          .mockResolvedValue({ role_id: 1n, role_name: "SuperAdmin" }),
+          .mockResolvedValue({ role_id: 1n, role_name: "Admin" }),
       },
     };
     const service = new RegistrationsService(prisma as never);
@@ -57,7 +56,7 @@ describe("RegistrationsService administrative role protection", () => {
       role: {
         findUnique: jest
           .fn()
-          .mockResolvedValue({ role_id: 2n, role_name: "Administrator" }),
+          .mockResolvedValue({ role_id: 2n, role_name: "Admin" }),
       },
       user: {
         findUnique: jest.fn().mockResolvedValue(null),

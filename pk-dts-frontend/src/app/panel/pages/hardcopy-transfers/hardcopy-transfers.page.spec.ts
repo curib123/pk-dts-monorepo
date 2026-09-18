@@ -14,6 +14,9 @@ describe('HardcopyTransfersPage', () => {
     const auth = jasmine.createSpyObj<AuthService>('AuthService', ['user']);
 
     beforeEach(async () => {
+        documents.listDocuments.calls.reset();
+        documents.listLocations.calls.reset();
+        documents.listSequences.calls.reset();
         transfers.listMine.and.returnValue(of([]));
         transfers.listPending.and.returnValue(of([]));
         documents.listDocuments.and.returnValue(of([
