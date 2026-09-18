@@ -78,7 +78,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
 
             <footer class="landing-footer">
                 <span>{{ settings().footerText }}</span>
-                <span>Created by John Paul Curib, Full-stack Developer</span>
+                <span>Corporate IT - System Programmer I - John Paul Curib</span>
                 <span>Secure records &middot; Clear ownership &middot; Faster retrieval</span>
             </footer>
         </div>
