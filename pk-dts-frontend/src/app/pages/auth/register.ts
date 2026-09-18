@@ -1206,7 +1206,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 z-index: 1;
                 width: min(1160px, 100%);
                 display: grid;
-                grid-template-columns: minmax(370px, 520px);
+                grid-template-columns: minmax(370px, 760px);
                 justify-content: center;
                 align-items: center;
                 gap: clamp(2rem, 6vw, 6.5rem);
@@ -1253,7 +1253,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
             @media (max-width: 960px) {
                 .registration-shell { justify-content: flex-start; padding: 6.5rem 1rem 1.5rem; }
-                .registration-panel { grid-template-columns: minmax(370px, 620px); gap: 1.25rem; width: min(620px, 100%); }
+                .registration-panel { grid-template-columns: minmax(0, 760px); gap: 1.25rem; width: min(760px, 100%); }
                 .landing-footer { width: min(620px, 100%); }
             }
 
