@@ -18,14 +18,6 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
             <div class="login-cover" aria-hidden="true"></div>
             <div class="login-overlay"></div>
 
-            <header class="landing-nav">
-                <a class="landing-brand" routerLink="/auth/login" aria-label="Document workspace home">
-                    <span class="brand-mark"><img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" /></span>
-                    <span><small>{{ settings().brandEyebrow }}</small><strong>{{ settings().systemShortTitle }}</strong></span>
-                </a>
-                <div class="landing-nav-meta"><i class="pi pi-shield"></i><span>Authorized access only</span></div>
-            </header>
-
             <div class="login-panel">
                 <section class="login-hero">
                     <div class="hero-copy">
