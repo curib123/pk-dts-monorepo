@@ -7,9 +7,11 @@ import { DocumentsService } from "./documents.service";
 describe("DocumentsController update permissions", () => {
   const update = jest.fn();
   const updateRequest = jest.fn();
+  const changeDirectory = jest.fn();
   const controller = new DocumentsController({
     update,
     updateRequest,
+    changeDirectory,
   } as unknown as DocumentsService);
 
   beforeEach(() => jest.clearAllMocks());
@@ -34,6 +36,15 @@ describe("DocumentsController update permissions", () => {
 
     expect(updateRequest).toHaveBeenCalledWith("42", dto, "7", user);
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("routes directory changes to the dedicated service method", () => {
+    const user = authenticatedUser(["documents.edit"]);
+    const dto = { softcopy_category_id: "21" };
+
+    controller.changeDirectory("42", dto, user);
+
+    expect(changeDirectory).toHaveBeenCalledWith("42", dto, user);
   });
 });
 

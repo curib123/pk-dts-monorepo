@@ -28,6 +28,7 @@ import { DocumentStatusDialogComponent } from './components/document-status-dial
 import { RevisionUploadDialogComponent } from './components/revision-upload-dialog/revision-upload-dialog.component';
 import { SoftcopyFolderUploadDialogComponent } from './components/softcopy-folder-upload-dialog/softcopy-folder-upload-dialog.component';
 import { DocumentAssignmentDialogComponent } from './components/document-assignment-dialog/document-assignment-dialog.component';
+import { DocumentDirectoryDialogComponent } from './components/document-directory-dialog/document-directory-dialog.component';
 import { DocumentsService } from './documents.service';
 import { folderIdsToExpandForDocuments } from './folder-tree-navigation';
 import {
@@ -93,7 +94,8 @@ interface DocumentFolderNode {
         BatchHardcopyUploadDialogComponent,
         SoftcopyFolderUploadDialogComponent,
         DocumentStatusDialogComponent,
-        DocumentAssignmentDialogComponent
+        DocumentAssignmentDialogComponent,
+        DocumentDirectoryDialogComponent
     ],
     template: `
         <app-loading-shimmer *ngIf="isLoading()" label="Loading documents" [columns]="7" />
@@ -397,7 +399,7 @@ interface DocumentFolderNode {
                                         <p-button *ngIf="canRequestHardcopyTransfer(document)" title="Request hardcopy transfer" icon="pi pi-arrows-h" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openHardcopyTransfer(document)" />
                                         <p-button *ngIf="canAssignDocuments()" title="Assign users" icon="pi pi-users" size="small" [rounded]="true" styleClass="assignment-action-button" (onClick)="openAssignmentDialog(document)" />
                                         <p-button *ngIf="canManageDocument(document)" title="Edit document" icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" (onClick)="openDocumentDialog(document)" />
-                                        <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canCorrectRevision(document)" title="Correct controlled file" icon="pi pi-file-edit" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openRevisionDialog(document)" />
+                                        <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canChangeDirectory(document)" title="Change directory" icon="pi pi-folder-open" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openDirectoryDialog(document)" />
                                         <p-button *ngIf="canDeleteDocument(document)" title="Delete document" icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" (onClick)="requestDelete(document)" />
                                     </div>
                                 </td>
@@ -446,7 +448,7 @@ interface DocumentFolderNode {
                                         <p-button *ngIf="canAssignDocuments()" title="Assign users" icon="pi pi-users" size="small" [rounded]="true" [outlined]="true" (onClick)="openAssignmentDialog(document)" />
                                         <p-button *ngIf="canChangeDocumentStatus(document)" [title]="document.status === 'Disposed' ? 'Restore document' : 'Dispose document'" [icon]="document.status === 'Disposed' ? 'pi pi-replay' : 'pi pi-ban'" size="small" [rounded]="true" [outlined]="true" [severity]="document.status === 'Disposed' ? 'success' : 'danger'" (onClick)="openStatusDialog(document)" />
                                         <p-button *ngIf="canManageDocument(document)" title="Edit document" icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" (onClick)="openDocumentDialog(document)" />
-                                        <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canCorrectRevision(document)" title="Correct controlled file" icon="pi pi-file-edit" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openRevisionDialog(document)" />
+                                        <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canChangeDirectory(document)" title="Change directory" icon="pi pi-folder-open" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openDirectoryDialog(document)" />
                                         <p-button *ngIf="canDeleteDocument(document)" title="Delete document" icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" (onClick)="requestDelete(document)" />
                                     </div>
                                 </div>
@@ -509,7 +511,7 @@ interface DocumentFolderNode {
                             <p-button *ngIf="canAssignDocuments()" title="Assign users" icon="pi pi-users" size="small" [rounded]="true" styleClass="assignment-action-button" (onClick)="openAssignmentDialog(document)" />
                             <p-button *ngIf="canChangeDocumentStatus(document)" [title]="document.status === 'Disposed' ? 'Restore document' : 'Dispose document'" [icon]="document.status === 'Disposed' ? 'pi pi-replay' : 'pi pi-ban'" size="small" [rounded]="true" [outlined]="true" [severity]="document.status === 'Disposed' ? 'success' : 'danger'" (onClick)="openStatusDialog(document)" />
                             <p-button *ngIf="canManageDocument(document)" title="Edit document" icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" (onClick)="openDocumentDialog(document)" />
-                            <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canCorrectRevision(document)" title="Correct controlled file" icon="pi pi-file-edit" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openRevisionDialog(document)" />
+                            <p-button *ngIf="canUploadRevision(document)" title="Upload and finalize controlled copy" icon="pi pi-upload" size="small" [rounded]="true" [outlined]="true" (onClick)="openRevisionDialog(document)" /><p-button *ngIf="canChangeDirectory(document)" title="Change directory" icon="pi pi-folder-open" size="small" [rounded]="true" [outlined]="true" severity="warn" (onClick)="openDirectoryDialog(document)" />
                             <p-button *ngIf="canDeleteDocument(document)" title="Delete document" icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" (onClick)="requestDelete(document)" />
                         </div>
                     </article>
@@ -593,9 +595,17 @@ interface DocumentFolderNode {
             [currentRevision]="revisionCurrentRevision"
             [existingRevisions]="revisionExistingRevisions"
             [documentStatus]="revisionTargetStatus"
-            [correctionMode]="revisionCorrectionMode"
             [softcopyCategories]="softcopyCategories()"
             (save)="uploadRevision($event)"
+        />
+
+        <app-document-directory-dialog
+            [(visible)]="directoryDialogVisible"
+            [saving]="isSaving()"
+            [documentNumber]="directoryContextDocumentNumber"
+            [currentCategoryId]="directoryCurrentCategoryId"
+            [softcopyCategories]="softcopyCategories()"
+            (save)="saveDirectory($event)"
         />
 
         <app-document-status-dialog [(visible)]="statusDialogVisible" [document]="statusTargetDocument" [mode]="statusDialogMode" [saving]="isSaving()" [administrator]="auth.hasPermission('documents.manage')" [users]="users()" [currentUser]="auth.user()" (save)="saveDocumentStatus($event)" />
@@ -1269,6 +1279,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     documentDialogVisible = false;
     detailDialogVisible = false;
     revisionDialogVisible = false;
+    directoryDialogVisible = false;
     statusDialogVisible = false;
     assignmentDialogVisible = false;
     attachmentDialogVisible = false;
@@ -1337,7 +1348,9 @@ export class DocumentsPage implements OnInit, OnDestroy {
     revisionCurrentRevision: RevisionSummary | null = null;
     revisionExistingRevisions: RevisionSummary[] = [];
     revisionTargetStatus = '';
-    revisionCorrectionMode = false;
+    directoryTargetDocumentId = '';
+    directoryContextDocumentNumber = '';
+    directoryCurrentCategoryId = '';
     assistantOpen = signal(false);
     assistantLoading = signal(false);
     assistantAnswer = signal('');
@@ -1412,7 +1425,9 @@ export class DocumentsPage implements OnInit, OnDestroy {
         const hasRevisionFile = !!document.softcopy?.current_revision || !!document.softcopy?.revisions?.length;
         return document.document_type === 'SOFTCOPY' && document.status === 'Approved' && !hasRevisionFile && this.canManageDocument(document) && this.auth.hasAnyPermission('documents.edit', 'documents.manage-own', 'document-requests.edit');
     }
-    canCorrectRevision(document: DocumentSummary) { return document.document_type === 'SOFTCOPY' && document.status === 'Completed' && this.canManageDocument(document) && this.auth.hasAnyPermission('documents.edit', 'documents.manage-own', 'document-requests.edit'); }
+    canChangeDirectory(document: DocumentSummary) {
+        return document.document_type === 'SOFTCOPY' && document.status === 'Completed' && this.canManageDocument(document);
+    }
 
     filteredDocuments() {
         const search = this.searchTerm.trim().toLowerCase();
@@ -2401,7 +2416,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
             next: ({ detail, revisions }) => {
                 this.revisionTargetDocumentId = document.document_id;
                 this.revisionTargetStatus = detail?.status || document.status || '';
-                this.revisionCorrectionMode = this.revisionTargetStatus === 'Completed';
                 this.revisionForm = {
                     ...this.emptyRevisionForm(),
                     uploaded_by: currentUserId,
@@ -2425,9 +2439,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
 
         this.isSaving.set(true);
-        const request = this.revisionCorrectionMode && this.revisionCurrentRevision
-            ? this.documentsService.correctRevision(this.revisionTargetDocumentId, this.revisionCurrentRevision.revision_id, form)
-            : this.documentsService.uploadRevision(this.revisionTargetDocumentId, form);
+        const request = this.documentsService.uploadRevision(this.revisionTargetDocumentId, form);
         request.subscribe({
             next: () => {
                 this.isSaving.set(false);
@@ -2437,7 +2449,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.revisionCurrentRevision = null;
                 this.revisionExistingRevisions = [];
                 this.revisionTargetStatus = '';
-                this.revisionCorrectionMode = false;
                 this.showNotice('success', 'Revision uploaded', 'The new revision was uploaded successfully.');
                 this.loadData();
                 if (this.detailDialogVisible && this.revisionTargetDocumentId) {
@@ -2445,6 +2456,33 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 }
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to upload revision')
+        });
+    }
+
+    openDirectoryDialog(document: DocumentSummary) {
+        if (!this.canChangeDirectory(document)) return;
+        this.directoryTargetDocumentId = document.document_id;
+        this.directoryContextDocumentNumber = document.document_number || document.document_title || 'Softcopy document';
+        this.directoryCurrentCategoryId = document.softcopy?.category?.softcopy_category_id || '';
+        this.directoryDialogVisible = true;
+    }
+
+    saveDirectory(categoryId: string) {
+        if (!this.directoryTargetDocumentId || !categoryId) return;
+        this.isSaving.set(true);
+        this.documentsService.changeDirectory(this.directoryTargetDocumentId, categoryId).subscribe({
+            next: () => {
+                this.isSaving.set(false);
+                const documentId = this.directoryTargetDocumentId;
+                this.directoryDialogVisible = false;
+                this.directoryTargetDocumentId = '';
+                this.directoryContextDocumentNumber = '';
+                this.directoryCurrentCategoryId = '';
+                this.showNotice('success', 'Directory changed', 'The controlled file was moved to the selected folder.');
+                this.loadData();
+                if (this.detailDialogVisible && documentId) this.openDetailDialogById(documentId);
+            },
+            error: (error: unknown) => this.handleActionError(error, 'Unable to change directory')
         });
     }
 

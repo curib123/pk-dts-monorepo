@@ -52,6 +52,7 @@ import { CreateRevisionDto } from "./dto/create-revision.dto";
 import { PublicDocumentQueryDto } from "./dto/public-document-query.dto";
 import { PublicDocumentAssistantQueryDto } from "./dto/public-document-assistant-query.dto";
 import { UpdateDocumentDto } from "./dto/update-document.dto";
+import { ChangeDocumentDirectoryDto } from "./dto/change-document-directory.dto";
 import { ConfigureDocumentApproversDto } from "./dto/configure-document-approvers.dto";
 import { ReassignWorkflowStepDto } from "./dto/reassign-workflow-step.dto";
 import { BatchSoftcopyFolderUploadDto } from "./dto/batch-softcopy-folder-upload.dto";
@@ -3478,6 +3479,62 @@ export class DocumentsService {
     } catch (error) {
       this.rethrowDocumentNumberConflict(error);
     }
+  }
+
+  async changeDirectory(
+    id: string,
+    dto: ChangeDocumentDirectoryDto,
+    actor: AuthenticatedUser,
+  ) {
+    const document_id = toBigIntId(id, "document_id");
+    const document = await this.prisma.document.findUnique({
+      where: { document_id },
+      select: {
+        document_id: true,
+        status: true,
+        document_type: true,
+        created_by: true,
+        softcopy: { select: { softcopy_id: true } },
+      },
+    });
+
+    if (!document) throw new NotFoundException("The document was not found.");
+    if (document.document_type !== DocumentType.SOFTCOPY) {
+      throw new BadRequestException("Only Softcopy documents can change directory.");
+    }
+    if (document.status !== DocumentStatus.Completed) {
+      throw new ConflictException("Only completed controlled files can change directory.");
+    }
+
+    if (!canManageDocuments(actor)) {
+      const actorId = toBigIntId(actor.user_id, "current_user_id");
+      const canManage = await this.prisma.document.findFirst({
+        where: {
+          document_id,
+          OR: [{ created_by: actorId }, { assignments: { some: { user_id: actorId } } }],
+        },
+        select: { document_id: true },
+      });
+      if (!canManage) {
+        throw new ForbiddenException(
+          "Staff can only change the directory of documents they created or that are assigned to them.",
+        );
+      }
+    }
+
+    const categoryId = await this.resolveSoftcopyCategoryId(
+      this.prisma,
+      dto.softcopy_category_id,
+    );
+    if (!document.softcopy) {
+      throw new ConflictException("The completed Softcopy has no controlled file directory.");
+    }
+    await this.prisma.softcopyDocument.update({
+      where: { softcopy_id: document.softcopy.softcopy_id },
+      data: { softcopy_category_id: categoryId },
+    });
+    await this.organizeRevisionStorage(document_id);
+    return this.findOne(id);
   }
 
   private rethrowDocumentNumberConflict(error: unknown): never {

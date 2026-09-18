@@ -118,6 +118,13 @@ export class DocumentsService {
         );
     }
 
+    changeDirectory(id: string, softcopyCategoryId: string) {
+        return this.http.patch<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}/directory`, { softcopy_category_id: softcopyCategoryId }).pipe(
+            map((response) => this.unwrap(response)),
+            tap(() => this.invalidateListCache())
+        );
+    }
+
     private uploadRequestReviewFile(documentId: string, payload: DocumentFormValue) {
         if (!payload.initial_file) return throwError(() => new Error('A review Softcopy file is required.'));
         const formData = new FormData();

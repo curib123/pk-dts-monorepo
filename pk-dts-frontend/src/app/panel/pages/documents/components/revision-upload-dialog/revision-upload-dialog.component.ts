@@ -23,7 +23,7 @@ import { RevisionFormValue, RevisionSummary, SoftcopyCategoryReference } from '.
             [appendTo]="'body'"
             [style]="{ width: '38rem', maxWidth: '94vw' }"
             [breakpoints]="{ '960px': '92vw', '640px': '96vw' }"
-            [header]="correctionMode ? 'Correct Controlled File' : 'Upload and Finalize Revision'"
+            header="Upload and Finalize Revision"
             (onHide)="handleHide()"
         >
             <div class="space-y-5 pt-2">
@@ -40,12 +40,6 @@ import { RevisionFormValue, RevisionSummary, SoftcopyCategoryReference } from '.
                             <div class="mt-2 text-slate-600">No existing revisions yet. This upload will become the first softcopy revision.</div>
                         </ng-template>
                     </div>
-                </div>
-
-                <div class="field" *ngIf="correctionMode">
-                    <label for="correction-reason">Correction reason <span class="text-red-500">*</span></label>
-                    <textarea id="correction-reason" pInputText [(ngModel)]="form.correction_reason" class="w-full" rows="3" placeholder="Explain why the controlled file is being replaced." ></textarea>
-                    <small *ngIf="submitted && !form.correction_reason?.trim()">A reason is required for a controlled file correction.</small>
                 </div>
 
                 <div class="field">
@@ -97,7 +91,7 @@ import { RevisionFormValue, RevisionSummary, SoftcopyCategoryReference } from '.
                     </div>
                 </div>
 
-                <label *ngIf="!correctionMode" class="inline-flex items-center gap-3 text-sm font-semibold text-slate-700">
+                <label class="inline-flex items-center gap-3 text-sm font-semibold text-slate-700">
                     <p-checkbox [(ngModel)]="form.set_as_current" [binary]="true"></p-checkbox>
                     <span>Finalize as official Controlled Copy</span>
                 </label>
@@ -105,7 +99,7 @@ import { RevisionFormValue, RevisionSummary, SoftcopyCategoryReference } from '.
 
             <ng-template pTemplate="footer">
                 <p-button label="Cancel" severity="secondary" text (onClick)="cancel()" />
-                <p-button [label]="correctionMode ? 'Upload corrected file' : 'Upload and finalize'" icon="pi pi-upload" [loading]="saving" (onClick)="submit()" />
+                <p-button label="Upload and finalize" icon="pi pi-upload" [loading]="saving" (onClick)="submit()" />
             </ng-template>
         </p-dialog>
     `,
@@ -194,7 +188,6 @@ export class RevisionUploadDialogComponent {
     @Input() currentRevision: RevisionSummary | null = null;
     @Input() existingRevisions: RevisionSummary[] = [];
     @Input() documentStatus = '';
-    @Input() correctionMode = false;
     @Input() softcopyCategories: SoftcopyCategoryReference[] = [];
 
     @Output() save = new EventEmitter<RevisionFormValue>();
@@ -222,9 +215,8 @@ export class RevisionUploadDialogComponent {
         }
 
         if (!this.form.softcopy_category_id) return;
-        if (this.correctionMode && !this.form.correction_reason?.trim()) return;
         if (this.form.set_as_current && (!this.form.effective_date || !this.form.series_number?.trim() || !this.form.page_number?.trim())) return;
-        this.save.emit({ ...this.form, set_as_current: this.correctionMode ? false : this.form.set_as_current, correction_reason: this.form.correction_reason?.trim() || '' });
+        this.save.emit({ ...this.form });
     }
 
     cancel() {

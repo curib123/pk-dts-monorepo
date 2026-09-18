@@ -46,6 +46,7 @@ import { BatchHardcopyUploadDto } from "./dto/batch-hardcopy-upload.dto";
 import { DisposeDocumentDto } from "./dto/dispose-document.dto";
 import { CreateRevisionDto } from "./dto/create-revision.dto";
 import { UpdateDocumentDto } from "./dto/update-document.dto";
+import { ChangeDocumentDirectoryDto } from "./dto/change-document-directory.dto";
 import { DocumentsService } from "./documents.service";
 import { DocumentStatus } from "@prisma/client";
 import { WorkflowActionDto } from "./dto/workflow-action.dto";
@@ -243,6 +244,18 @@ export class DocumentsController {
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     return this.documentsService.reassignWorkflowStep(id, stepId, dto, user!);
+  }
+
+  @Patch(":id/directory")
+  @RequirePermissions("documents.edit", "documents.manage-own")
+  @ApiOperation({ summary: "Change the folder or subfolder for a completed Softcopy" })
+  @ApiOkResponse({ description: "Document directory changed successfully." })
+  changeDirectory(
+    @Param("id") id: string,
+    @Body() dto: ChangeDocumentDirectoryDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.documentsService.changeDirectory(id, dto, user!);
   }
 
   @Patch(":id")
