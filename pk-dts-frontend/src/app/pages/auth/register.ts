@@ -12,19 +12,37 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, RouterModule],
     template: `
-        <main class="registration-shell" [style.--registration-cover]="coverImage()">
-            <div class="registration-cover" aria-hidden="true"></div>
-            <div class="registration-overlay"></div>
-            <section class="registration-card">
-                <aside class="registration-intro">
-                    <div class="intro-copy">
-                        <span class="eyebrow">Secure account request</span>
-                        <h1>{{ mode() === 'register' ? 'Join your document workspace.' : 'Follow your request.' }}</h1>
-                        <p>{{ mode() === 'register' ? 'Submit your details for review. An authorized account manager will confirm your access and assign the appropriate role.' : 'Use your registration username to retrieve the latest request and see its current approval status.' }}</p>
-                    </div>
-                </aside>
+        <main class="login-shell registration-shell" [style.--registration-cover]="coverImage()">
+            <div class="login-cover registration-cover" aria-hidden="true"></div>
+            <div class="login-overlay registration-overlay"></div>
 
-                <div class="registration-content">
+            <div class="login-panel registration-panel">
+                <section class="login-hero registration-intro">
+                    <div class="hero-copy intro-copy">
+                        <div class="hero-kicker eyebrow">{{ settings().loginKicker }}</div>
+                        <h1>{{ settings().loginHeadline }}</h1>
+                        <p>{{ settings().loginDescription }}</p>
+                        <div class="workflow-points" aria-label="System capabilities">
+                            <div><i class="pi pi-file"></i><span><strong>Track records</strong><small>Softcopy and physical documents</small></span></div>
+                            <div><i class="pi pi-map-marker"></i><span><strong>Locate faster</strong><small>Mapped storage and file journeys</small></span></div>
+                            <div><i class="pi pi-shield"></i><span><strong>Work securely</strong><small>Role-based access and accountability</small></span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="login-card registration-card">
+                    <div class="portal-label"><span></span> Staff workspace</div>
+                    <div class="login-card-header">
+                        <div class="login-logo">
+                            <img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" />
+                        </div>
+                        <div>
+                            <div class="login-title">{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</div>
+                            <div class="login-subtitle">{{ mode() === 'register' ? 'Submit your details for review and access approval.' : 'Track the latest decision on your account request.' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="registration-content">
                     <div class="content-heading">
                         <h2>{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</h2>
                         <p>{{ mode() === 'register' ? 'Complete the form below. Fields marked required must be provided.' : 'Enter the username used when you registered.' }}</p>
@@ -121,7 +139,15 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
                     <footer>Already approved? <a routerLink="/auth/login">Sign in</a></footer>
                 </div>
-            </section>
+
+                </section>
+            </div>
+
+            <footer class="landing-footer">
+                <span>{{ settings().footerText }}</span>
+                <span>Corporate IT - System Programmer I - John Paul Curib</span>
+                <span>Secure records &middot; Clear ownership &middot; Faster retrieval</span>
+            </footer>
         </main>
     `,
     styles: [
@@ -1159,6 +1185,120 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 .wide { grid-column: 1; }
                 .status-result dl { grid-template-columns: 1fr; }
                 .result-actions { flex-direction: column; }
+            }
+        `
+        ,`
+            /* Reuse the login composition for registration and status requests. */
+            .registration-shell {
+                min-height: 100svh;
+                padding: 7rem clamp(1.25rem, 5vw, 5rem) 4.5rem;
+                align-items: center;
+                background: #080c14;
+            }
+
+            .registration-cover,
+            .registration-overlay {
+                inset: 0;
+                width: auto;
+                height: auto;
+            }
+
+            .registration-cover {
+                background-position: center;
+                opacity: 1;
+            }
+
+            .registration-overlay {
+                background:
+                    linear-gradient(90deg, rgba(5, 9, 16, 0.97) 0%, rgba(5, 9, 16, 0.88) 46%, rgba(5, 9, 16, 0.62) 100%),
+                    linear-gradient(180deg, rgba(5, 9, 16, 0.28) 0%, rgba(5, 9, 16, 0.24) 55%, rgba(5, 9, 16, 0.92) 100%);
+            }
+
+            .registration-panel {
+                position: relative;
+                z-index: 1;
+                width: min(1160px, 100%);
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(370px, 420px);
+                align-items: center;
+                gap: clamp(2rem, 6vw, 6.5rem);
+                overflow: visible;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                box-shadow: none;
+                backdrop-filter: none;
+            }
+
+            .registration-intro {
+                min-height: 540px;
+                padding: 2rem 0;
+                align-items: center;
+                background: transparent;
+            }
+
+            .registration-intro::after { display: none; }
+            .intro-copy { max-width: 39rem; margin: 0; padding: 0; }
+            .intro-copy .hero-kicker { padding: 0.48rem 0.72rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.45rem; background: var(--brand-primary); color: #fff; font-size: 0.65rem; letter-spacing: 0.16em; box-shadow: 0 8px 24px rgba(127, 29, 29, 0.2); }
+            .intro-copy h1 { max-width: 38rem; margin-top: 1.35rem; color: #fff; font-size: clamp(2.75rem, 4.5vw, 4.6rem); line-height: 1.04; letter-spacing: -0.045em; text-wrap: balance; text-shadow: 0 3px 24px rgba(0, 0, 0, 0.35); }
+            .intro-copy p { max-width: 35rem; margin-top: 1.25rem; color: #e2e8f0; font-size: 1rem; line-height: 1.7; }
+            .workflow-points { gap: 0.65rem; margin-top: 2rem; }
+            .workflow-points > div { grid-template-columns: 2.1rem minmax(0, 1fr); gap: 0.6rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.75rem; background: rgba(15, 23, 42, 0.76); padding: 0.72rem; backdrop-filter: blur(8px); }
+            .workflow-points > div > i { width: 2.1rem; height: 2.1rem; border-radius: 0.55rem; background: var(--brand-primary-deep); color: #fff; }
+            .workflow-points strong { color: #fff; font-size: 0.74rem; }
+            .workflow-points small { color: #cbd5e1; }
+
+            .registration-card {
+                width: auto;
+                min-height: 0;
+                display: block;
+                overflow: visible;
+                padding: 2.35rem;
+                border: 1px solid rgba(255, 255, 255, 0.72);
+                border-radius: 1.35rem;
+                background: rgba(255, 255, 255, 0.97);
+                box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.12);
+                backdrop-filter: none;
+            }
+
+            .portal-label { margin-bottom: 1.35rem; color: var(--brand-primary-deep); }
+            .portal-label span { width: 1.25rem; background: var(--brand-primary); }
+            .login-card-header { gap: 0.9rem; margin-bottom: 1.65rem; }
+            .login-logo { width: 3.75rem; height: 3.75rem; border-radius: 0.9rem; }
+            .login-logo img { width: 2.55rem; height: 2.55rem; }
+            .login-title { color: #0f172a; font-size: 1.6rem; }
+            .login-subtitle { margin-top: 0.2rem; color: #64748b; font-size: 0.86rem; line-height: 1.45; }
+
+            .registration-content { min-width: 0; padding: 0; background: transparent; }
+            .content-heading { display: none; }
+            .mode-tabs { margin: 0 0 1.35rem; }
+            .form-grid { gap: 0.85rem; }
+            .registration-content > footer { margin-top: 1.25rem; padding-top: 1.05rem; font-size: 0.78rem; }
+
+            .landing-footer {
+                left: clamp(1.25rem, 5vw, 5rem);
+                right: clamp(1.25rem, 5vw, 5rem);
+                color: rgba(255, 255, 255, 0.48);
+            }
+
+            @media (max-width: 960px) {
+                .registration-shell { justify-content: flex-start; padding: 6.5rem 1rem 1.5rem; }
+                .registration-panel { grid-template-columns: 1fr; gap: 1.25rem; width: min(620px, 100%); }
+                .registration-intro { min-height: auto; padding: 2rem 1rem 1rem; text-align: center; }
+                .intro-copy { max-width: 36rem; margin-inline: auto; }
+                .intro-copy p { margin-inline: auto; }
+                .workflow-points { display: none; }
+                .landing-footer { width: min(620px, 100%); }
+            }
+
+            @media (max-width: 640px) {
+                .registration-shell { padding: 5.75rem 0.75rem 1rem; }
+                .registration-intro { padding: 1.35rem 0.5rem 0.5rem; }
+                .intro-copy h1 { margin-top: 0.9rem; font-size: 2rem; }
+                .intro-copy p { margin-top: 0.75rem; font-size: 0.86rem; line-height: 1.55; }
+                .registration-card { padding: 1.45rem 1.15rem; border-radius: 1rem; }
+                .registration-content > footer { gap: 0.35rem; }
+                .landing-footer { gap: 0.35rem; }
             }
         `
     ]
