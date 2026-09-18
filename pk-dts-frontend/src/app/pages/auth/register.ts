@@ -17,19 +17,6 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             <div class="login-overlay registration-overlay"></div>
 
             <div class="login-panel registration-panel">
-                <section class="login-hero registration-intro">
-                    <div class="hero-copy intro-copy">
-                        <div class="hero-kicker eyebrow">{{ settings().loginKicker }}</div>
-                        <h1>{{ settings().loginHeadline }}</h1>
-                        <p>{{ settings().loginDescription }}</p>
-                        <div class="workflow-points" aria-label="System capabilities">
-                            <div><i class="pi pi-file"></i><span><strong>Track records</strong><small>Softcopy and physical documents</small></span></div>
-                            <div><i class="pi pi-map-marker"></i><span><strong>Locate faster</strong><small>Mapped storage and file journeys</small></span></div>
-                            <div><i class="pi pi-shield"></i><span><strong>Work securely</strong><small>Role-based access and accountability</small></span></div>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="login-card registration-card">
                     <div class="portal-label"><span></span> Staff workspace</div>
                     <div class="login-card-header">
@@ -1219,7 +1206,8 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 z-index: 1;
                 width: min(1160px, 100%);
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(370px, 420px);
+                grid-template-columns: minmax(370px, 520px);
+                justify-content: center;
                 align-items: center;
                 gap: clamp(2rem, 6vw, 6.5rem);
                 overflow: visible;
@@ -1229,24 +1217,6 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 box-shadow: none;
                 backdrop-filter: none;
             }
-
-            .registration-intro {
-                min-height: 540px;
-                padding: 2rem 0;
-                align-items: center;
-                background: transparent;
-            }
-
-            .registration-intro::after { display: none; }
-            .intro-copy { max-width: 39rem; margin: 0; padding: 0; }
-            .intro-copy .hero-kicker { padding: 0.48rem 0.72rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.45rem; background: var(--brand-primary); color: #fff; font-size: 0.65rem; letter-spacing: 0.16em; box-shadow: 0 8px 24px rgba(127, 29, 29, 0.2); }
-            .intro-copy h1 { max-width: 38rem; margin-top: 1.35rem; color: #fff; font-size: clamp(2.75rem, 4.5vw, 4.6rem); line-height: 1.04; letter-spacing: -0.045em; text-wrap: balance; text-shadow: 0 3px 24px rgba(0, 0, 0, 0.35); }
-            .intro-copy p { max-width: 35rem; margin-top: 1.25rem; color: #e2e8f0; font-size: 1rem; line-height: 1.7; }
-            .workflow-points { gap: 0.65rem; margin-top: 2rem; }
-            .workflow-points > div { grid-template-columns: 2.1rem minmax(0, 1fr); gap: 0.6rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.75rem; background: rgba(15, 23, 42, 0.76); padding: 0.72rem; backdrop-filter: blur(8px); }
-            .workflow-points > div > i { width: 2.1rem; height: 2.1rem; border-radius: 0.55rem; background: var(--brand-primary-deep); color: #fff; }
-            .workflow-points strong { color: #fff; font-size: 0.74rem; }
-            .workflow-points small { color: #cbd5e1; }
 
             .registration-card {
                 width: auto;
@@ -1283,19 +1253,13 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
             @media (max-width: 960px) {
                 .registration-shell { justify-content: flex-start; padding: 6.5rem 1rem 1.5rem; }
-                .registration-panel { grid-template-columns: 1fr; gap: 1.25rem; width: min(620px, 100%); }
-                .registration-intro { min-height: auto; padding: 2rem 1rem 1rem; text-align: center; }
-                .intro-copy { max-width: 36rem; margin-inline: auto; }
-                .intro-copy p { margin-inline: auto; }
-                .workflow-points { display: none; }
+                .registration-panel { grid-template-columns: minmax(370px, 620px); gap: 1.25rem; width: min(620px, 100%); }
                 .landing-footer { width: min(620px, 100%); }
             }
 
             @media (max-width: 640px) {
                 .registration-shell { padding: 5.75rem 0.75rem 1rem; }
-                .registration-intro { padding: 1.35rem 0.5rem 0.5rem; }
-                .intro-copy h1 { margin-top: 0.9rem; font-size: 2rem; }
-                .intro-copy p { margin-top: 0.75rem; font-size: 0.86rem; line-height: 1.55; }
+                .registration-panel { grid-template-columns: 1fr; }
                 .registration-card { padding: 1.45rem 1.15rem; border-radius: 1rem; }
                 .registration-content > footer { gap: 0.35rem; }
                 .landing-footer { gap: 0.35rem; }

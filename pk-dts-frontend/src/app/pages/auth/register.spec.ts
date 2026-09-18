@@ -26,7 +26,7 @@ describe('Register', () => {
 
         expect(element.querySelector('.login-shell')).not.toBeNull();
         expect(element.querySelector('.login-panel')).not.toBeNull();
-        expect(element.querySelector('.login-hero')).not.toBeNull();
+        expect(element.querySelector('.registration-intro')).toBeNull();
         expect(element.querySelector('.login-card')).not.toBeNull();
         expect(element.querySelector('form.form-grid')).not.toBeNull();
     });
