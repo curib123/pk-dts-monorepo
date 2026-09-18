@@ -179,8 +179,27 @@ export class DocumentAccessRequestsService {
 
     if (!document)
       throw new NotFoundException("The approved document was not found.");
-    const approverId = document.approver_configuration?.access_approver_user_id
+    let approverId = document.approver_configuration?.access_approver_user_id
       ?? document.approver_configuration?.document_owner_user_id;
+    let approvalStage = "DOCUMENT_CONFIGURED_APPROVER";
+    if (!approverId) {
+      const fallbackApprover = await this.prisma.user.findFirst({
+        where: {
+          user_id: { not: userId },
+          role: {
+            role_permissions: {
+              some: {
+                permission: { permission_name: "document-access-requests.approve" },
+              },
+            },
+          },
+        },
+        select: { user_id: true },
+        orderBy: { user_id: "asc" },
+      });
+      approverId = fallbackApprover?.user_id;
+      approvalStage = "DOCUMENT_ACCESS_APPROVER";
+    }
     if (!approverId) {
       throw new ConflictException("An authorized document access approver is not configured.");
     }
@@ -197,7 +216,7 @@ export class DocumentAccessRequestsService {
           request_reason: requestReason,
           status: DocumentAccessRequestStatus.ForAccessApproval,
           approver_user_id: approverId,
-          approval_stage: "DOCUMENT_CONFIGURED_APPROVER",
+          approval_stage: approvalStage,
         },
         include: REQUEST_INCLUDE,
       });

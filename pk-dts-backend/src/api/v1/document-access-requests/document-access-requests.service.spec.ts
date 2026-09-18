@@ -107,6 +107,53 @@ describe("DocumentAccessRequestsService", () => {
     );
   });
 
+  it("falls back to the first authorized access approver when the document has no configured approver", async () => {
+    const prisma: any = {
+      document: {
+        findFirst: jest.fn().mockResolvedValue({ document_id: 4n, approver_configuration: null }),
+      },
+      documentAssignment: { findUnique: jest.fn().mockResolvedValue(null) },
+      documentAccessRequest: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ access_request_id: 7n }),
+      },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({ user_id: 12n }),
+      },
+      documentAccessRequestHistory: { create: jest.fn().mockResolvedValue({}) },
+      $transaction: jest.fn((callback) => callback(prisma)),
+    };
+    const service = new DocumentAccessRequestsService(prisma);
+
+    await service.create(
+      { document_id: "4", request_reason: "Needed for review" },
+      actor(["document-access-requests.create"]),
+    );
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        user_id: { not: 9n },
+        role: {
+          role_permissions: {
+            some: {
+              permission: { permission_name: "document-access-requests.approve" },
+            },
+          },
+        },
+      },
+      select: { user_id: true },
+      orderBy: { user_id: "asc" },
+    });
+    expect(prisma.documentAccessRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          approver_user_id: 12n,
+          approval_stage: "DOCUMENT_ACCESS_APPROVER",
+        }),
+      }),
+    );
+  });
+
   it("rejects an access request without a nonblank reason", async () => {
     const prisma: any = {};
     const service = new DocumentAccessRequestsService(prisma);
