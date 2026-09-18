@@ -1,7 +1,5 @@
 /* Global application theme — one source of truth: light mode + deep maroon brand. */
 @use 'primeicons/primeicons.css';
-@use './layout/layout.scss';
-@use './demo/demo.scss';
 
 :root {
     color-scheme: light;
