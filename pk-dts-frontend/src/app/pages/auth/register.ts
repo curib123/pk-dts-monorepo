@@ -15,38 +15,17 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
         <main class="registration-shell" [style.--registration-cover]="coverImage()">
             <div class="registration-cover" aria-hidden="true"></div>
             <div class="registration-overlay"></div>
-            <header class="landing-nav">
-                <a class="landing-brand" routerLink="/auth/login" aria-label="Document workspace home">
-                    <span class="brand-mark"><img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" /></span>
-                    <span><small>{{ settings().brandEyebrow }}</small><strong>{{ settings().systemShortTitle }}</strong></span>
-                </a>
-                <div class="landing-nav-actions">
-                    <a class="nav-link" routerLink="/"><i class="pi pi-arrow-left"></i><span>Public documents</span></a>
-                    <div class="landing-nav-meta"><i class="pi pi-user-plus"></i><span>Account registration</span></div>
-                </div>
-            </header>
             <section class="registration-card">
                 <aside class="registration-intro">
-                    <header>
-                        <span class="logo-frame"><img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" /></span>
-                        <div class="brand-copy"><strong>{{ settings().systemTitle }}</strong><span>Account access</span></div>
-                    </header>
                     <div class="intro-copy">
                         <span class="eyebrow">Secure account request</span>
                         <h1>{{ mode() === 'register' ? 'Join your document workspace.' : 'Follow your request.' }}</h1>
                         <p>{{ mode() === 'register' ? 'Submit your details for review. An authorized account manager will confirm your access and assign the appropriate role.' : 'Use your registration username to retrieve the latest request and see its current approval status.' }}</p>
                     </div>
-                    <div class="process-list" *ngIf="mode() === 'register'">
-                        <div><b>1</b><span><strong>Send your request</strong><small>Provide your identity and requested access.</small></span></div>
-                        <div><b>2</b><span><strong>Administrator review</strong><small>Your details and role are verified.</small></span></div>
-                        <div><b>3</b><span><strong>Start securely</strong><small>Sign in after your account is approved.</small></span></div>
-                    </div>
-                    <div class="privacy-note"><i class="pi pi-shield"></i><span><strong>Your information is protected</strong><small>Details are used only to review and create your account.</small></span></div>
                 </aside>
 
                 <div class="registration-content">
                     <div class="content-heading">
-                        <span>Account access</span>
                         <h2>{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</h2>
                         <p>{{ mode() === 'register' ? 'Complete the form below. Fields marked required must be provided.' : 'Enter the username used when you registered.' }}</p>
                     </div>
@@ -1077,6 +1056,112 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             @media (max-width: 640px) {
                 .landing-brand .brand-mark { width: 3.75rem; height: 2.5rem; }
                 .registration-intro .logo-frame { width: 4.05rem; height: 2.7rem; }
+            }
+        `
+        ,`
+            /* Keep registration visually aligned with the focused login shell. */
+            .registration-shell {
+                min-height: 100svh;
+                padding: 2rem clamp(1rem, 4vw, 4rem);
+                background: #f6f8fb;
+            }
+
+            .registration-cover {
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: auto;
+                width: 43%;
+                background-position: center;
+                opacity: 0.9;
+            }
+
+            .registration-overlay {
+                left: auto;
+                width: 43%;
+                background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(127, 29, 29, 0.68));
+            }
+
+            .registration-card {
+                width: min(1120px, 100%);
+                min-height: 620px;
+                display: grid;
+                grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+                padding: 0;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.65rem;
+                background: transparent;
+                box-shadow: 0 26px 70px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+                backdrop-filter: none;
+            }
+
+            .registration-intro {
+                min-height: 620px;
+                padding: clamp(2rem, 5vw, 4rem);
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                background: linear-gradient(160deg, rgba(15, 23, 42, 0.34), rgba(15, 23, 42, 0.9));
+            }
+
+            .intro-copy { max-width: 30rem; margin: 0; padding: 0; }
+            .intro-copy .eyebrow { border-radius: 0.55rem; background: rgba(255, 255, 255, 0.14); }
+            .intro-copy h1 { max-width: 27rem; margin-top: 1.1rem; font-size: clamp(2.4rem, 4vw, 4rem); line-height: 1.02; }
+            .intro-copy p { max-width: 27rem; color: rgba(255, 255, 255, 0.78); font-size: 0.96rem; line-height: 1.7; }
+
+            .registration-content {
+                min-width: 0;
+                padding: clamp(2rem, 4vw, 3.3rem);
+                background: #fff;
+            }
+
+            .content-heading > span { display: none; }
+            .content-heading h2 { margin-top: 0; color: #172033; font-size: 1.75rem; letter-spacing: -0.035em; }
+            .content-heading p { color: #7b8495; font-size: 0.86rem; line-height: 1.6; }
+            .mode-tabs { margin: 1.35rem 0 1.65rem; border: 1px solid #e6eaf0; border-radius: 0.8rem; background: #f8fafc; padding: 0.25rem; }
+            .mode-tabs button { min-height: 2.7rem; border-radius: 0.58rem; color: #7b8495; font-size: 0.78rem; }
+            .mode-tabs button.active { color: #fff; background: var(--registration-brand-deep); box-shadow: 0 8px 16px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent); }
+
+            .form-grid { gap: 0.85rem; }
+            .section-label { margin-top: 0.55rem; border-top-color: #edf0f4; padding-top: 0.9rem; }
+            .section-label strong { color: #334155; font-size: 0.78rem; }
+            .section-label small { color: #94a3b8; font-size: 0.68rem; }
+            .form-grid input, .form-grid select, .form-grid textarea, .status-form input {
+                min-height: 2.95rem;
+                border: 1px solid #dbe1e9;
+                border-radius: 0.7rem;
+                background: #fbfcfe;
+                box-shadow: none;
+            }
+            .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus, .status-form input:focus { border-color: color-mix(in srgb, var(--registration-brand) 58%, #cbd5e1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--registration-brand) 12%, transparent); }
+            .primary { min-height: 3.1rem; border-radius: 0.7rem; background: var(--registration-brand-deep); box-shadow: 0 12px 24px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent); }
+            .primary:hover { background: var(--registration-brand); }
+            .error { border: 1px solid #fee2e2; border-radius: 0.75rem; background: #fff5f5; color: #b91c1c; }
+            .status-guide { border-color: #dbeafe; border-radius: 0.8rem; background: #eff6ff; color: #1e40af; }
+            .receipt, .status-result { border: 1px solid #e6eaf0; border-radius: 1rem; background: #f8fafc; }
+            .status-result dl div { border: 1px solid #edf0f4; background: #fff; }
+            .registration-content > footer { border-top: 1px solid #edf0f4; padding-top: 1rem; }
+
+            @media (max-width: 900px) {
+                .registration-cover, .registration-overlay { width: 100%; }
+                .registration-cover { height: 38%; bottom: auto; }
+                .registration-overlay { height: 38%; bottom: auto; }
+                .registration-card { grid-template-columns: 1fr; width: min(700px, 100%); }
+                .registration-intro { min-height: 300px; padding: 2.4rem 2rem; }
+                .registration-content { padding: 2rem; }
+            }
+
+            @media (max-width: 620px) {
+                .registration-shell { padding: 1rem 0.75rem; }
+                .registration-card { border-radius: 1.15rem; }
+                .registration-intro { min-height: 260px; padding: 2rem 1.25rem; }
+                .intro-copy h1 { font-size: 2.15rem; }
+                .registration-content { padding: 1.55rem 1.15rem; }
+                .form-grid { grid-template-columns: 1fr; }
+                .wide { grid-column: 1; }
+                .status-result dl { grid-template-columns: 1fr; }
+                .result-actions { flex-direction: column; }
             }
         `
     ]
