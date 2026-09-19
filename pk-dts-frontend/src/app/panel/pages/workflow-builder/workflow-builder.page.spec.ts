@@ -78,24 +78,33 @@ describe('WorkflowBuilderPage', () => {
         fixture.detectChanges();
     });
 
-    it('renders the workflow list before loading the selected graph', () => {
+    it('loads only the workflow list until a workflow is clicked', () => {
         const page = fixture.componentInstance;
 
         expect(page.loading).toBeFalse();
-        expect(page.versionLoading).toBeTrue();
-        expect(page.selectedDefinition?.workflow_definition_id).toBe('1');
-        expect(page.selectedVersion?.workflow_version_id).toBe('2');
-        expect(workflows.getVersion).toHaveBeenCalledWith('1', '2');
+        expect(page.versionLoading).toBeFalse();
+        expect(page.selectedDefinition).toBeUndefined();
+        expect(page.selectedVersion).toBeUndefined();
+        expect(workflows.getVersion).not.toHaveBeenCalled();
         expect(users.listUsers).not.toHaveBeenCalled();
         expect(roles.listRoles).not.toHaveBeenCalled();
 
         const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
         expect(text).toContain('Workflows');
-        expect(text).toContain('Loading selected workflow');
+        expect(text).toContain('Select a workflow to begin');
     });
 
-    it('hydrates the selected graph and only then loads editor reference data', async () => {
+    it('fetches the selected workflow and editor data only after the workflow is clicked', () => {
         const page = fixture.componentInstance;
+
+        page.selectDefinition(page.definitions[0]);
+
+        expect(page.selectedDefinition?.workflow_definition_id).toBe('1');
+        expect(page.selectedVersion?.workflow_version_id).toBe('2');
+        expect(page.versionLoading).toBeTrue();
+        expect(workflows.getVersion).toHaveBeenCalledWith('1', '2');
+        expect(users.listUsers).toHaveBeenCalledTimes(1);
+        expect(roles.listRoles).toHaveBeenCalledTimes(1);
 
         versionRequest.next({
             workflow_version_id: '2',
@@ -106,19 +115,11 @@ describe('WorkflowBuilderPage', () => {
         });
         versionRequest.complete();
 
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        fixture.detectChanges();
-
         expect(page.versionLoading).toBeFalse();
+        expect(page.referenceDataLoading).toBeFalse();
         expect(page.approvalNodes.length).toBe(1);
         expect(page.approvalNodes[0].label).toBe('Leader approval');
-        expect(users.listUsers).not.toHaveBeenCalled();
-        expect(roles.listRoles).not.toHaveBeenCalled();
-
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        fixture.detectChanges();
-
-        expect(users.listUsers).toHaveBeenCalledTimes(1);
-        expect(roles.listRoles).toHaveBeenCalledTimes(1);
+        expect(page.users).toEqual([]);
+        expect(page.roles).toEqual([]);
     });
 });

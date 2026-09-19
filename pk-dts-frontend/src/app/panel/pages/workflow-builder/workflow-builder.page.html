@@ -77,7 +77,7 @@
             <div *ngIf="!definitions.length" class="empty"><i class="pi pi-list-check"></i><strong>No workflows yet</strong><span>Create the first approval route to begin.</span></div>
         </aside>
 
-        <main *ngIf="selectedDefinition && selectedVersion && !versionLoading && !versionLoadError; else selectPrompt" class="editor">
+        <main *ngIf="!!selectedDefinition && !!selectedVersion && !versionLoading && !versionLoadError; else selectPrompt" class="editor">
             <section class="editor-toolbar">
                 <div class="editor-title">
                     <div class="status-line">
@@ -166,7 +166,7 @@
 
                         <label class="step-label">
                             <span>Step name <em>Required</em></span>
-                            <input [(ngModel)]="node.label" (input)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
+                            <input [value]="node.label" (input)="setNodeLabel(node, $any($event.target).value)" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
                             <small>This label appears in the request approval history.</small>
                         </label>
 
@@ -194,7 +194,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'USER'">
                                     <span>Person</span>
-                                    <select [(ngModel)]="node.assignment!.user_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [value]="node.assignment?.user_id || ''" (change)="setAssignmentUser(node, $any($event.target).value)" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a person</option>
                                         <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
                                     </select>
@@ -202,7 +202,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'ROLE'">
                                     <span>Role</span>
-                                    <select [(ngModel)]="node.assignment!.role_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [value]="node.assignment?.role_id || ''" (change)="setAssignmentRole(node, $any($event.target).value)" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a role</option>
                                         <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
                                     </select>
@@ -248,7 +248,7 @@
                     <span>The workflow list is ready. Only this version's approval graph is being loaded.</span>
                 </ng-container>
                 <ng-template #versionLoadState>
-                    <ng-container *ngIf="versionLoadError && selectedDefinition && selectedVersion; else chooseWorkflow">
+                    <ng-container *ngIf="!!versionLoadError && !!selectedDefinition && !!selectedVersion; else chooseWorkflow">
                         <i class="pi pi-exclamation-circle"></i>
                         <strong>Unable to load this workflow version</strong>
                         <span>{{ versionLoadError }}</span>
