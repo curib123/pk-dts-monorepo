@@ -1261,6 +1261,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
     private alerts = inject(AlertDialogService);
     private assistantSearchTimer: ReturnType<typeof setTimeout> | null = null;
     private dataLoadRequest = 0;
+    private filteredDocumentsSource: DocumentSummary[] | null = null;
+    private filteredCategoriesSource: SoftcopyCategoryReference[] | null = null;
+    private filteredDocumentsKey = '';
+    private filteredDocumentsResult: DocumentSummary[] = [];
 
     documents = signal<DocumentSummary[]>([]);
     users = signal<DocumentUserSummary[]>([]);
@@ -1435,8 +1439,33 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     filteredDocuments() {
+        const documents = this.documents();
+        const categories = this.softcopyCategories();
         const search = this.searchTerm.trim().toLowerCase();
-        return this.documents().filter((document) => {
+        const filterKey = [
+            search,
+            this.selectedType,
+            this.selectedStatus,
+            this.selectedAreaId,
+            this.selectedLocationId,
+            this.selectedSpecificId,
+            this.selectedAssetId,
+            this.selectedSequenceId,
+            this.selectedCategoryId,
+            this.selectedAssignmentStatus
+        ].join('\u001f');
+
+        if (
+            this.filteredDocumentsSource === documents
+            && this.filteredCategoriesSource === categories
+            && this.filteredDocumentsKey === filterKey
+        ) {
+            return this.filteredDocumentsResult;
+        }
+
+        const selectedCategory = categories.find((category) => category.softcopy_category_id === this.selectedCategoryId);
+        const selectedFolder = selectedCategory?.folder_name || '';
+        const filtered = documents.filter((document) => {
             const matchesSearch =
                 !search ||
                 [
@@ -1468,8 +1497,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
             const matchesSpecific = !this.selectedSpecificId || (document.hardcopy?.specific?.specific_id || '') === this.selectedSpecificId;
             const matchesAsset = !this.selectedAssetId || (document.hardcopy?.asset?.asset_id || '') === this.selectedAssetId;
             const matchesSequence = !this.selectedSequenceId || (document.hardcopy?.sequence?.sequence_id || '') === this.selectedSequenceId;
-            const selectedCategory = this.softcopyCategories().find((category) => category.softcopy_category_id === this.selectedCategoryId);
-            const selectedFolder = selectedCategory?.folder_name || '';
             const documentFolder = document.softcopy?.category?.folder_name || '';
             const matchesCategory = !this.selectedCategoryId || (selectedFolder ? documentFolder === selectedFolder || documentFolder.startsWith(`${selectedFolder}/`) : (document.softcopy?.category?.softcopy_category_id || '') === this.selectedCategoryId);
             const isAssigned = !!document.assignments?.length;
@@ -1477,6 +1504,12 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
             return matchesSearch && matchesType && matchesStatus && matchesArea && matchesLocation && matchesSpecific && matchesAsset && matchesSequence && matchesCategory && matchesAssignment;
         });
+
+        this.filteredDocumentsSource = documents;
+        this.filteredCategoriesSource = categories;
+        this.filteredDocumentsKey = filterKey;
+        this.filteredDocumentsResult = filtered;
+        return filtered;
     }
 
     documentFolders(): DocumentFolderNode[] {
