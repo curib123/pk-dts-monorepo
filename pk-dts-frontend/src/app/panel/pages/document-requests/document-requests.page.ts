@@ -16,7 +16,7 @@ import { DocumentDetailDialogComponent } from '../documents/components/document-
 import { DocumentFormDialogComponent } from '../documents/components/document-form-dialog/document-form-dialog.component';
 import { RevisionUploadDialogComponent } from '../documents/components/revision-upload-dialog/revision-upload-dialog.component';
 import { DocumentsService } from '../documents/documents.service';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaReference,
     AssetReference,
@@ -35,22 +35,16 @@ import {
 @Component({
     selector: 'app-document-requests-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, ButtonModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, DocumentDetailDialogComponent, DocumentFormDialogComponent, RevisionUploadDialogComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent],
+    imports: [WorkspaceToolbarComponent, WorkspacePageComponent, CommonModule, ButtonModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, DocumentDetailDialogComponent, DocumentFormDialogComponent, RevisionUploadDialogComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent],
     template: `<app-workspace-page>
         <section class="requests-page">
-            <div class="request-heading">
-                <div>
-                    <span>PERSONAL WORKFLOW</span>
-                    <h1>My Requests</h1>
-                    <p>Create and track document requests submitted by your account, including their approval history and current status.</p>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-file-edit"></i></span>
+                    <div><strong>Personal document requests</strong><span>Track approval state, returned changes, and request history.</span></div>
                 </div>
-                <p-button
-                    *ngIf="canCreateRequest()"
-                    label="Create Document Request"
-                    icon="pi pi-plus"
-                    (onClick)="openCreateDialog()"
-                />
-            </div>
+                <p-button workspace-actions *ngIf="canCreateRequest()" label="Create Document Request" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+            </app-workspace-toolbar>
 
             <div class="feedback success" *ngIf="successMessage()">{{ successMessage() }}</div>
             <div class="feedback error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
