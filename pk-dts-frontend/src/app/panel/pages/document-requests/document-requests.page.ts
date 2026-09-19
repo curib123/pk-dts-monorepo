@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import type { PaginatorState } from 'primeng/types/paginator';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer/loading-shimmer.component';
@@ -116,6 +116,7 @@ import {
         <app-document-detail-dialog
             [(visible)]="detailDialogVisible"
             [document]="selectedDocumentDetail()"
+            [loading]="viewLoading()"
             [revisions]="selectedRevisions()"
             [users]="[]"
             [canConfigureWorkflow]="false"
@@ -155,7 +156,7 @@ import {
         .requests-page{display:grid;gap:1.25rem}.request-heading,.request-table{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:1.4rem}.request-heading{border-left:6px solid var(--brand-primary);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}.request-heading span{color:var(--brand-primary);font-size:.72rem;font-weight:800;letter-spacing:.14em}.request-heading h1{margin:.25rem 0;color:#111827}.request-heading p,.tab-copy{margin:0;color:#64748b}.request-table h2{margin:0 0 .35rem}.workflow-tabs{display:flex;gap:.65rem;flex-wrap:wrap;padding:.4rem;border-radius:16px;background:#f1f5f9;width:max-content;max-width:100%}.workflow-tabs button{border:0;background:transparent;border-radius:12px;padding:.8rem 1rem;font-weight:800;color:#64748b;cursor:pointer}.workflow-tabs button.active{background:#fff;color:var(--brand-primary);box-shadow:0 4px 14px rgba(15,23,42,.09)}.workflow-tabs button span{margin-left:.45rem;padding:.15rem .45rem;border-radius:999px;background:#e2e8f0;color:#475569;font-size:.72rem}.status{display:inline-block;padding:.35rem .65rem;border-radius:999px;background:#111827;color:#fff;font-size:.75rem;font-weight:700}.disposal-status[data-status="Pending"]{background:#f59e0b}.disposal-status[data-status="Approved"]{background:#15803d}.disposal-status[data-status="Rejected"]{background:var(--brand-primary)}td small{display:block;color:#64748b;margin-top:.25rem}.row-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.feedback{border-radius:12px;padding:.85rem 1rem;font-weight:600}.feedback.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.feedback.error{background:var(--brand-soft);color:var(--brand-primary-deep);border:1px solid var(--brand-border)}
     `]
 })
-export class DocumentRequestsPage implements OnInit {
+export class DocumentRequestsPage implements OnInit, OnDestroy {
     private documents = inject(DocumentsService);
     private auth = inject(AuthService);
     private alerts = inject(AlertDialogService);
@@ -179,6 +180,7 @@ export class DocumentRequestsPage implements OnInit {
     errorMessage = signal('');
     viewingDocumentId = '';
     detailDialogVisible = false;
+    private detailRequest?: Subscription;
     createDialogVisible = false;
     submitConfirmationVisible = false;
     deleteConfirmationVisible = false;
@@ -199,6 +201,7 @@ export class DocumentRequestsPage implements OnInit {
     rows = 10;
 
     ngOnInit() { this.viewMode = this.systemSettings.defaultDataView(); this.rows = this.systemSettings.defaultRowsPerPage(); this.load(); }
+    ngOnDestroy() { this.detailRequest?.unsubscribe(); }
 
     load() {
         this.loading.set(true);
@@ -227,31 +230,39 @@ export class DocumentRequestsPage implements OnInit {
     }
 
     openRequestDetails(item: DocumentSummary) {
-        if (this.viewLoading()) return;
+        this.detailRequest?.unsubscribe();
         this.viewingDocumentId = item.document_id;
         this.viewLoading.set(true);
         this.errorMessage.set('');
-        this.documents.getDocument(item.document_id).pipe(
+        this.selectedDocumentDetail.set(item);
+        this.selectedRevisions.set(item.softcopy?.revisions ?? []);
+        this.detailDialogVisible = true;
+
+        this.detailRequest = this.documents.getDocument(item.document_id).pipe(
             finalize(() => {
-                this.viewLoading.set(false);
-                this.viewingDocumentId = '';
+                if (this.viewingDocumentId === item.document_id) {
+                    this.viewLoading.set(false);
+                    this.viewingDocumentId = '';
+                }
             })
         ).subscribe({
             next: (document) => {
                 if (!document) {
                     const message = 'This document request is no longer available.';
+                    this.detailDialogVisible = false;
+                    this.selectedDocumentDetail.set(null);
+                    this.selectedRevisions.set([]);
                     this.errorMessage.set(message);
                     this.alerts.error('Request unavailable', message);
                     return;
                 }
                 this.selectedDocumentDetail.set(document);
                 this.selectedRevisions.set(document.softcopy?.revisions ?? []);
-                this.detailDialogVisible = true;
             },
             error: (error) => {
-                const message = this.requestError(error, 'Unable to load this document request and its approval workflow.');
+                const message = this.requestError(error, 'The request summary is available, but the full workflow details could not be loaded.');
                 this.errorMessage.set(message);
-                this.alerts.error('Unable to view request', message);
+                this.alerts.error('Unable to load full request details', message);
             }
         });
     }
