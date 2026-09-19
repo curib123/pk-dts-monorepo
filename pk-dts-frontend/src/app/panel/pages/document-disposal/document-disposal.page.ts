@@ -15,24 +15,22 @@ import { DocumentDetail, DocumentSummary, RevisionSummary } from '../documents/d
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
 @Component({
     selector: 'app-document-disposal-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, AlertModalComponent, DocumentDetailDialogComponent, LoadingShimmerComponent],
+    imports: [WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, AlertModalComponent, DocumentDetailDialogComponent, LoadingShimmerComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading()" label="Loading disposed documents" [columns]="7" />
         <section class="space-y-6" [style.display]="loading() ? 'none' : null">
             <article class="surface-card p-5 sm:p-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">Disposed documents</h1>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                            Review disposed records, disposal remarks, the responsible account or manual name, and restore records when needed.
-                        </p>
+                        <h2 class="m-0 text-xl font-black text-slate-900">Disposed record inventory</h2>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Filter disposed records and restore them when permitted.</p>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Disposed records</div>
@@ -41,10 +39,7 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
                 </div>
 
                 <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
-                    <div class="field">
-                        <label for="disposal-search">Search</label>
-                        <input id="disposal-search" [(ngModel)]="searchTerm" (ngModelChange)="resetPagination()" class="text-field" placeholder="Search number, title, remarks, disposer, area, or location..." />
-                    </div>
+                    <app-workspace-search [value]="searchTerm" (valueChange)="searchTerm = $event; resetPagination()" label="Search" placeholder="Search number, title, remarks, disposer, area, or location..." />
                     <div class="field">
                         <label for="disposed-by-filter">Disposed by</label>
                         <input id="disposed-by-filter" [(ngModel)]="disposedByFilter" (ngModelChange)="resetPagination()" class="text-field" placeholder="Filter by account or manual name" />
