@@ -1034,6 +1034,28 @@ export class DocumentsService {
       ...(Object.keys(hardcopyFilters).length
         ? { hardcopy: { is: hardcopyFilters } }
         : {}),
+      ...(query.disposed_by?.trim()
+        ? {
+            AND: [
+              {
+                OR: [
+                  { disposed_by_name: { contains: query.disposed_by.trim(), mode: "insensitive" } },
+                  {
+                    disposer: {
+                      is: {
+                        OR: [
+                          { firstname: { contains: query.disposed_by.trim(), mode: "insensitive" } },
+                          { lastname: { contains: query.disposed_by.trim(), mode: "insensitive" } },
+                          { username: { contains: query.disposed_by.trim(), mode: "insensitive" } },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          }
+        : {}),
       ...(category
         ? {
             softcopy: {
