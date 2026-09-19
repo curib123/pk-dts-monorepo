@@ -11,7 +11,7 @@ import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer
 import { SearchableDropdownComponent, SearchableDropdownOption, SearchableDropdownValue } from '@/app/shared/components/searchable-dropdown/searchable-dropdown.component';
 import { DocumentAccessRequestsService } from './document-access-requests.service';
 import { AccessRequestDocument, DocumentAccessRequest, DocumentAccessRequestStatus } from './document-access-requests.types';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type ViewTab = 'catalog' | 'mine' | 'pending';
 type AccessPageMode = 'requester' | 'reviewer' | 'all';
@@ -20,7 +20,7 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
 @Component({
     selector: 'app-document-access-requests-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, ConfirmationDialogComponent, LoadingShimmerComponent, SearchableDropdownComponent],
+    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, ConfirmationDialogComponent, LoadingShimmerComponent, SearchableDropdownComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading()" label="Loading document access requests" [columns]="5" />
         <section class="access-page" [style.display]="loading() ? 'none' : null">
@@ -36,11 +36,11 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
 
             <div *ngIf="errorMessage()" class="feedback error"><i class="pi pi-exclamation-triangle"></i><span>{{ errorMessage() }}</span></div>
 
-            <nav class="access-tabs" aria-label="Document access request sections">
+            <app-workspace-tabs ariaLabel="Access request sections">
                 <button *ngIf="canUseCatalog()" type="button" [class.active]="activeTab() === 'catalog'" (click)="selectTab('catalog')"><i class="pi pi-search"></i> Find documents</button>
                 <button *ngIf="canViewOwn()" type="button" [class.active]="activeTab() === 'mine'" (click)="selectTab('mine')"><i class="pi pi-clock"></i> My requests <span>{{ myRequests().length }}</span></button>
                 <button *ngIf="canReview()" type="button" [class.active]="activeTab() === 'pending'" (click)="selectTab('pending')"><i class="pi pi-check-square"></i> Approval queue <span>{{ pendingRequests().length }}</span></button>
-            </nav>
+            </app-workspace-tabs>
 
             <article *ngIf="activeTab() === 'catalog' && canUseCatalog()" class="workspace">
                 <div class="workspace-head"><div><h2>Find a document</h2><p>Only approved metadata is shown here. Files, attachments, revisions, and document details stay protected.</p></div></div>
