@@ -13,7 +13,6 @@ import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/wor
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading" label="Loading your disposal requests" [columns]="6" />
         <section class="disposal-page" [style.display]="loading ? 'none' : null">
-            <header><span>PERSONAL DISPOSAL WORKFLOW</span><h1>Disposal Requests</h1><p>Track the disposal requests submitted by your account and see the latest decision and reviewer remarks.</p></header>
             <div class="request-table"><p-table [value]="requests()" responsiveLayout="scroll">
                 <ng-template pTemplate="header"><tr><th>Document</th><th>Requested action</th><th>Reason</th><th>Status</th><th>Submitted</th><th>Decision</th></tr></ng-template>
                 <ng-template pTemplate="body" let-item><tr><td><strong>{{ item.document.document_number || item.document.document_title }}</strong><small>{{ item.document.document_title }}</small></td><td>{{ item.disposal_action }}<small *ngIf="item.disposal_action_other">{{ item.disposal_action_other }}</small></td><td>{{ item.disposal_remarks || 'No reason recorded' }}</td><td><span class="status" [attr.data-status]="item.status">{{ statusLabel(item.status) }}</span></td><td>{{ item.created_at | date:'medium' }}</td><td><span *ngIf="item.reviewer">{{ fullName(item.reviewer) }}</span><span *ngIf="!item.reviewer">Awaiting administrator review</span><small *ngIf="item.reviewer_remarks">{{ item.reviewer_remarks }}</small></td></tr></ng-template>
