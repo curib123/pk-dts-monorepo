@@ -13,6 +13,28 @@
 
 .workspace-page-shell--compact { --workspace-gap: .75rem; }
 
+.workspace-page-shell > :is(
+    .review-page,
+    .audit-page,
+    .backup-page,
+    .access-page,
+    .requests-page,
+    .documents-page,
+    .transfer-page,
+    .disposal-page,
+    .profile-page,
+    .role-permission-page,
+    .folders-page,
+    .storage-page,
+    .settings-page,
+    .user-account-page,
+    .workflow-page
+) {
+    min-width: 0;
+    display: grid;
+    gap: 1rem !important;
+}
+
 .workspace-toolbar-shell {
     min-width: 0;
     display: flex;
@@ -104,6 +126,61 @@
 .workspace-page-shell :is(.primary, .secondary, .quiet, .outline, .danger, .refresh, .search-action, .search-button, .clear-button):disabled {
     opacity: .5;
     cursor: not-allowed;
+}
+
+.workspace-page-shell .p-button {
+    min-height: 2.4rem;
+    border-radius: .65rem;
+    font-size: .7rem;
+    font-weight: 800;
+}
+.workspace-page-shell .p-button.p-button-sm {
+    min-height: 2.1rem;
+    font-size: .66rem;
+}
+.workspace-page-shell .p-datatable {
+    overflow: hidden;
+    border: 1px solid var(--app-border);
+    border-radius: var(--workspace-radius);
+    background: var(--app-surface);
+    box-shadow: var(--app-shadow-sm);
+}
+.workspace-page-shell .p-datatable .p-datatable-thead > tr > th {
+    border-color: var(--app-border);
+    background: var(--app-surface-muted);
+    color: var(--app-text-muted);
+    font-size: .64rem;
+    font-weight: 850;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+.workspace-page-shell .p-datatable .p-datatable-tbody > tr > td {
+    border-color: var(--app-border);
+    background: var(--app-surface);
+    color: var(--app-text);
+}
+.workspace-page-shell .p-datatable .p-datatable-tbody > tr:hover > td {
+    background: var(--app-surface-muted);
+}
+
+.searchable-dropdown-panel {
+    border: 1px solid var(--app-border) !important;
+    border-radius: .8rem !important;
+    background: var(--app-surface) !important;
+    box-shadow: var(--app-shadow-lg) !important;
+}
+.searchable-dropdown-panel .p-select-filter {
+    min-height: 2.45rem;
+    border-radius: .65rem;
+}
+.searchable-dropdown-panel .p-select-option {
+    border-radius: .55rem;
+    margin: .15rem .3rem;
+    font-size: .72rem;
+}
+.searchable-dropdown-panel .p-select-option.p-select-option-selected {
+    background: var(--brand-soft) !important;
+    color: var(--brand-primary-deep) !important;
 }
 
 .workspace-tabs-shell {
