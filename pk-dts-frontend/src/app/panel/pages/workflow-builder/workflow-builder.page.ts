@@ -248,6 +248,24 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.markDirty();
     }
 
+    setNodeLabel(node: WorkflowNode, label: string) {
+        if (!this.editable) return;
+        node.label = label;
+        this.markDirty();
+    }
+
+    setAssignmentUser(node: WorkflowNode, userId: string) {
+        if (!this.editable || node.assignment?.type !== 'USER') return;
+        node.assignment.user_id = userId;
+        this.markDirty();
+    }
+
+    setAssignmentRole(node: WorkflowNode, roleId: string) {
+        if (!this.editable || node.assignment?.type !== 'ROLE') return;
+        node.assignment.role_id = roleId;
+        this.markDirty();
+    }
+
     dragStart(index: number) { if (this.editable) this.draggedIndex = index; }
 
     drop(index: number) {
