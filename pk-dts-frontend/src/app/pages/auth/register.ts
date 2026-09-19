@@ -46,7 +46,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     <div class="section-label wide"><i class="pi pi-briefcase"></i><span><strong>Work and access</strong><small>Help us assign the right permissions</small></span></div>
                     <label [class.field-invalid]="isRegisterFieldInvalid('username')"><span>Username</span><input formControlName="username" type="text" autocomplete="username" maxlength="150" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small></label>
                     <label [class.field-invalid]="isRegisterFieldInvalid('position_title')"><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')"><span>Requested role</span><select formControlName="requested_role_id" [disabled]="rolesLoading() || !!rolesLoadError()" required>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')"><span>Requested role</span><select formControlName="requested_role_id" required>
                         <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
                         <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
                     </select>
@@ -1682,7 +1682,7 @@ export class Register implements OnInit {
         username: ['', [Validators.required, Validators.maxLength(150), Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,149}$/)]],
         position_title: ['', Validators.maxLength(100)],
         applicant_remarks: ['', Validators.maxLength(1000)],
-        requested_role_id: ['', Validators.required],
+        requested_role_id: [{ value: '', disabled: true }, Validators.required],
         password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]],
         confirmPassword: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]]
     });
@@ -1695,11 +1695,16 @@ export class Register implements OnInit {
         if (this.rolesLoading()) return;
         this.rolesLoading.set(true);
         this.rolesLoadError.set('');
+        this.registerForm.controls.requested_role_id.disable({ emitEvent: false });
         this.registration.roles().subscribe({
             next: (roles) => {
                 this.roles.set(roles);
                 this.rolesLoading.set(false);
-                if (!roles.length) this.rolesLoadError.set('No registration roles are currently available.');
+                if (roles.length) {
+                    this.registerForm.controls.requested_role_id.enable({ emitEvent: false });
+                } else {
+                    this.rolesLoadError.set('No registration roles are currently available.');
+                }
             },
             error: () => {
                 this.roles.set([]);
@@ -1746,7 +1751,17 @@ export class Register implements OnInit {
         const confirmation = confirm.value ?? '';
         return !!confirmation && (confirm.dirty || confirm.touched) && password !== confirmation;
     }
+    private normalizeRegisterTextFields() {
+        const fields = ['firstname', 'lastname', 'middlename', 'username', 'position_title', 'applicant_remarks'] as const;
+        for (const field of fields) {
+            const control = this.registerForm.controls[field];
+            const value = control.value;
+            if (typeof value === 'string') control.setValue(value.trim(), { emitEvent: false });
+        }
+        this.registerForm.updateValueAndValidity({ emitEvent: false });
+    }
     submitRegistration() {
+        this.normalizeRegisterTextFields();
         this.registerForm.markAllAsTouched();
         const value = this.registerForm.getRawValue();
         if (this.rolesLoading() || this.rolesLoadError() || !this.roles().length) {
@@ -1764,12 +1779,12 @@ export class Register implements OnInit {
         this.loading.set(true);
         this.errorMessage.set('');
         const payload = {
-            firstname: value.firstname?.trim() ?? '',
-            lastname: value.lastname?.trim() ?? '',
-            middlename: value.middlename?.trim() || undefined,
-            username: value.username?.trim() ?? '',
-            position_title: value.position_title?.trim() || undefined,
-            applicant_remarks: value.applicant_remarks?.trim() || undefined,
+            firstname: value.firstname ?? '',
+            lastname: value.lastname ?? '',
+            middlename: value.middlename || undefined,
+            username: value.username ?? '',
+            position_title: value.position_title || undefined,
+            applicant_remarks: value.applicant_remarks || undefined,
             requested_role_id: value.requested_role_id ?? '',
             password: value.password ?? ''
         };
