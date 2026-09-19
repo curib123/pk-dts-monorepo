@@ -33,6 +33,7 @@ export interface DocumentListQuery {
     asset_id?: string;
     sequence_id?: string;
     category_id?: string;
+    disposed_by?: string;
 }
 
 export type DocumentTypeValue = 'HARDCOPY' | 'SOFTCOPY';
