@@ -38,43 +38,6 @@ interface NoticeState {
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading user accounts" [columns]="6" />
         <section class="user-account-page space-y-6" [style.display]="isLoading() ? 'none' : null">
-            <div class="surface-card overflow-hidden legacy-workspace-header">
-                <div class="hero-strip"></div>
-                <div class="p-6 sm:p-7">
-                    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                        <div class="space-y-3">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-slate-500">User Account</div>
-                            <div>
-                                <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">User account workspace</h1>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Create user accounts, map each person to a role, inspect profile details, and manage who can access the document-tracking panel.</p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3">
-                            <p-button *ngIf="canCreateUser()" label="Create User" icon="pi pi-plus" (onClick)="openUserDialog()" />
-                        </div>
-                    </div>
-
-                    <div *ngIf="canViewUsers()" class="mt-6 grid gap-3 sm:grid-cols-3">
-                        <div class="stat-card">
-                            <div class="stat-label">Users</div>
-                            <div class="stat-value">{{ totalRecords() }}</div>
-                            <div class="stat-hint">Accounts available in the system</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Roles</div>
-                            <div class="stat-value">{{ roles().length }}</div>
-                            <div class="stat-hint">Assignable access levels for accounts</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">On This Page</div>
-                            <div class="stat-value">{{ users().length }}</div>
-                            <div class="stat-hint">Accounts currently loaded in this table view</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div *ngIf="errorMessage()" class="surface-alert">
                 <div class="flex items-start gap-3">
                     <i class="pi pi-exclamation-triangle mt-1 text-red-500"></i>
