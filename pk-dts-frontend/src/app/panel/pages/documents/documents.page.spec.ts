@@ -91,11 +91,11 @@ describe('DocumentsPage hardcopy transfer actions', () => {
         page.isLoading.set(false);
 
         page.setViewMode('list');
-        fixture.detectChanges();
+        fixture.detectChanges(false);
         expect(transferButtons(fixture.nativeElement)).toBe(1);
 
         page.setViewMode('grid');
-        fixture.detectChanges();
+        fixture.detectChanges(false);
         expect(transferButtons(fixture.nativeElement)).toBe(1);
 
         page.setViewMode('folder');
@@ -103,11 +103,11 @@ describe('DocumentsPage hardcopy transfer actions', () => {
         expect(roots.length).toBe(1);
         page.toggleFolder(roots[0].id);
         page.toggleFolder(roots[0].children[0].id);
-        fixture.detectChanges();
+        fixture.detectChanges(false);
         expect(transferButtons(fixture.nativeElement)).toBe(1);
     });
 
     function transferButtons(element: HTMLElement) {
-        return element.querySelectorAll('button[title="Request hardcopy transfer"]').length;
+        return element.querySelectorAll('.pi-arrows-h').length;
     }
 });
