@@ -91,7 +91,7 @@
                 <div class="toolbar-actions">
                     <label class="version-picker">
                         <span>View version</span>
-                        <select [ngModel]="selectedVersion.workflow_version_id" (ngModelChange)="selectVersionById($event)" aria-label="View workflow version">
+                        <select [value]="selectedVersion.workflow_version_id" (change)="selectVersionById($any($event.target).value)" aria-label="View workflow version">
                             <option *ngFor="let version of selectedDefinition.versions; trackBy: trackVersion" [value]="version.workflow_version_id">{{ versionLabel(version) }}</option>
                         </select>
                     </label>
@@ -166,7 +166,7 @@
 
                         <label class="step-label">
                             <span>Step name <em>Required</em></span>
-                            <input [(ngModel)]="node.label" (ngModelChange)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
+                            <input [(ngModel)]="node.label" (input)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
                             <small>This label appears in the request approval history.</small>
                         </label>
 
@@ -184,7 +184,7 @@
                             <div class="assignment-grid" *ngIf="node.assignment?.type !== 'PERMISSION'">
                                 <label>
                                     <span>Approver source</span>
-                                    <select [ngModel]="node.assignment?.type" (ngModelChange)="setAssignmentType(node, $event)" [disabled]="!editable">
+                                    <select [value]="node.assignment?.type" (change)="setAssignmentType(node, $any($event.target).value)" [disabled]="!editable">
                                         <option value="REQUESTER">Requester</option>
                                         <option value="REQUESTER_LEADER">Requester's leader</option>
                                         <option value="USER">Specific person</option>
@@ -194,7 +194,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'USER'">
                                     <span>Person</span>
-                                    <select [(ngModel)]="node.assignment!.user_id" (ngModelChange)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [(ngModel)]="node.assignment!.user_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a person</option>
                                         <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
                                     </select>
@@ -202,7 +202,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'ROLE'">
                                     <span>Role</span>
-                                    <select [(ngModel)]="node.assignment!.role_id" (ngModelChange)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [(ngModel)]="node.assignment!.role_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a role</option>
                                         <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
                                     </select>
