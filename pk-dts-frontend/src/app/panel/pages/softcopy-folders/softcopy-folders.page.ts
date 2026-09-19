@@ -101,15 +101,24 @@ export class SoftcopyFoldersPage implements OnInit {
     }
 
     filteredCategories() {
+        const categories = this.categories();
         const query = this.search.trim().toLowerCase();
-        if (!query) return this.categories();
-        return this.categories().filter((category) =>
-            category.category_name.toLowerCase().includes(query) || category.folder_name.toLowerCase().includes(query)
-        );
+        if (this.filteredSource === categories && this.filteredQuery === query) return this.filteredResult;
+
+        const filtered = query
+            ? categories.filter((category) =>
+                category.category_name.toLowerCase().includes(query) || category.folder_name.toLowerCase().includes(query)
+            )
+            : categories;
+
+        this.filteredSource = categories;
+        this.filteredQuery = query;
+        this.filteredResult = filtered;
+        return filtered;
     }
 
-    load() {
-        this.loading.set(true);
+    load(showLoading = this.categories().length === 0) {
+        this.loading.set(showLoading);
         this.error.set('');
         this.storageApi.listSoftcopyCategories(1, 1000).subscribe({
             next: (response) => {
