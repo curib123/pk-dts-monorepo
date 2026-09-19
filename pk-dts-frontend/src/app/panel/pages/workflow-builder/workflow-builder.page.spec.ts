@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject, of } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { RolePermissionService } from '../roles-permissions/role-permission.service';
@@ -94,7 +94,7 @@ describe('WorkflowBuilderPage', () => {
         expect(text).toContain('Loading selected workflow');
     });
 
-    it('hydrates the selected graph and only then loads editor reference data', fakeAsync(() => {
+    it('hydrates the selected graph and only then loads editor reference data', async () => {
         const page = fixture.componentInstance;
 
         versionRequest.next({
@@ -105,7 +105,8 @@ describe('WorkflowBuilderPage', () => {
             graph
         });
         versionRequest.complete();
-        tick(0);
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
         fixture.detectChanges();
 
         expect(page.versionLoading).toBeFalse();
@@ -113,5 +114,5 @@ describe('WorkflowBuilderPage', () => {
         expect(page.approvalNodes[0].label).toBe('Leader approval');
         expect(users.listUsers).toHaveBeenCalledTimes(1);
         expect(roles.listRoles).toHaveBeenCalledTimes(1);
-    }));
+    });
 });
