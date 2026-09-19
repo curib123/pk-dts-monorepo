@@ -197,6 +197,7 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     disposedByFilter = '';
     totalRecords = signal(0);
     private filterTimer: ReturnType<typeof setTimeout> | null = null;
+    private loadRequestId = 0;
     first = 0;
     rows = 10;
     rowsPerPageOptions = [10, 20, 50];
@@ -321,6 +322,7 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     trackDocument = (_index: number, document: DocumentSummary) => document.document_id;
 
     private loadData(showLoading = this.documents().length === 0) {
+        const requestId = ++this.loadRequestId;
         this.loading.set(showLoading);
         this.documentsService.listDisposedDocumentsPage({
             page: Math.floor(this.first / this.rows) + 1,
@@ -329,6 +331,7 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
             disposed_by: this.disposedByFilter.trim()
         }).subscribe({
             next: (response) => {
+                if (requestId !== this.loadRequestId) return;
                 const items = response.items ?? [];
                 const total = response.meta?.total ?? items.length;
                 if (total > 0 && this.first >= total) {
@@ -341,7 +344,9 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
                 this.totalRecords.set(total);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false)
+            error: () => {
+                if (requestId === this.loadRequestId) this.loading.set(false);
+            }
         });
     }
 }
