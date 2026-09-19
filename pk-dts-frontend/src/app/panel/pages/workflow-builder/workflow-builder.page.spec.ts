@@ -34,6 +34,11 @@ describe('WorkflowBuilderPage', () => {
     };
 
     beforeEach(async () => {
+        workflows.list.calls.reset();
+        workflows.getVersion.calls.reset();
+        users.listUsers.calls.reset();
+        roles.listRoles.calls.reset();
+        auth.hasPermission.calls.reset();
         versionRequest = new Subject<any>();
         workflows.list.and.returnValue(of([
             {
@@ -89,7 +94,7 @@ describe('WorkflowBuilderPage', () => {
         expect(text).toContain('Loading selected workflow');
     });
 
-    it('hydrates the selected graph and only then loads editor reference data', () => {
+    it('hydrates the selected graph and only then loads editor reference data', async () => {
         const page = fixture.componentInstance;
 
         versionRequest.next({
@@ -100,6 +105,7 @@ describe('WorkflowBuilderPage', () => {
             graph
         });
         versionRequest.complete();
+        await fixture.whenStable();
         fixture.detectChanges();
 
         expect(page.versionLoading).toBeFalse();
