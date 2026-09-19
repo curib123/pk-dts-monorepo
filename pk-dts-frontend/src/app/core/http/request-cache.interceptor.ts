@@ -65,7 +65,7 @@ export const requestCacheInterceptor: HttpInterceptorFn = (request, next) => {
             }
         }),
         finalize(() => inFlightRequests.delete(key)),
-        shareReplay({ bufferSize: 1, refCount: false })
+        shareReplay({ bufferSize: 1, refCount: true })
     );
 
     inFlightRequests.set(key, sharedRequest);
