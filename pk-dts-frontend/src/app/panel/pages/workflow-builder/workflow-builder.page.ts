@@ -372,9 +372,27 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
 
     private applyDefinitions(definitions: WorkflowDefinition[], selectDefinitionId?: string, selectVersionId?: string) {
         this.definitions = definitions;
-        const definition = definitions.find((item) => item.workflow_definition_id === selectDefinitionId)
-            || definitions.find((item) => item.workflow_definition_id === this.selectedDefinition?.workflow_definition_id)
-            || definitions[0];
+        const targetDefinitionId = selectDefinitionId || this.selectedDefinition?.workflow_definition_id;
+
+        if (!targetDefinitionId) {
+            this.selectedDefinition = undefined;
+            this.selectedVersion = undefined;
+            this.graph = this.blankGraph();
+            this.versionLoading = false;
+            this.versionLoadError = '';
+            return;
+        }
+
+        const definition = definitions.find((item) => item.workflow_definition_id === targetDefinitionId);
+        if (!definition) {
+            this.selectedDefinition = undefined;
+            this.selectedVersion = undefined;
+            this.graph = this.blankGraph();
+            this.versionLoading = false;
+            this.versionLoadError = '';
+            return;
+        }
+
         this.selectDefinition(definition, selectVersionId);
     }
 
