@@ -22,7 +22,7 @@ export class WorkspacePageComponent {
     imports: [CommonModule],
     template: `
         <section class="workspace-toolbar-shell" [class.workspace-toolbar-shell--stacked]="stacked">
-            <div class="workspace-toolbar-main"><ng-content></ng-content></div>
+            <div class="workspace-toolbar-main"><ng-content select=":not([workspace-actions])"></ng-content></div>
             <div class="workspace-toolbar-actions"><ng-content select="[workspace-actions]"></ng-content></div>
         </section>
     `
