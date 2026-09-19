@@ -232,7 +232,7 @@
 .topbar-account-copy { display: grid; gap: 0.05rem; }
 .topbar-account-name { color: var(--app-text); font-size: 0.82rem; line-height: 1.1; font-weight: 800; }
 .topbar-account-role { margin-top:.12rem;color: var(--app-text-muted); font-size: 0.66rem; line-height: 1.1; }
-.panel-content { min-height: calc(100vh - 5.25rem); padding: 1.5rem; background: var(--app-background); }
+.panel-content { width: 100%; min-width: 0; max-width: 100%; min-height: calc(100vh - 5.25rem); overflow-x: clip; padding: 1.5rem; background: var(--app-background); }
 .topbar-menu { display: none; }
 
 @media (max-width: 991px) {
