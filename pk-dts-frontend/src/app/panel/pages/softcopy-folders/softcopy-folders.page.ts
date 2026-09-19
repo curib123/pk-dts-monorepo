@@ -12,14 +12,13 @@ import { WorkspacePageComponent, WorkspaceSearchComponent, WorkspaceToolbarCompo
     imports: [WorkspaceToolbarComponent, WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
     template: `<app-workspace-page>
         <section class="folders-page">
-            <header class="folders-heading">
-                <div>
-                    <span class="eyebrow">DOCUMENTS</span>
-                    <h1>Softcopy Folders</h1>
-                    <p>Browse the digital filing hierarchy available to your account. Folder actions appear only when your role has the matching permission.</p>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-folder"></i></span>
+                    <div><strong>Folder hierarchy</strong><span>Browse and manage the digital filing structure available to your role.</span></div>
                 </div>
-                <button *ngIf="canCreate()" type="button" class="primary" (click)="beginCreate()"><i class="pi pi-plus"></i> New folder</button>
-            </header>
+                <button workspace-actions *ngIf="canCreate()" type="button" class="primary" (click)="beginCreate()"><i class="pi pi-plus"></i> New folder</button>
+            </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i><span>{{ error() }}</span></div>
             <div *ngIf="message()" class="feedback success"><i class="pi pi-check-circle"></i><span>{{ message() }}</span></div>
