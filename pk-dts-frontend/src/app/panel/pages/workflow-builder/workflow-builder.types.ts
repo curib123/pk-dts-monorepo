@@ -53,14 +53,17 @@ export interface WorkflowGraph {
     edges: WorkflowEdge[];
 }
 
-export interface WorkflowVersion {
+export interface WorkflowVersionSummary {
     workflow_version_id: string;
     workflow_definition_id: string;
     version_number: number;
     status: WorkflowVersionStatus;
-    graph: WorkflowGraph;
     published_at?: string | null;
     _count?: { documents: number };
+}
+
+export interface WorkflowVersion extends WorkflowVersionSummary {
+    graph: WorkflowGraph;
 }
 
 export interface WorkflowDefinition {
@@ -70,7 +73,7 @@ export interface WorkflowDefinition {
     description?: string | null;
     document_type: WorkflowDocumentType;
     is_active: boolean;
-    versions: WorkflowVersion[];
+    versions: WorkflowVersionSummary[];
 }
 
 export interface PublishedWorkflowVersion extends WorkflowVersion {
