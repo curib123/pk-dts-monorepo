@@ -19,6 +19,7 @@ import { Permission, Role, RolePermission } from './role-permission.types';
 import { PermissionAssignmentDialogComponent, PermissionAssignmentFormValue } from './components/permission-assignment-dialog/permission-assignment-dialog.component';
 import { ResourceFormDialogComponent, ResourceFormValue } from './components/resource-form-dialog/resource-form-dialog.component';
 import { ResourceViewDialogComponent, ResourceViewDialogData } from './components/resource-view-dialog/resource-view-dialog.component';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 type DeleteTargetType = 'role' | 'rolePermission';
@@ -39,8 +40,8 @@ interface DeleteTarget {
 @Component({
     selector: 'app-roles-permissions-page',
     standalone: true,
-    imports: [CommonModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceFormDialogComponent, ResourceViewDialogComponent, PermissionAssignmentDialogComponent],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceFormDialogComponent, ResourceViewDialogComponent, PermissionAssignmentDialogComponent],
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading roles and permissions" [columns]="5" />
         <section class="role-permission-page space-y-6" [style.display]="isLoading() ? 'none' : null">
             <div class="surface-card overflow-hidden">
@@ -205,7 +206,7 @@ interface DeleteTarget {
         />
 
         <app-alert-modal [(visible)]="noticeVisible" [severity]="notice()?.severity ?? 'info'" [title]="notice()?.title ?? 'Notice'" [message]="notice()?.message ?? ''" [details]="notice()?.details ?? ''" />
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             :host {
