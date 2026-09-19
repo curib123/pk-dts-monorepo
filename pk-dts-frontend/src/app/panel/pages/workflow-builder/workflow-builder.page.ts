@@ -303,7 +303,14 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
 
                 this.graph = this.prepareSequentialGraph(version.graph);
                 if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
-                if (this.canConfigure) this.loadReferenceData();
+                if (this.canConfigure) {
+                    Promise.resolve().then(() => {
+                        if (this.selectedDefinition?.workflow_definition_id === definitionId
+                            && this.selectedVersion?.workflow_version_id === versionId) {
+                            this.loadReferenceData();
+                        }
+                    });
+                }
             },
             error: (error) => {
                 if (this.selectedDefinition?.workflow_definition_id !== definitionId
