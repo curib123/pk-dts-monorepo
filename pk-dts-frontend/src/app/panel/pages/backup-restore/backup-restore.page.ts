@@ -13,6 +13,7 @@ import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { BackupListItem, BackupLogItem, FactoryResetScope } from './backup-restore.types';
 import { BackupRestoreService } from './backup-restore.service';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
@@ -26,8 +27,8 @@ interface NoticeState {
 @Component({
     selector: 'app-backup-restore-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
+    template: `<app-workspace-page>
         <section class="backup-page">
             <div class="backup-toolbar">
                 <nav class="backup-tabs" aria-label="Backup and recovery sections">
@@ -239,7 +240,7 @@ interface NoticeState {
 
             <app-alert-modal [(visible)]="noticeVisible" [severity]="notice()?.severity ?? 'info'" [title]="notice()?.title ?? 'Notice'" [message]="notice()?.message ?? ''" [details]="notice()?.details ?? ''" />
         </section>
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             :host {
