@@ -4,6 +4,7 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 interface AuditItem {
     audit_log_id: string;
@@ -33,8 +34,8 @@ interface AuditListResponse {
 @Component({
     selector: 'app-audit-logs-page',
     standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule],
+    template: `<app-workspace-page>
         <section class="audit-page">
             <div class="workspace-toolbar">
                 <div class="workspace-summary">
@@ -200,7 +201,7 @@ interface AuditListResponse {
                 </div>
             </footer>
         </section>
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             :host { display: block; }
