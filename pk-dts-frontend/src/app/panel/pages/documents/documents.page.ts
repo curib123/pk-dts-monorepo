@@ -562,7 +562,7 @@ interface DocumentFolderNode {
             [canAssignUsers]="canAssignDocuments()"
             [canDirectCreate]="canDirectCreateSoftcopy()"
             [currentUserName]="currentUserName()"
-            [referenceLoading]="isLoading()"
+            [referenceLoading]="referenceLoading()"
             [saving]="isSaving()"
             (save)="saveDocument($event)"
         />
@@ -1857,6 +1857,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.searchTerm = query;
                 this.resetPagination();
                 this.syncFolderExpansionForSearch();
+                if (!this.isLoading()) this.onTableSearchChange();
             }
 
             const documentId = params.get('document') ?? '';
@@ -1955,6 +1956,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     private loadReferenceData(force = false) {
         if (this.referenceLoadingStarted && !force) return;
         this.referenceLoadingStarted = true;
+        this.referenceLoading.set(true);
         const referenceIssues: string[] = [];
         forkJoin({
             users: this.auth.hasPermission('user-accounts.view')
@@ -1975,8 +1977,9 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.locations.set(locations ?? []);
                 this.sequences.set(sequences ?? []);
                 this.softcopyCategories.set((softcopyCategories ?? []).filter((category) => category.is_active !== false));
-                this.referenceDataLoaded = true;
+                this.referenceDataLoaded = referenceIssues.length === 0;
                 this.referenceLoadingStarted = false;
+                this.referenceLoading.set(false);
                 this.syncFolderExpansionForSearch();
                 if (referenceIssues.length) {
                     this.referenceWarningMessage.set(
@@ -1986,6 +1989,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
             },
             error: () => {
                 this.referenceLoadingStarted = false;
+                this.referenceLoading.set(false);
             }
         });
     }
