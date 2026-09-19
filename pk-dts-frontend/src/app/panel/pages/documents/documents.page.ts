@@ -31,6 +31,7 @@ import { DocumentAssignmentDialogComponent } from './components/document-assignm
 import { DocumentDirectoryDialogComponent } from './components/document-directory-dialog/document-directory-dialog.component';
 import { DocumentsService } from './documents.service';
 import { folderIdsToExpandForDocuments } from './folder-tree-navigation';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaReference,
     AssetReference,
@@ -77,7 +78,7 @@ interface DocumentFolderNode {
 @Component({
     selector: 'app-documents-page',
     standalone: true,
-    imports: [
+    imports: [WorkspacePageComponent, 
         CommonModule,
         FormsModule,
         ButtonModule,
@@ -97,7 +98,7 @@ interface DocumentFolderNode {
         DocumentAssignmentDialogComponent,
         DocumentDirectoryDialogComponent
     ],
-    template: `
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading documents" [columns]="7" />
         <section class="documents-page space-y-6" [style.display]="isLoading() ? 'none' : null">
             <div *ngIf="errorMessage()" class="surface-alert">
@@ -717,7 +718,7 @@ interface DocumentFolderNode {
                 </div>
             </div>
         </div>
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             :host {
