@@ -195,6 +195,66 @@ describe('DocumentsService', () => {
     );
   });
 
+  it('applies the linked Hardcopy changes when the edit request reaches final approval', async () => {
+    const approver = {
+      ...regularUser,
+      role: {
+        ...regularUser.role,
+        permissions: ['document-requests.approve-hardcopy'],
+      },
+    } satisfies AuthenticatedUser;
+    const sourceUpdatedAt = new Date('2026-09-19T01:00:00.000Z');
+    const current = {
+      document_id: 99n,
+      document_type: DocumentType.HARDCOPY,
+      status: DocumentStatus.ForApproval,
+      action_requested: 'REVISE',
+      created_by: 8n,
+      workflow_version_id: 100n,
+      workflow_current_node_key: 'review',
+      source_document_id: 42n,
+      source_document_updated_at: sourceUpdatedAt,
+      workflow_steps: [
+        {
+          workflow_step_id: 10n,
+          stage: DocumentWorkflowStage.HARDCOPY_APPROVAL,
+          node_key: 'review',
+          sequence: 1,
+          assigned_user_id: 7n,
+          status: 'PENDING',
+          assignment_type: 'USER',
+          required_permission: null,
+          on_approve_node_key: null,
+          on_reject_node_key: null,
+          on_return_node_key: null,
+        },
+      ],
+      assignments: [],
+    };
+    prisma.document.findUnique
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce({ document_id: 99n, status: DocumentStatus.Approved });
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
+
+    const applyEdit = jest
+      .spyOn(service as any, 'applyApprovedHardcopyEditRequest')
+      .mockResolvedValue(undefined);
+    jest
+      .spyOn(service as any, 'prepareCurrentRevisionArtifacts')
+      .mockResolvedValue(undefined);
+
+    await service.transition('99', '7', 'approve', 'Approved changes', approver);
+
+    expect(applyEdit).toHaveBeenCalledWith(
+      prisma,
+      99n,
+      42n,
+      sourceUpdatedAt,
+      7n,
+      'Approved changes',
+    );
+  });
+
   it('applies an approved Hardcopy edit request to the controlled source record', async () => {
     const snapshotTime = new Date('2026-09-19T01:00:00.000Z');
     prisma.document.findUnique
