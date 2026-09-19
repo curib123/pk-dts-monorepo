@@ -1,6 +1,6 @@
 import { EMPTY, of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { AuthService } from '@/app/auth/auth.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { DashboardService } from './pages/dashboard/dashboard.service';
@@ -93,7 +93,7 @@ describe('PanelLayoutComponent', () => {
                 { provide: DashboardService, useValue: dashboard },
                 { provide: NotificationsService, useValue: notifications },
                 { provide: SystemSettingsService, useValue: { settings: () => ({ logoUrl: '', systemTitle: '', brandEyebrow: '', systemShortTitle: '' }) } },
-                { provide: Router, useValue: { url: '/panel/dashboard', events: EMPTY, navigate: jasmine.createSpy(), navigateByUrl: jasmine.createSpy() } },
+                provideRouter([]),
                 { provide: ActivatedRoute, useValue: { snapshot: { data: {} }, firstChild: null } }
             ]
         });
