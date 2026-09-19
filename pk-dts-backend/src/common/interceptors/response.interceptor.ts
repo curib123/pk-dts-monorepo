@@ -13,6 +13,11 @@ export class ResponseInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse();
+    const isEventStream = request.originalUrl?.includes('/notifications/stream');
+
+    if (isEventStream) {
+      return next.handle();
+    }
 
     return next.handle().pipe(
       map((data) => {
