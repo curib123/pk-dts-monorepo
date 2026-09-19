@@ -23,6 +23,12 @@ export class AuthenticatedPreloadingStrategy implements PreloadingStrategy {
             return of(null);
         }
 
+        const permissions = route.data?.['permissions'] as string[] | undefined;
+        const allowAssignedWorkflowTask = route.data?.['allowAssignedWorkflowTask'] === true;
+        if (permissions?.length && !this.auth.hasAnyPermission(...permissions) && !allowAssignedWorkflowTask) {
+            return of(null);
+        }
+
         const explicitDelay = Number(route.data?.['preloadDelayMs']);
         const delayMs = Number.isFinite(explicitDelay)
             ? Math.max(0, explicitDelay)
