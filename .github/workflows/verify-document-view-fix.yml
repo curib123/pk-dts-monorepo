@@ -1,6 +1,9 @@
 name: Verify document view fix
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fix/instant-document-view-loading-2026-09-19
