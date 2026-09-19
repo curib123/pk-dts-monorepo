@@ -4,22 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '@/app/auth/auth.service';
 import { UserAccountService } from '../user-account/user-account.service';
 import { UserAccountDetail, UserAccountFormValue } from '../user-account/user-account.types';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-my-profile-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule],
+    imports: [WorkspaceToolbarComponent, WorkspacePageComponent, CommonModule, FormsModule],
     template: `<app-workspace-page>
         <section class="profile-page">
-            <header class="profile-heading">
-                <div>
-                    <span class="eyebrow">MY ACCOUNT</span>
-                    <h1>My Profile</h1>
-                    <p>Update your own account details. Your role and reporting leader are managed by an authorized administrator.</p>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-user"></i></span>
+                    <div><strong>Account details</strong><span>Update your personal information and password.</span></div>
                 </div>
-                <span class="role-pill" *ngIf="user()">{{ user()!.role.role_name }}</span>
-            </header>
+                <span workspace-actions class="role-pill" *ngIf="user()">{{ user()!.role.role_name }}</span>
+            </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i><span>{{ error() }}</span></div>
             <div *ngIf="success()" class="feedback success"><i class="pi pi-check-circle"></i><span>{{ success() }}</span></div>
