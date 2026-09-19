@@ -19,9 +19,13 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         `
             :host {
                 display: block;
+                min-width: 0;
+                max-width: 100%;
             }
 
             .table-frame {
+                min-width: 0;
+                max-width: 100%;
                 overflow: hidden;
                 border: 1px solid var(--app-border);
                 border-radius: 1rem;
@@ -30,7 +34,11 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
             }
 
             .table-scroll {
+                width: 100%;
+                max-width: 100%;
                 overflow-x: auto;
+                overscroll-behavior-inline: contain;
+                -webkit-overflow-scrolling: touch;
             }
 
             .shared-table {

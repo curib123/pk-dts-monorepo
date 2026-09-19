@@ -52,6 +52,7 @@
 .workspace-toolbar-main { order: 1; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
 .workspace-toolbar-actions { order: 2; display: flex; align-items: center; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
 .workspace-toolbar-actions:empty { display: none; }
+.workspace-toolbar-main > app-workspace-search { flex: 1 1 20rem; min-width: 0; }
 
 .workspace-context {
     min-width: 0;
@@ -276,7 +277,7 @@
 .workspace-section-body { min-width: 0; padding: 1rem; }
 .workspace-section-shell--flush .workspace-section-body { padding: 0; }
 
-.workspace-search-shell { min-width: min(100%, 16rem); display: grid; gap: .32rem; }
+.workspace-search-shell { width: 100%; min-width: 0; display: grid; gap: .32rem; }
 .workspace-control-label {
     color: var(--app-text-muted);
     font-size: .62rem;
@@ -330,6 +331,8 @@
 
 /* Common projected route content. */
 .workspace-page-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+    max-width: 100%;
+    box-sizing: border-box;
     border-color: var(--app-border-strong);
     color: var(--app-text);
 }

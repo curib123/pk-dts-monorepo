@@ -25,9 +25,9 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
     imports: [WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, AlertModalComponent, DocumentDetailDialogComponent, LoadingShimmerComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading()" label="Loading disposed documents" [columns]="7" />
-        <section class="space-y-6" [style.display]="loading() ? 'none' : null">
-            <article class="surface-card p-5 sm:p-6">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <section class="disposal-page space-y-6" [style.display]="loading() ? 'none' : null">
+            <article class="surface-card disposal-card p-5 sm:p-6">
+                <div class="disposal-summary">
                     <div>
                         <h2 class="m-0 text-xl font-black text-slate-900">Disposed record inventory</h2>
                         <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Filter disposed records and restore them when permitted.</p>
@@ -38,14 +38,13 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
                     </div>
                 </div>
 
-                <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
-                    <app-workspace-search [value]="searchTerm" (valueChange)="searchTerm = $event; resetPagination()" label="Search" placeholder="Search number, title, remarks, disposer, area, or location..." />
-                    <div class="field">
+                <div class="disposal-filters">
+                    <app-workspace-search class="disposal-search" [value]="searchTerm" (valueChange)="searchTerm = $event; resetPagination()" label="Search" placeholder="Search number, title, remarks, disposer, area, or location..." />
+                    <div class="field disposed-by-field">
                         <label for="disposed-by-filter">Disposed by</label>
                         <input id="disposed-by-filter" [(ngModel)]="disposedByFilter" (ngModelChange)="resetPagination()" class="text-field" placeholder="Filter by account or manual name" />
                     </div>
-                    <div class="field">
-                        <label>&nbsp;</label>
+                    <div class="filter-reset">
                         <p-button label="Reset filters" severity="secondary" text icon="pi pi-refresh" (onClick)="resetFilters()" />
                     </div>
                 </div>
@@ -139,14 +138,33 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
     </app-workspace-page>`,
     styles: [
         `
-            .surface-card { border: 1px solid rgba(148,163,184,.18); border-radius: 1.75rem; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.96)); box-shadow: 0 24px 64px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.04); }
-            .stat-card { border: 1px solid rgba(226,232,240,1); border-radius: 1.35rem; background: linear-gradient(180deg,#fff 0%,#f8fafc 100%); padding: 1rem 1.1rem; min-width: 13rem; }
-            .stat-label { font-size:.75rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:#64748b; }
-            .stat-value { margin-top:.55rem; font-size:2rem; line-height:1; font-weight:900; color:#111827; }
-            .field { display:flex; flex-direction:column; gap:.55rem; }
-            .field label { font-size:.84rem; font-weight:700; color:#475569; }
-            .text-field { min-height:2.75rem; width:100%; border-radius:.85rem; border:1px solid #cbd5e1; background:#fff; padding:.75rem .9rem; color:#0f172a; outline:none; }
+            :host { display:block;min-width:0;max-width:100%; }
+            .disposal-page,.disposal-card { min-width:0;max-width:100%; }
+            .surface-card { overflow:hidden;border:1px solid rgba(148,163,184,.18);border-radius:1.75rem;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(248,250,252,.96));box-shadow:0 24px 64px rgba(15,23,42,.08),0 2px 8px rgba(15,23,42,.04); }
+            .disposal-summary { min-width:0;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem; }
+            .disposal-summary > div:first-child { min-width:0;flex:1 1 24rem; }
+            .disposal-summary h2,.disposal-summary p { overflow-wrap:anywhere; }
+            .stat-card { min-width:min(100%,11rem);max-width:100%;flex:0 1 13rem;border:1px solid rgba(226,232,240,1);border-radius:1.35rem;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);padding:1rem 1.1rem; }
+            .stat-label { font-size:.75rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#64748b; }
+            .stat-value { margin-top:.55rem;font-size:2rem;line-height:1;font-weight:900;color:#111827; }
+            .disposal-filters { min-width:0;max-width:100%;display:flex;flex-wrap:wrap;align-items:flex-end;gap:1rem;margin-top:1.5rem; }
+            .disposal-search { min-width:min(100%,18rem);flex:1 1 30rem; }
+            .field { min-width:0;display:flex;flex-direction:column;gap:.55rem; }
+            .disposed-by-field { min-width:min(100%,14rem);flex:0 1 18rem; }
+            .field label { font-size:.84rem;font-weight:700;color:#475569; }
+            .text-field { min-height:2.75rem;width:100%;max-width:100%;box-sizing:border-box;border-radius:.85rem;border:1px solid #cbd5e1;background:#fff;padding:.75rem .9rem;color:#0f172a;outline:none; }
             .text-field:focus { border-color:#0f172a; }
+            .filter-reset { min-width:0;flex:0 0 auto;display:flex;align-items:flex-end; }
+            .pagination-footer { min-width:0;max-width:100%;overflow:hidden; }
+            app-pagination { min-width:0;max-width:100%; }
+            :host ::ng-deep app-table-shell td { overflow-wrap:anywhere;word-break:break-word; }
+            :host ::ng-deep app-table-shell td:last-child { white-space:nowrap; }
+            @media (max-width:760px) {
+                .stat-card { flex:1 1 100%; }
+                .disposal-search,.disposed-by-field,.filter-reset { min-width:0;flex:1 1 100%; }
+                :host ::ng-deep .filter-reset .p-button { width:100%;justify-content:center; }
+                app-pagination { width:100%;overflow-x:auto; }
+            }
         `
     ]
 })
