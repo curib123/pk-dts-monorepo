@@ -20,6 +20,7 @@ import { UserFormDialogComponent } from './components/user-form-dialog/user-form
 import { UserDocumentAssignmentDialogComponent } from './components/user-document-assignment-dialog/user-document-assignment-dialog.component';
 import { UserAccountService } from './user-account.service';
 import { PaginatedMeta, RegistrationRequestSummary, UserAccountDetail, UserAccountFormValue, UserAccountSummary, UserDocumentAssignmentOption, UserRoleSummary } from './user-account.types';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
@@ -33,8 +34,8 @@ interface NoticeState {
 @Component({
     selector: 'app-user-account-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, TooltipModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, UserFormDialogComponent, UserDocumentAssignmentDialogComponent],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, TooltipModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, UserFormDialogComponent, UserDocumentAssignmentDialogComponent],
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading user accounts" [columns]="6" />
         <section class="user-account-page space-y-6" [style.display]="isLoading() ? 'none' : null">
             <div class="surface-card overflow-hidden legacy-workspace-header">
@@ -256,7 +257,7 @@ interface NoticeState {
         />
 
         <app-alert-modal [(visible)]="noticeVisible" [severity]="notice()?.severity ?? 'info'" [title]="notice()?.title ?? 'Notice'" [message]="notice()?.message ?? ''" [details]="notice()?.details ?? ''" />
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             .legacy-workspace-header { display: none; }
