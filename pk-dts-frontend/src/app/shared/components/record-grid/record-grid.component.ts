@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 @Component({
     selector: 'app-record-grid',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div *ngIf="!empty; else emptyState" class="record-grid"><ng-content /></div>
         <ng-template #emptyState>
@@ -37,6 +38,7 @@ export class RecordGridComponent {
     selector: 'app-record-card',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <article class="record-card">
             <div class="card-accent"></div>
