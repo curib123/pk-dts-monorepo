@@ -48,9 +48,14 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     private loadSequence = 0;
     private listRequest?: Subscription;
     private versionRequest?: Subscription;
+    private referenceDataTimer: ReturnType<typeof setTimeout> | null = null;
 
     ngOnInit() { this.load(); }
-    ngOnDestroy() { this.listRequest?.unsubscribe(); this.versionRequest?.unsubscribe(); }
+    ngOnDestroy() {
+        this.listRequest?.unsubscribe();
+        this.versionRequest?.unsubscribe();
+        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
+    }
 
     get canConfigure() { return this.auth.hasPermission('document-workflow.configure'); }
     get canPublish() { return this.auth.hasPermission('document-workflow.publish'); }
@@ -67,6 +72,10 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         const sequence = ++this.loadSequence;
         this.listRequest?.unsubscribe();
         this.versionRequest?.unsubscribe();
+        if (this.referenceDataTimer) {
+            clearTimeout(this.referenceDataTimer);
+            this.referenceDataTimer = null;
+        }
         this.versionLoading = false;
         this.versionLoadError = '';
         this.loading = true;
@@ -104,6 +113,10 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     selectVersion(version?: WorkflowVersionSummary) {
         if (this.dirty && !confirm('Discard unsaved workflow changes?')) return;
         this.versionRequest?.unsubscribe();
+        if (this.referenceDataTimer) {
+            clearTimeout(this.referenceDataTimer);
+            this.referenceDataTimer = null;
+        }
         this.selectedVersion = version;
         this.legacyComplex = false;
         this.unsupportedLegacyAssignment = false;
@@ -304,12 +317,14 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
                 this.graph = this.prepareSequentialGraph(version.graph);
                 if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
                 if (this.canConfigure) {
-                    Promise.resolve().then(() => {
+                    if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
+                    this.referenceDataTimer = setTimeout(() => {
+                        this.referenceDataTimer = null;
                         if (this.selectedDefinition?.workflow_definition_id === definitionId
                             && this.selectedVersion?.workflow_version_id === versionId) {
                             this.loadReferenceData();
                         }
-                    });
+                    }, 0);
                 }
             },
             error: (error) => {
