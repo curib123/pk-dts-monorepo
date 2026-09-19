@@ -1154,11 +1154,11 @@ export class DocumentsService {
           creator: { select: { user_id: true, firstname: true, lastname: true, username: true, position_title: true } },
           hardcopy: {
             include: {
-              asset: true,
-              area: true,
-              specific: true,
-              location: true,
-              sequence: true,
+              asset: { select: { asset_id: true, asset_number: true, specific_id: true } },
+              area: { select: { area_id: true, area_name: true } },
+              specific: { select: { specific_id: true, specific_name: true, area_id: true } },
+              location: { select: { location_id: true, location_name: true, location_code: true } },
+              sequence: { select: { sequence_id: true, sequence_code: true } },
               attachments: {
                 orderBy: { created_at: "desc" },
                 include: {
@@ -1171,7 +1171,16 @@ export class DocumentsService {
           },
           softcopy: {
             include: {
-              category: true,
+              category: {
+                select: {
+                  softcopy_category_id: true,
+                  category_name: true,
+                  folder_name: true,
+                  description: true,
+                  is_active: true,
+                  parent_category_id: true,
+                },
+              },
               current_revision: {
                 include: {
                   uploader: {
@@ -1220,7 +1229,8 @@ export class DocumentsService {
             },
           },
           assignments: {
-            include: {
+            select: {
+              assigned_at: true,
               user: {
                 select: {
                   user_id: true,
@@ -1269,6 +1279,14 @@ export class DocumentsService {
               },
               assignment_history: {
                 orderBy: { changed_at: "desc" },
+                select: {
+                  assignment_history_id: true,
+                  previous_user_name: true,
+                  new_user_name: true,
+                  new_position_title: true,
+                  reason: true,
+                  changed_at: true,
+                },
               },
             },
           },
@@ -4747,11 +4765,24 @@ export class DocumentsService {
     user?: AuthenticatedUser,
   ): Prisma.DocumentWhereInput {
     if (!user || canManageDocuments(user)) return {};
-    return {
+
+    const userId = toBigIntId(user.user_id, "current_user_id");
+    const assignedDocument: Prisma.DocumentWhereInput = {
       assignments: {
-        some: { user_id: toBigIntId(user.user_id, "current_user_id") },
+        some: { user_id: userId },
       },
     };
+
+    if (hasPermission(user, "document-requests.view-own")) {
+      return {
+        OR: [
+          assignedDocument,
+          { requested_by_user_id: userId },
+        ],
+      };
+    }
+
+    return assignedDocument;
   }
 
   private isAdministrativeRole(roleName: string) {
