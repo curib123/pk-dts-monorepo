@@ -65,7 +65,7 @@ export class NotificationsService {
                             }
                         }
                     } catch {
-                        if (stopped || activeController.signal.aborted) break;
+                        if (stopped || activeController?.signal.aborted) break;
                     } finally {
                         activeController = null;
                     }
