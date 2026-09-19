@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { SearchableDropdownComponent, SearchableDropdownOption, SearchableDropdownValue } from '@/app/shared/components/searchable-dropdown/searchable-dropdown.component';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
@@ -29,7 +30,7 @@ type TransferAction = 'approve' | 'return' | 'reject' | 'complete';
                         <span>{{ reviewerMode ? 'Only workflow stages assigned to you are shown.' : 'Move approved hardcopy records through the controlled transfer workflow.' }}</span>
                     </div>
                 </div>
-                <button workspace-actions *ngIf="!reviewerMode" type="button" class="primary" (click)="formOpen = !formOpen"><i class="pi pi-plus"></i> New transfer request</button>
+                <button workspace-actions *ngIf="!reviewerMode" type="button" class="primary" (click)="toggleCreateForm()"><i class="pi pi-plus"></i> New transfer request</button>
             </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i>{{ error() }}</div>
@@ -86,6 +87,7 @@ export class HardcopyTransfersPage implements OnInit {
     locations = signal<LocationReference[]>([]);
     sequences = signal<SequenceReference[]>([]);
     referenceLoading = false;
+    private referenceLoaded = false;
     error = signal('');
     message = signal('');
     form: CreateHardcopyTransferPayload = { document_id: '', destination_location_id: '', reason: '' };
@@ -96,24 +98,36 @@ export class HardcopyTransfersPage implements OnInit {
         if (!this.reviewerMode && documentId) {
             this.form.document_id = documentId;
             this.formOpen = true;
+            this.loadReferenceData();
         }
-        if (!this.reviewerMode) this.loadReferenceData();
         this.load();
     }
 
-    loadReferenceData() {
+    toggleCreateForm() {
+        this.formOpen = !this.formOpen;
+        if (this.formOpen) this.loadReferenceData();
+    }
+
+    loadReferenceData(force = false) {
+        if (this.referenceLoading || (this.referenceLoaded && !force)) return;
+
         this.referenceLoading = true;
-        this.documentsService.listDocuments().subscribe({
-            next: documents => this.documents.set((documents ?? []).filter(document => document.document_type === 'HARDCOPY' && !!document.hardcopy && ['Approved', 'Completed'].includes(document.status || ''))),
-            error: error => this.error.set(this.errorText(error))
-        });
-        this.documentsService.listLocations().subscribe({
-            next: locations => { this.locations.set((locations ?? []).filter(location => location.is_active !== false)); this.referenceLoading = false; },
-            error: error => { this.referenceLoading = false; this.error.set(this.errorText(error)); }
-        });
-        this.documentsService.listSequences().subscribe({
-            next: sequences => this.sequences.set(sequences ?? []),
-            error: error => this.error.set(this.errorText(error))
+        forkJoin({
+            documents: this.documentsService.listDocuments(),
+            locations: this.documentsService.listLocations(),
+            sequences: this.documentsService.listSequences()
+        }).subscribe({
+            next: ({ documents, locations, sequences }) => {
+                this.documents.set((documents ?? []).filter(document => document.document_type === 'HARDCOPY' && !!document.hardcopy && ['Approved', 'Completed'].includes(document.status || '')));
+                this.locations.set((locations ?? []).filter(location => location.is_active !== false));
+                this.sequences.set(sequences ?? []);
+                this.referenceLoaded = true;
+                this.referenceLoading = false;
+            },
+            error: error => {
+                this.referenceLoading = false;
+                this.error.set(this.errorText(error));
+            }
         });
     }
 
