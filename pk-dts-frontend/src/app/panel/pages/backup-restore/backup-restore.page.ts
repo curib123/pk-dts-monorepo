@@ -13,7 +13,7 @@ import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { BackupListItem, BackupLogItem, FactoryResetScope } from './backup-restore.types';
 import { BackupRestoreService } from './backup-restore.service';
-import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
@@ -27,21 +27,21 @@ interface NoticeState {
 @Component({
     selector: 'app-backup-restore-page',
     standalone: true,
-    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
+    imports: [WorkspaceToolbarComponent, WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
     template: `<app-workspace-page>
         <section class="backup-page">
-            <div class="backup-toolbar">
+            <app-workspace-toolbar>
                 <app-workspace-tabs ariaLabel="Backup workspace sections">
                     <button type="button" [class.active]="activeTab() === 'backups'" (click)="selectTab('backups')"><i class="pi pi-database"></i> Backups <span>{{ backups().length }}</span></button>
                     <button *ngIf="canRestoreBackup()" type="button" [class.active]="activeTab() === 'restore'" (click)="selectTab('restore')"><i class="pi pi-refresh"></i> Restore</button>
                     <button *ngIf="canViewLogs()" type="button" [class.active]="activeTab() === 'activity'" (click)="selectTab('activity')"><i class="pi pi-history"></i> Activity</button>
                     <button *ngIf="canReset()" type="button" class="danger-tab" [class.active]="activeTab() === 'reset'" (click)="selectTab('reset')"><i class="pi pi-exclamation-triangle"></i> Reset</button>
                 </app-workspace-tabs>
-                <div class="backup-actions">
+                <div workspace-actions class="backup-actions">
                     <p-button title="Refresh" severity="secondary" icon="pi pi-refresh" [rounded]="true" [outlined]="true" (onClick)="refreshActiveTab()" />
                     <p-button *ngIf="canCreateBackup()" label="Back Up Now" icon="pi pi-plus" [loading]="saving()" (onClick)="createBackup()" />
                 </div>
-            </div>
+            </app-workspace-toolbar>
 
             <div *ngIf="errorMessage()" class="surface-alert">
                 <div class="flex items-start gap-3">
