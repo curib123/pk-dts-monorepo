@@ -25,14 +25,7 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
         <app-loading-shimmer *ngIf="loading()" label="Loading document access requests" [columns]="5" />
         <section class="access-page" [style.display]="loading() ? 'none' : null">
             <style>.access-page .document-card-title h3{margin:0;color:var(--brand-primary-deep);font-size:1.05rem;font-weight:900}.request-row .request-number,.request-row>div:first-child small,.requested-document strong,.requested-document small{display:none}.request-row>div:first-child strong,.requested-document p{color:var(--brand-primary-deep);font-size:.9rem;font-weight:900}.requested-document p{margin:0}</style>
-            <header class="access-hero">
-                <div>
-                    <span class="eyebrow">CONTROLLED DOCUMENT ACCESS</span>
-                    <h1>{{ pageHeading() }}</h1>
-                    <p>{{ pageDescription() }}</p>
-                </div>
-                <div class="hero-status"><i class="pi pi-shield"></i><span>Approval required</span></div>
-            </header>
+
 
             <div *ngIf="errorMessage()" class="feedback error"><i class="pi pi-exclamation-triangle"></i><span>{{ errorMessage() }}</span></div>
 
