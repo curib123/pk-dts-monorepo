@@ -69,6 +69,17 @@ export class DocumentsService {
         return this.fetchAllPages<DocumentSummary>(`${DOCUMENTS_API}/disposed`);
     }
 
+    listDisposedDocumentsPage(query: DocumentListQuery) {
+        const params = Object.fromEntries(
+            Object.entries(query)
+                .filter(([, value]) => value !== undefined && value !== null && value !== '')
+                .map(([key, value]) => [key, String(value)])
+        );
+        return this.http
+            .get<ApiResponse<PaginatedResponse<DocumentSummary>>>(`${DOCUMENTS_API}/disposed`, { params })
+            .pipe(map((response) => this.unwrap(response)));
+    }
+
     listMyRequests() { return this.fetchAllPages<DocumentSummary>(`${DOCUMENTS_API}/requests/mine`); }
     listMyRequestsPage(page = 1, limit = 10) { return this.fetchPage<DocumentSummary>(`${DOCUMENTS_API}/requests/mine`, page, limit); }
     listPendingRequests() { return this.fetchAllPages<DocumentSummary>(`${DOCUMENTS_API}/requests/pending`); }
