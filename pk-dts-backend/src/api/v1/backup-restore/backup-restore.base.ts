@@ -31,6 +31,7 @@ import {
 import { FactoryResetScope } from "./dto/factory-reset.dto";
 
 const BACKUP_LOG_FILE = "backup-activity.jsonl";
+const BACKUP_LIST_INDEX_FILE = ".backup-list-index.json";
 const BACKUP_FILE_PREFIX = "backup-";
 const LEGACY_BACKUP_FILE_EXTENSION = ".json";
 const BACKUP_FILE_EXTENSION = ".zip";
@@ -66,6 +67,7 @@ export class BackupRestoreService {
     string,
     { size: number; mtimeMs: number; item: BackupListItem }
   >();
+  private backupListIndexLoaded = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -74,12 +76,16 @@ export class BackupRestoreService {
 
   async listBackups(): Promise<BackupListItem[]> {
     const backupRoot = await this.ensureBackupRoot();
+    await this.hydrateBackupListCache(backupRoot);
+
     const files = await this.listBackupFileNames(backupRoot);
     const activeFiles = new Set(files);
+    let cacheChanged = false;
 
     for (const cachedFile of this.backupListCache.keys()) {
       if (!activeFiles.has(cachedFile)) {
         this.backupListCache.delete(cachedFile);
+        cacheChanged = true;
       }
     }
 
@@ -114,10 +120,15 @@ export class BackupRestoreService {
           mtimeMs: fileStat.mtimeMs,
           item,
         });
+        cacheChanged = true;
 
         return item;
       }),
     );
+
+    if (cacheChanged) {
+      await this.persistBackupListCache(backupRoot).catch(() => undefined);
+    }
 
     return items.sort(
       (left, right) =>
@@ -1038,6 +1049,47 @@ export class BackupRestoreService {
     const backupRoot = this.getBackupRoot();
     await mkdir(backupRoot, { recursive: true });
     return backupRoot;
+  }
+
+  private async hydrateBackupListCache(backupRoot: string) {
+    if (this.backupListIndexLoaded) {
+      return;
+    }
+
+    this.backupListIndexLoaded = true;
+    const indexPath = join(backupRoot, BACKUP_LIST_INDEX_FILE);
+
+    try {
+      const raw = await readFile(indexPath, "utf-8");
+      const entries = JSON.parse(raw) as Record<
+        string,
+        { size: number; mtimeMs: number; item: BackupListItem }
+      >;
+
+      for (const [fileName, entry] of Object.entries(entries ?? {})) {
+        if (
+          entry &&
+          Number.isFinite(entry.size) &&
+          Number.isFinite(entry.mtimeMs) &&
+          entry.item?.file_name === fileName
+        ) {
+          this.backupListCache.set(fileName, entry);
+        }
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        this.backupListCache.clear();
+      }
+    }
+  }
+
+  private async persistBackupListCache(backupRoot: string) {
+    const index = Object.fromEntries(this.backupListCache.entries());
+    await writeFile(
+      join(backupRoot, BACKUP_LIST_INDEX_FILE),
+      JSON.stringify(index),
+      "utf-8",
+    );
   }
 
   private async listBackupFileNames(backupRoot: string) {
