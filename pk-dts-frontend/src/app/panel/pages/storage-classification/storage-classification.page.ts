@@ -327,6 +327,8 @@ export class StorageClassificationPage implements OnInit {
 
     formMode: 'create' | 'update' = 'create';
     editingId = '';
+    private hierarchyLoaded = false;
+    private hierarchyLoading = false;
     deletingId = '';
     deletingLabel = '';
 
@@ -376,9 +378,6 @@ export class StorageClassificationPage implements OnInit {
             this.activeResource.set('softcopyCategories');
         }
         this.loadActiveResource();
-        if (canViewStorageCatalogs) {
-            this.loadHierarchyOptions();
-        }
     }
 
     currentItems(): unknown[] {
@@ -423,6 +422,9 @@ export class StorageClassificationPage implements OnInit {
     }
 
     openFormDialog(item?: any) {
+        if (['assetNumbers', 'specifics', 'locations'].includes(this.activeResource())) {
+            this.loadHierarchyOptions();
+        }
         this.formMode = item ? 'update' : 'create';
         this.editingId = item ? this.resourceId(item) : '';
         this.form = item ? this.mapItemToForm(item) : this.emptyForm();
@@ -440,7 +442,7 @@ export class StorageClassificationPage implements OnInit {
                 this.form = this.emptyForm();
                 this.showNotice('success', `${this.activeResourceLabel()} saved`, `The ${this.activeResourceLabel().toLowerCase()} record was saved successfully.`);
                 this.loadActiveResource();
-                this.loadHierarchyOptions();
+                if (this.hierarchyLoaded) this.loadHierarchyOptions(true);
             },
             error: (error: unknown) => this.handleActionError(error, `Unable to save ${this.activeResourceLabel().toLowerCase()}`)
         });
@@ -963,15 +965,25 @@ export class StorageClassificationPage implements OnInit {
         return { primary: '', area_id: '', specific_id: '', asset_id: '', parent_category_id: '' };
     }
 
-    private loadHierarchyOptions() {
+    private loadHierarchyOptions(force = false) {
+        if (this.hierarchyLoading || (this.hierarchyLoaded && !force)) return;
+
+        this.hierarchyLoading = true;
         forkJoin({
             areas: this.storageService.listAreas(1, 1000),
             specifics: this.storageService.listSpecifics(1, 1000),
             assets: this.storageService.listAssetNumbers(1, 1000)
-        }).subscribe(({ areas, specifics, assets }) => {
-            this.hierarchyAreas.set(areas.items ?? []);
-            this.hierarchySpecifics.set(specifics.items ?? []);
-            this.hierarchyAssets.set(assets.items ?? []);
+        }).subscribe({
+            next: ({ areas, specifics, assets }) => {
+                this.hierarchyAreas.set(areas.items ?? []);
+                this.hierarchySpecifics.set(specifics.items ?? []);
+                this.hierarchyAssets.set(assets.items ?? []);
+                this.hierarchyLoaded = true;
+                this.hierarchyLoading = false;
+            },
+            error: () => {
+                this.hierarchyLoading = false;
+            }
         });
     }
 }
