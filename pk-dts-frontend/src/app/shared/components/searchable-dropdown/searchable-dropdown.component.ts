@@ -53,33 +53,33 @@ export const SEARCHABLE_DROPDOWN_THRESHOLD = 10;
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select {
-                min-height: 2.75rem;
-                border-radius: 0.85rem;
-                border: 1px solid #cbd5e1;
-                background: #ffffff;
-                color: #0f172a;
+                min-height: 2.6rem;
+                border-radius: 0.7rem;
+                border: 1px solid var(--app-border-strong);
+                background: var(--app-surface);
+                color: var(--app-text);
                 transition:
                     border-color 0.2s ease,
                     box-shadow 0.2s ease;
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select:not(.p-disabled):hover {
-                border-color: #94a3b8;
+                border-color: var(--app-text-faint);
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select.p-focus {
                 border-color: var(--brand-primary);
-                box-shadow: 0 0 0 0.18rem rgba(185, 28, 28, 0.12);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 11%, transparent);
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select-label {
-                padding: 0.75rem 0.9rem;
+                padding: 0.63rem 0.75rem;
             }
 
             .searchable-dropdown-shell ::ng-deep .p-select-dropdown,
             .searchable-dropdown-shell ::ng-deep .p-select-clear-icon,
             .searchable-dropdown-shell ::ng-deep .p-select-dropdown-icon {
-                color: #475569;
+                color: var(--app-text-muted);
             }
 
             .searchable-dropdown-invalid ::ng-deep .p-select {
