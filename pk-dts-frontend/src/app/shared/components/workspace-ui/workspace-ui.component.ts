@@ -78,6 +78,7 @@ export class WorkspaceSectionComponent {
     selector: 'app-workspace-search',
     standalone: true,
     imports: [CommonModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <label class="workspace-search-shell">
             <span *ngIf="label" class="workspace-control-label">{{ label }}</span>
