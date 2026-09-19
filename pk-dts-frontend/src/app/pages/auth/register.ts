@@ -39,26 +39,30 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
                 <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="form-grid">
                     <div class="section-label wide"><i class="pi pi-user"></i><span><strong>Personal details</strong><small>Tell us who you are</small></span></div>
-                    <label><span>First name</span><input formControlName="firstname" autocomplete="given-name" required /></label>
-                    <label><span>Last name</span><input formControlName="lastname" autocomplete="family-name" required /></label>
-                    <label><span>Middle name <small>Optional</small></span><input formControlName="middlename" autocomplete="additional-name" /></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('firstname')"><span>First name</span><input formControlName="firstname" autocomplete="given-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('lastname')"><span>Last name</span><input formControlName="lastname" autocomplete="family-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('middlename')"><span>Middle name <small>Optional</small></span><input formControlName="middlename" autocomplete="additional-name" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small></label>
 
                     <div class="section-label wide"><i class="pi pi-briefcase"></i><span><strong>Work and access</strong><small>Help us assign the right permissions</small></span></div>
-                    <label><span>Username</span><input formControlName="username" type="text" autocomplete="username" required /></label>
-                    <label><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" /></label>
-                    <label><span>Requested role</span><select formControlName="requested_role_id" required>
-                        <option value="">Select the access role you need</option>
-                        <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}{{ role.description ? ' — ' + role.description : '' }}</option>
-                    </select><small class="field-note">The approver confirms your final role.</small></label>
-                    <label class="wide remarks-field"><span>Remarks <small>Optional</small></span>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('username')"><span>Username</span><input formControlName="username" type="text" autocomplete="username" maxlength="150" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('position_title')"><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')"><span>Requested role</span><select formControlName="requested_role_id" [disabled]="rolesLoading() || !!rolesLoadError()" required>
+                        <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
+                        <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
+                    </select>
+                    <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
+                    <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
+                    <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span></label>
+                    <label class="wide remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')"><span>Remarks <small>Optional</small></span>
                         <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
+                        <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
                     </label>
 
                     <div class="section-label wide"><i class="pi pi-lock"></i><span><strong>Secure your account</strong><small>Use at least 8 characters</small></span></div>
-                    <label><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" minlength="8" required /></label>
-                    <label><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('password')"><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small></label>
+                    <label [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()"><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small><small class="field-error" *ngIf="!isRegisterFieldInvalid('confirmPassword') && passwordMismatch()">Passwords do not match.</small></label>
                     <div class="wide error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
-                    <button class="primary wide" type="submit" [disabled]="loading()"><i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</button>
+                    <button class="primary wide" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0"><i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</button>
                 </form>
 
                 <section *ngIf="receipt() as result" class="receipt">
@@ -1424,6 +1428,48 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 font-size: .76rem;
             }
 
+            .field-invalid input,
+            .field-invalid select,
+            .field-invalid textarea {
+                border-color: #dc2626;
+                background: #fffafa;
+            }
+
+            .field-invalid input:focus,
+            .field-invalid select:focus,
+            .field-invalid textarea:focus {
+                border-color: #dc2626;
+                box-shadow: 0 0 0 3px rgba(220, 38, 38, .1);
+            }
+
+            .field-error {
+                color: #b91c1c !important;
+                font-size: .64rem;
+                font-weight: 700 !important;
+                line-height: 1.25;
+            }
+
+            .role-load-error {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: .5rem;
+                color: #b91c1c;
+                font-size: .64rem;
+                font-weight: 700;
+            }
+
+            .role-load-error button {
+                border: 0;
+                border-radius: .4rem;
+                background: #fee2e2;
+                padding: .25rem .5rem;
+                color: #991b1b;
+                font: inherit;
+                font-weight: 800;
+                cursor: pointer;
+            }
+
             .status-form {
                 width: min(720px, 100%);
                 margin-inline: auto;
@@ -1621,6 +1667,8 @@ export class Register implements OnInit {
     settings = this.systemSettings.settings;
     mode = signal<'register' | 'status'>('register');
     roles = signal<RegistrationRole[]>([]);
+    rolesLoading = signal(false);
+    rolesLoadError = signal('');
     loading = signal(false);
     errorMessage = signal('');
     receipt = signal<RegistrationReceipt | null>(null);
@@ -1628,20 +1676,37 @@ export class Register implements OnInit {
     referenceLookupState = signal<'idle' | 'checking' | 'found' | 'missing'>('idle');
     referenceLookupMessage = signal('');
     registerForm = this.fb.group({
-        firstname: ['', Validators.required],
-        lastname: ['', Validators.required],
-        middlename: [''],
-        username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,149}$/)]],
-        position_title: [''],
-        applicant_remarks: [''],
+        firstname: ['', [Validators.required, Validators.maxLength(100), Validators.pattern(/\S/)]],
+        lastname: ['', [Validators.required, Validators.maxLength(100), Validators.pattern(/\S/)]],
+        middlename: ['', Validators.maxLength(100)],
+        username: ['', [Validators.required, Validators.maxLength(150), Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,149}$/)]],
+        position_title: ['', Validators.maxLength(100)],
+        applicant_remarks: ['', Validators.maxLength(1000)],
         requested_role_id: ['', Validators.required],
-        password: ['', [Validators.required, Validators.minLength(8)]],
-        confirmPassword: ['', Validators.required]
+        password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]],
+        confirmPassword: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]]
     });
     statusForm = this.fb.group({ username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,149}$/)]], reference_code: ['', Validators.required] });
     ngOnInit() {
-        this.registration.roles().subscribe({ next: (r) => this.roles.set(r), error: () => this.errorMessage.set('Registration roles could not be loaded.') });
+        this.loadRoles();
         this.statusForm.controls.username.valueChanges.pipe(debounceTime(600), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef)).subscribe((username) => this.lookupReference(username ?? ''));
+    }
+    loadRoles() {
+        if (this.rolesLoading()) return;
+        this.rolesLoading.set(true);
+        this.rolesLoadError.set('');
+        this.registration.roles().subscribe({
+            next: (roles) => {
+                this.roles.set(roles);
+                this.rolesLoading.set(false);
+                if (!roles.length) this.rolesLoadError.set('No registration roles are currently available.');
+            },
+            error: () => {
+                this.roles.set([]);
+                this.rolesLoading.set(false);
+                this.rolesLoadError.set('Registration roles could not be loaded.');
+            }
+        });
     }
     coverImage() {
         const url = this.settings().loginCoverUrl.replace(/["'()]/g, '');
@@ -1656,11 +1721,40 @@ export class Register implements OnInit {
             if (username) this.statusForm.controls.username.setValue(username);
         }
     }
+    isRegisterFieldInvalid(controlName: keyof typeof this.registerForm.controls) {
+        const control = this.registerForm.controls[controlName];
+        return control.invalid && (control.dirty || control.touched);
+    }
+    registerFieldError(controlName: keyof typeof this.registerForm.controls) {
+        const control = this.registerForm.controls[controlName];
+        if (control.hasError('required')) return 'This field is required.';
+        if (control.hasError('minlength')) return 'Use at least 8 characters.';
+        if (control.hasError('maxlength')) {
+            const max = control.getError('maxlength')?.requiredLength;
+            return `Use no more than ${max} characters.`;
+        }
+        if (control.hasError('pattern')) {
+            return controlName === 'username'
+                ? 'Use letters, numbers, dots, underscores, @, +, or -; start with a letter or number.'
+                : 'Enter a value that is not only spaces.';
+        }
+        return 'Check this field.';
+    }
+    passwordMismatch() {
+        const confirm = this.registerForm.controls.confirmPassword;
+        const password = this.registerForm.controls.password.value ?? '';
+        const confirmation = confirm.value ?? '';
+        return !!confirmation && (confirm.dirty || confirm.touched) && password !== confirmation;
+    }
     submitRegistration() {
         this.registerForm.markAllAsTouched();
         const value = this.registerForm.getRawValue();
+        if (this.rolesLoading() || this.rolesLoadError() || !this.roles().length) {
+            this.errorMessage.set('A registration role must be available before you can submit this request.');
+            return;
+        }
         if (this.registerForm.invalid) {
-            this.errorMessage.set('Complete all required fields and use a password with at least 8 characters.');
+            this.errorMessage.set('Review the highlighted fields and correct the form before submitting.');
             return;
         }
         if (value.password !== value.confirmPassword) {
@@ -1669,8 +1763,16 @@ export class Register implements OnInit {
         }
         this.loading.set(true);
         this.errorMessage.set('');
-        const { confirmPassword, ...payload } = value;
-        void confirmPassword;
+        const payload = {
+            firstname: value.firstname?.trim() ?? '',
+            lastname: value.lastname?.trim() ?? '',
+            middlename: value.middlename?.trim() || undefined,
+            username: value.username?.trim() ?? '',
+            position_title: value.position_title?.trim() || undefined,
+            applicant_remarks: value.applicant_remarks?.trim() || undefined,
+            requested_role_id: value.requested_role_id ?? '',
+            password: value.password ?? ''
+        };
         this.registration.register(payload).subscribe({
             next: (r) => {
                 this.receipt.set(r);
