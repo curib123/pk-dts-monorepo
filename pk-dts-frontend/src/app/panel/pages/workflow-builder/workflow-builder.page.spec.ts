@@ -174,6 +174,61 @@ describe('WorkflowBuilderPage', () => {
         expect(page.dirty).toBeTrue();
     });
 
+    it('publishes in place without reloading the workflow list or graph', () => {
+        const page = fixture.componentInstance;
+        spyOn(window, 'confirm').and.returnValue(true);
+
+        page.selectDefinition(page.definitions[0]);
+        versionRequest.next({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'DRAFT',
+            published_at: null,
+            graph
+        });
+        versionRequest.complete();
+
+        workflows.publish.and.returnValue(of({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'PUBLISHED',
+            published_at: '2026-09-19T06:30:00.000Z',
+            graph
+        } as any));
+
+        page.publish();
+
+        expect(workflows.publish).toHaveBeenCalledWith('1', '2');
+        expect(workflows.list).toHaveBeenCalledTimes(1);
+        expect(workflows.getVersion).toHaveBeenCalledTimes(1);
+        expect(page.selectedVersion?.status).toBe('PUBLISHED');
+        expect(page.message).toContain('published');
+    });
+
+    it('changes active state in place without refetching the workflow list', () => {
+        const page = fixture.componentInstance;
+
+        page.selectDefinition(page.definitions[0]);
+        versionRequest.next({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'DRAFT',
+            graph
+        });
+        versionRequest.complete();
+
+        workflows.setActive.and.returnValue(of({ ...page.selectedDefinition!, is_active: false } as any));
+        page.toggleActive();
+
+        expect(workflows.setActive).toHaveBeenCalledWith('1', false);
+        expect(workflows.list).toHaveBeenCalledTimes(1);
+        expect(workflows.getVersion).toHaveBeenCalledTimes(1);
+        expect(page.selectedDefinition?.is_active).toBeFalse();
+    });
+
     it('filters the local workflow list without another API request', () => {
         const page = fixture.componentInstance;
 
