@@ -1077,6 +1077,8 @@ export class DocumentsService {
             OR: [
               { document_title: { contains: search, mode: "insensitive" } },
               { requested_by_name: { contains: search, mode: "insensitive" } },
+              { disposal_remarks: { contains: search, mode: "insensitive" } },
+              { disposal_action_other: { contains: search, mode: "insensitive" } },
               { disposed_by_name: { contains: search, mode: "insensitive" } },
               {
                 creator: {
