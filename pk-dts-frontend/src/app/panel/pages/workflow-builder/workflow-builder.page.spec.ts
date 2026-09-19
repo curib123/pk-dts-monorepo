@@ -98,7 +98,6 @@ describe('WorkflowBuilderPage', () => {
         const page = fixture.componentInstance;
 
         page.selectDefinition(page.definitions[0]);
-        fixture.detectChanges();
 
         expect(page.selectedDefinition?.workflow_definition_id).toBe('1');
         expect(page.selectedVersion?.workflow_version_id).toBe('2');
