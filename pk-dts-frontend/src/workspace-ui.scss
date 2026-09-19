@@ -49,8 +49,8 @@
 }
 
 .workspace-toolbar-shell--stacked { align-items: stretch; flex-direction: column; }
-.workspace-toolbar-main { min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-.workspace-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+.workspace-toolbar-main { order: 1; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
+.workspace-toolbar-actions { order: 2; display: flex; align-items: center; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
 .workspace-toolbar-actions:empty { display: none; }
 
 .workspace-context {
@@ -356,9 +356,7 @@
 .workspace-page-shell .section-head,
 .workspace-page-shell .section-heading,
 .workspace-page-shell .workspace-head,
-.workspace-page-shell .folder-toolbar,
-.workspace-page-shell .backup-toolbar,
-.workspace-page-shell .settings-toolbar {
+.workspace-page-shell .folder-toolbar {
     border-radius: var(--workspace-radius);
 }
 .workspace-page-shell :is(.filter-panel, .catalog-tools, .document-search-card, .request-table, .folder-card) {
