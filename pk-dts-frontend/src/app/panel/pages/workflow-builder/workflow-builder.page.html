@@ -77,7 +77,7 @@
             <div *ngIf="!definitions.length" class="empty"><i class="pi pi-list-check"></i><strong>No workflows yet</strong><span>Create the first approval route to begin.</span></div>
         </aside>
 
-        <main *ngIf="selectedDefinition && selectedVersion && !versionLoading && !versionLoadError; else selectPrompt" class="editor">
+        <main *ngIf="!!selectedDefinition && !!selectedVersion && !versionLoading && !versionLoadError; else selectPrompt" class="editor">
             <section class="editor-toolbar">
                 <div class="editor-title">
                     <div class="status-line">
@@ -248,7 +248,7 @@
                     <span>The workflow list is ready. Only this version's approval graph is being loaded.</span>
                 </ng-container>
                 <ng-template #versionLoadState>
-                    <ng-container *ngIf="versionLoadError && selectedDefinition && selectedVersion; else chooseWorkflow">
+                    <ng-container *ngIf="!!versionLoadError && !!selectedDefinition && !!selectedVersion; else chooseWorkflow">
                         <i class="pi pi-exclamation-circle"></i>
                         <strong>Unable to load this workflow version</strong>
                         <span>{{ versionLoadError }}</span>
