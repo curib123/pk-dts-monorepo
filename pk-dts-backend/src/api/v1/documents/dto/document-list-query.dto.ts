@@ -50,6 +50,12 @@ export class DocumentListQueryDto extends PaginationQueryDto {
   @IsNumberString()
   sequence_id?: string;
 
+  @ApiPropertyOptional({ description: 'Filter disposed records by disposer account or manual name.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  disposed_by?: string;
+
   @ApiPropertyOptional({ description: 'Softcopy category. Parent folders include descendants.' })
   @IsOptional()
   @IsNumberString()
