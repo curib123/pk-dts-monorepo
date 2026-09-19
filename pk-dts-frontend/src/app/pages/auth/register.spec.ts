@@ -62,7 +62,7 @@ describe('Register', () => {
 
         page.submitRegistration();
 
-        expect(page.registerForm.controls.firstname.hasError('pattern')).toBeTrue();
+        expect(page.registerForm.controls.firstname.hasError('required')).toBeTrue();
         expect(page.registerForm.controls.password.hasError('maxlength')).toBeTrue();
         expect(registration.register).not.toHaveBeenCalled();
         expect(page.errorMessage()).toContain('highlighted fields');
