@@ -17,15 +17,15 @@ import { DisposalRequestSummary, DocumentSummary } from '../documents/documents.
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
-    selector: 'app-approval-review-page', standalone: true, imports: [WorkspacePageComponent, DocumentDetailDialogComponent, CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ConfirmationDialogComponent, LoadingShimmerComponent],
+    selector: 'app-approval-review-page', standalone: true, imports: [WorkspacePageComponent, WorkspaceTabsComponent, DocumentDetailDialogComponent, CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ConfirmationDialogComponent, LoadingShimmerComponent],
     template: `<app-workspace-page><app-loading-shimmer *ngIf="loading" label="Loading approval requests" [columns]="6" />
     <app-document-detail-dialog *ngIf="viewDocumentDetail" [(visible)]="viewVisible" [document]="viewDocumentDetail" [loading]="!!viewLoadingId" [revisions]="viewDocumentDetail.softcopy?.revisions || []" [canAccessFiles]="true" />
     <section class="review-page" [style.display]="loading ? 'none' : null">
     <div class="feedback error" *ngIf="errorMessage()">{{errorMessage()}}</div>
-    <nav class="workflow-tabs" aria-label="Approval type"><button type="button" [class.active]="activeTab === 'documents'" (click)="activeTab='documents'"><i class="pi pi-file-check"></i> Document Approvals <span>{{requests().length}}</span></button><button *ngIf="canReviewDisposals()" type="button" [class.active]="activeTab === 'disposals'" (click)="activeTab='disposals'"><i class="pi pi-trash"></i> Disposal Approvals <span>{{disposalRequests().length}}</span></button></nav>
+    <app-workspace-tabs ariaLabel="Approval type"><button type="button" [class.active]="activeTab === 'documents'" (click)="activeTab='documents'"><i class="pi pi-file-check"></i> Document Approvals <span>{{requests().length}}</span></button><button *ngIf="canReviewDisposals()" type="button" [class.active]="activeTab === 'disposals'" (click)="activeTab='disposals'"><i class="pi pi-trash"></i> Disposal Approvals <span>{{disposalRequests().length}}</span></button></app-workspace-tabs>
     <ng-container *ngIf="activeTab === 'documents'">
     <app-data-view-switch [(mode)]="viewMode" title="Document approval results" />
     <p-table *ngIf="viewMode === 'list'" [value]="requests()" [loading]="loading" responsiveLayout="scroll"><ng-template pTemplate="header"><tr><th>Document</th><th>Approval stage</th><th>Created by</th><th>Requester</th><th>Submitted</th><th>Decision</th></tr></ng-template>
