@@ -45,7 +45,7 @@ describe('WorkflowBuilderPage', () => {
                 workflow_definition_id: '1',
                 workflow_key: 'system-softcopy-create',
                 name: 'Softcopy approval',
-                description: null,
+                description: 'Standard softcopy route',
                 document_type: 'SOFTCOPY',
                 is_active: true,
                 versions: [
@@ -89,12 +89,14 @@ describe('WorkflowBuilderPage', () => {
         expect(users.listUsers).not.toHaveBeenCalled();
         expect(roles.listRoles).not.toHaveBeenCalled();
 
-        const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-        expect(text).toContain('Workflows');
-        expect(text).toContain('Select a workflow to begin');
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelector('.builder-shell')).not.toBeNull();
+        expect(element.querySelector('.workflow-sidebar')).not.toBeNull();
+        expect(element.querySelector('.editor-empty')).not.toBeNull();
+        expect(element.querySelector('.page-heading')).toBeNull();
     });
 
-    it('fetches the selected workflow and editor data only after the workflow is clicked', () => {
+    it('loads the selected graph first without fetching approver lists that are not needed', () => {
         const page = fixture.componentInstance;
 
         page.selectDefinition(page.definitions[0]);
@@ -103,8 +105,8 @@ describe('WorkflowBuilderPage', () => {
         expect(page.selectedVersion?.workflow_version_id).toBe('2');
         expect(page.versionLoading).toBeTrue();
         expect(workflows.getVersion).toHaveBeenCalledWith('1', '2');
-        expect(users.listUsers).toHaveBeenCalledTimes(1);
-        expect(roles.listRoles).toHaveBeenCalledTimes(1);
+        expect(users.listUsers).not.toHaveBeenCalled();
+        expect(roles.listRoles).not.toHaveBeenCalled();
 
         versionRequest.next({
             workflow_version_id: '2',
@@ -116,10 +118,71 @@ describe('WorkflowBuilderPage', () => {
         versionRequest.complete();
 
         expect(page.versionLoading).toBeFalse();
-        expect(page.referenceDataLoading).toBeFalse();
         expect(page.approvalNodes.length).toBe(1);
         expect(page.approvalNodes[0].label).toBe('Leader approval');
-        expect(page.users).toEqual([]);
-        expect(page.roles).toEqual([]);
+        expect(users.listUsers).not.toHaveBeenCalled();
+        expect(roles.listRoles).not.toHaveBeenCalled();
+
+        fixture.detectChanges();
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelectorAll('.step-card').length).toBe(1);
+        expect(element.querySelectorAll('.behavior-strip').length).toBe(1);
+        expect(element.textContent).toContain('Approve → next step');
+    });
+
+    it('loads only roles when the selected graph contains a role assignment', () => {
+        const page = fixture.componentInstance;
+        const roleGraph = {
+            ...graph,
+            nodes: [
+                { key: 'leader', label: 'Manager approval', type: 'APPROVAL', stage: 'CUSTOM', assignment: { type: 'ROLE', role_id: '4' } },
+                { key: 'approved', label: 'Approved', type: 'END' }
+            ]
+        };
+
+        page.selectDefinition(page.definitions[0]);
+        versionRequest.next({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'DRAFT',
+            graph: roleGraph
+        });
+        versionRequest.complete();
+
+        expect(roles.listRoles).toHaveBeenCalledTimes(1);
+        expect(users.listUsers).not.toHaveBeenCalled();
+    });
+
+    it('loads people only when an editor changes a step to Specific person', () => {
+        const page = fixture.componentInstance;
+
+        page.selectDefinition(page.definitions[0]);
+        versionRequest.next({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'DRAFT',
+            graph
+        });
+        versionRequest.complete();
+
+        page.setAssignmentType(page.approvalNodes[0], 'USER');
+
+        expect(users.listUsers).toHaveBeenCalledTimes(1);
+        expect(roles.listRoles).not.toHaveBeenCalled();
+        expect(page.dirty).toBeTrue();
+    });
+
+    it('filters the local workflow list without another API request', () => {
+        const page = fixture.componentInstance;
+
+        page.workflowSearch = 'hardcopy';
+        expect(page.filteredDefinitions).toEqual([]);
+        expect(workflows.list).toHaveBeenCalledTimes(1);
+
+        page.workflowSearch = 'softcopy';
+        expect(page.filteredDefinitions.length).toBe(1);
+        expect(workflows.list).toHaveBeenCalledTimes(1);
     });
 });
