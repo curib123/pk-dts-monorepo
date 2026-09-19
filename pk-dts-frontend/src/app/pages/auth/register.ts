@@ -18,57 +18,46 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
             <div class="login-panel registration-panel">
                 <section class="login-card registration-card">
-                    <div class="portal-label"><span></span> Staff workspace</div>
-                    <div class="login-card-header">
-                        <div class="login-logo">
-                            <img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" />
+                    <div class="register-topbar">
+                        <div class="login-card-header">
+                            <div class="login-logo">
+                                <img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" />
+                            </div>
+                            <div class="login-heading-copy">
+                                <div class="login-title">{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</div>
+                                <div class="login-subtitle">{{ mode() === 'register' ? 'Complete the form below for account review and access approval.' : 'Enter the username used when you registered to track the latest decision.' }}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="login-title">{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</div>
-                            <div class="login-subtitle">{{ mode() === 'register' ? 'Submit your details for review and access approval.' : 'Track the latest decision on your account request.' }}</div>
-                        </div>
+
+                        <nav class="mode-tabs" aria-label="Registration options">
+                            <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')"><i class="pi pi-user-plus"></i><span>New request</span></button>
+                            <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')"><i class="pi pi-clock"></i><span>Check status</span></button>
+                        </nav>
                     </div>
 
                     <div class="registration-content">
-                    <div class="content-heading">
-                        <h2>{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</h2>
-                        <p>{{ mode() === 'register' ? 'Complete the form below. Fields marked required must be provided.' : 'Enter the username used when you registered.' }}</p>
-                    </div>
-                    <nav class="mode-tabs" aria-label="Registration options">
-                        <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')"><i class="pi pi-user-plus"></i><span>New request</span></button>
-                        <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')"><i class="pi pi-clock"></i><span>Check status</span></button>
-                    </nav>
 
                 <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="form-grid">
                     <div class="section-label wide"><i class="pi pi-user"></i><span><strong>Personal details</strong><small>Tell us who you are</small></span></div>
-                    <label><span>First name</span><input formControlName="firstname" autocomplete="given-name" /></label>
-                    <label><span>Last name</span><input formControlName="lastname" autocomplete="family-name" /></label>
-                    <label
-                        ><span>Middle name <small>Optional</small></span
-                        ><input formControlName="middlename"
-                    /></label>
+                    <label><span>First name</span><input formControlName="firstname" autocomplete="given-name" required /></label>
+                    <label><span>Last name</span><input formControlName="lastname" autocomplete="family-name" required /></label>
+                    <label><span>Middle name <small>Optional</small></span><input formControlName="middlename" autocomplete="additional-name" /></label>
+
                     <div class="section-label wide"><i class="pi pi-briefcase"></i><span><strong>Work and access</strong><small>Help us assign the right permissions</small></span></div>
-                    <label class="wide"><span>Username</span><input formControlName="username" type="text" autocomplete="username" /></label>
-                    <label class="wide"
-                        ><span>Position title <small>Optional</small></span
-                        ><input formControlName="position_title"
-                    /></label>
-                    <label class="wide"
-                        ><span>Remarks <small>Optional</small></span
-                        ><textarea formControlName="applicant_remarks" rows="3" maxlength="1000" placeholder="Write an optional message for the account manager"></textarea>
-                        <small class="field-note">Add any information that may help the account manager review your request.</small></label
-                    >
-                    <label class="wide"
-                        ><span>Requested role</span
-                        ><select formControlName="requested_role_id">
-                            <option value="">Select the access role you need</option>
-                            <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}{{ role.description ? ' — ' + role.description : '' }}</option></select
-                        ><small class="field-note">This is a request only. The approver selects your final role.</small></label
-                    >
+                    <label><span>Username</span><input formControlName="username" type="text" autocomplete="username" required /></label>
+                    <label><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" /></label>
+                    <label><span>Requested role</span><select formControlName="requested_role_id" required>
+                        <option value="">Select the access role you need</option>
+                        <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}{{ role.description ? ' — ' + role.description : '' }}</option>
+                    </select><small class="field-note">The approver confirms your final role.</small></label>
+                    <label class="wide remarks-field"><span>Remarks <small>Optional</small></span>
+                        <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
+                    </label>
+
                     <div class="section-label wide"><i class="pi pi-lock"></i><span><strong>Secure your account</strong><small>Use at least 8 characters</small></span></div>
-                    <label><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" /></label>
-                    <label><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" /></label>
-                    <div class="wide error" *ngIf="errorMessage()"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
+                    <label><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+                    <label><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+                    <div class="wide error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
                     <button class="primary wide" type="submit" [disabled]="loading()"><i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</button>
                 </form>
 
@@ -1175,11 +1164,19 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             }
         `
         ,`
-            /* Reuse the login composition for registration and status requests. */
+            /* Full-screen registration: wide on desktop, compact and scroll-safe on smaller screens. */
+            :host {
+                min-height: 100svh;
+            }
+
             .registration-shell {
                 min-height: 100svh;
-                padding: 7rem clamp(1.25rem, 5vw, 5rem) 4.5rem;
+                padding: clamp(.75rem, 1.6vh, 1.25rem);
+                display: flex;
                 align-items: center;
+                justify-content: center;
+                overflow-x: hidden;
+                overflow-y: auto;
                 background: #080c14;
             }
 
@@ -1190,79 +1187,428 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 height: auto;
             }
 
-            .registration-cover {
-                background-position: center;
-                opacity: 1;
-            }
-
             .registration-overlay {
                 background:
-                    linear-gradient(90deg, rgba(5, 9, 16, 0.97) 0%, rgba(5, 9, 16, 0.88) 46%, rgba(5, 9, 16, 0.62) 100%),
-                    linear-gradient(180deg, rgba(5, 9, 16, 0.28) 0%, rgba(5, 9, 16, 0.24) 55%, rgba(5, 9, 16, 0.92) 100%);
+                    linear-gradient(90deg, rgba(5, 9, 16, .95) 0%, rgba(5, 9, 16, .82) 52%, rgba(5, 9, 16, .62) 100%),
+                    linear-gradient(180deg, rgba(5, 9, 16, .25), rgba(5, 9, 16, .86));
             }
 
             .registration-panel {
                 position: relative;
                 z-index: 1;
-                width: min(1160px, 100%);
-                display: grid;
-                grid-template-columns: minmax(370px, 760px);
-                justify-content: center;
-                align-items: center;
-                gap: clamp(2rem, 6vw, 6.5rem);
-                overflow: visible;
-                border: 0;
-                border-radius: 0;
-                background: transparent;
-                box-shadow: none;
-                backdrop-filter: none;
+                width: min(1380px, calc(100vw - 2rem));
+                display: block;
             }
 
             .registration-card {
-                width: auto;
-                min-height: 0;
-                display: block;
-                overflow: visible;
-                padding: 2.35rem;
-                border: 1px solid rgba(255, 255, 255, 0.72);
-                border-radius: 1.35rem;
-                background: rgba(255, 255, 255, 0.97);
-                box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.12);
-                backdrop-filter: none;
+                width: 100%;
+                max-height: calc(100svh - 1.5rem);
+                overflow-y: auto;
+                padding: clamp(1.15rem, 1.8vw, 1.75rem);
+                border: 1px solid rgba(255, 255, 255, .72);
+                border-radius: 1.15rem;
+                background: rgba(255, 255, 255, .98);
+                box-shadow: 0 24px 64px rgba(0, 0, 0, .34);
+                scrollbar-gutter: stable;
             }
 
-            .portal-label { margin-bottom: 1.35rem; color: var(--brand-primary-deep); }
-            .portal-label span { width: 1.25rem; background: var(--brand-primary); }
-            .login-card-header { gap: 0.9rem; margin-bottom: 1.65rem; }
-            .login-logo { width: 3.75rem; height: 3.75rem; border-radius: 0.9rem; }
-            .login-logo img { width: 2.55rem; height: 2.55rem; }
-            .login-title { color: #0f172a; font-size: 1.6rem; }
-            .login-subtitle { margin-top: 0.2rem; color: #64748b; font-size: 0.86rem; line-height: 1.45; }
+            .register-topbar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+                align-items: center;
+                gap: 1.25rem;
+                margin-bottom: 1rem;
+                padding-bottom: .9rem;
+                border-bottom: 1px solid #e8edf3;
+            }
 
-            .registration-content { min-width: 0; padding: 0; background: transparent; }
-            .content-heading { display: none; }
-            .mode-tabs { margin: 0 0 1.35rem; }
-            .form-grid { gap: 0.85rem; }
-            .registration-content > footer { margin-top: 1.25rem; padding-top: 1.05rem; font-size: 0.78rem; }
+            .login-card-header {
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: .8rem;
+                margin: 0;
+            }
 
+            .login-logo {
+                width: 2.65rem;
+                height: 2.65rem;
+                flex: 0 0 auto;
+                display: grid;
+                place-items: center;
+                overflow: hidden;
+                border-radius: .65rem;
+                background: #070707;
+            }
+
+            .login-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            .login-heading-copy {
+                min-width: 0;
+            }
+
+            .login-title {
+                color: #0f172a;
+                font-size: clamp(1.3rem, 2vw, 1.65rem);
+                font-weight: 850;
+                line-height: 1.15;
+                letter-spacing: -.025em;
+            }
+
+            .login-subtitle {
+                margin-top: .2rem;
+                color: #64748b;
+                font-size: .78rem;
+                line-height: 1.4;
+            }
+
+            .mode-tabs {
+                margin: 0;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: .3rem;
+                padding: .25rem;
+                border: 1px solid #e3e8ef;
+                border-radius: .7rem;
+                background: #f8fafc;
+            }
+
+            .mode-tabs button {
+                min-height: 2.45rem;
+                border-radius: .5rem;
+                padding: .5rem .7rem;
+                font-size: .75rem;
+            }
+
+            .mode-tabs button.active {
+                color: #fff;
+                background: var(--registration-brand-deep);
+                box-shadow: none;
+            }
+
+            .registration-content {
+                min-width: 0;
+                padding: 0;
+                background: transparent;
+            }
+
+            .form-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: .7rem .85rem;
+            }
+
+            .wide {
+                grid-column: 1 / -1;
+            }
+
+            .section-label {
+                min-height: 2rem;
+                margin: .05rem 0 0;
+                padding: .45rem 0 .25rem;
+                display: flex;
+                align-items: center;
+                gap: .55rem;
+                border-top: 1px solid #eef2f6;
+            }
+
+            .section-label:first-child {
+                padding-top: 0;
+                border-top: 0;
+            }
+
+            .section-label > i {
+                width: 1.7rem;
+                height: 1.7rem;
+                display: grid;
+                place-items: center;
+                flex: 0 0 auto;
+                border-radius: .45rem;
+                color: var(--registration-brand-deep);
+                background: var(--registration-brand-soft);
+                font-size: .78rem;
+            }
+
+            .section-label > span {
+                display: flex;
+                align-items: baseline;
+                gap: .5rem;
+                min-width: 0;
+            }
+
+            .section-label strong {
+                color: #334155;
+                font-size: .75rem;
+            }
+
+            .section-label small {
+                color: #94a3b8;
+                font-size: .64rem;
+                font-weight: 650;
+            }
+
+            .registration-content label {
+                gap: .3rem;
+            }
+
+            .registration-content label > span {
+                color: #334155;
+                font-size: .72rem;
+                font-weight: 800;
+            }
+
+            .registration-content input,
+            .registration-content select,
+            .registration-content textarea {
+                min-height: 2.55rem;
+                border: 1px solid #dbe1e9;
+                border-radius: .62rem;
+                background: #fbfcfe;
+                padding: .55rem .7rem;
+                font-size: .82rem;
+                box-shadow: none;
+            }
+
+            .registration-content textarea {
+                min-height: 3.35rem;
+                resize: vertical;
+            }
+
+            .registration-content input:hover,
+            .registration-content select:hover,
+            .registration-content textarea:hover {
+                border-color: #c4cbd5;
+                background: #fff;
+            }
+
+            .registration-content input:focus,
+            .registration-content select:focus,
+            .registration-content textarea:focus {
+                border-color: var(--registration-brand);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--registration-brand) 11%, transparent);
+                outline: none;
+            }
+
+            .field-note {
+                color: #8490a1;
+                font-size: .64rem;
+                line-height: 1.3;
+            }
+
+            .remarks-field textarea {
+                min-height: 3.2rem;
+            }
+
+            .primary {
+                min-height: 2.8rem;
+                border-radius: .65rem;
+                background: var(--registration-brand-deep);
+                box-shadow: 0 8px 18px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent);
+            }
+
+            .primary:not(:disabled):hover {
+                transform: none;
+                background: var(--registration-brand);
+            }
+
+            .error {
+                padding: .65rem .8rem;
+                border: 1px solid #fee2e2;
+                border-radius: .65rem;
+                background: #fff5f5;
+                color: #b91c1c;
+                font-size: .76rem;
+            }
+
+            .status-form {
+                width: min(720px, 100%);
+                margin-inline: auto;
+                display: grid;
+                gap: .8rem;
+            }
+
+            .receipt,
+            .status-result {
+                width: min(760px, 100%);
+                margin-inline: auto;
+            }
+
+            .registration-content > footer {
+                margin-top: .8rem;
+                padding-top: .7rem;
+                border-top: 1px solid #eef2f6;
+                font-size: .75rem;
+            }
+
+            /* The registration form is the primary task; decorative footer copy should not consume viewport height. */
             .landing-footer {
-                left: clamp(1.25rem, 5vw, 5rem);
-                right: clamp(1.25rem, 5vw, 5rem);
-                color: rgba(255, 255, 255, 0.48);
+                display: none;
             }
 
-            @media (max-width: 960px) {
-                .registration-shell { justify-content: flex-start; padding: 6.5rem 1rem 1.5rem; }
-                .registration-panel { grid-template-columns: minmax(0, 760px); gap: 1.25rem; width: min(760px, 100%); }
-                .landing-footer { width: min(620px, 100%); }
+            @media (min-width: 961px) and (max-height: 760px) {
+                .registration-shell {
+                    align-items: flex-start;
+                    padding: .55rem;
+                }
+
+                .registration-panel {
+                    width: min(1400px, calc(100vw - 1.1rem));
+                }
+
+                .registration-card {
+                    max-height: calc(100svh - 1.1rem);
+                    padding: .85rem 1.1rem;
+                    border-radius: .9rem;
+                }
+
+                .register-topbar {
+                    margin-bottom: .65rem;
+                    padding-bottom: .6rem;
+                }
+
+                .login-logo {
+                    width: 2.3rem;
+                    height: 2.3rem;
+                }
+
+                .login-title {
+                    font-size: 1.25rem;
+                }
+
+                .login-subtitle {
+                    font-size: .7rem;
+                }
+
+                .mode-tabs button {
+                    min-height: 2.15rem;
+                    padding: .38rem .6rem;
+                }
+
+                .form-grid {
+                    gap: .5rem .7rem;
+                }
+
+                .section-label {
+                    min-height: 1.65rem;
+                    padding: .25rem 0 .1rem;
+                }
+
+                .registration-content input,
+                .registration-content select {
+                    min-height: 2.25rem;
+                    padding: .42rem .62rem;
+                }
+
+                .registration-content textarea,
+                .remarks-field textarea {
+                    min-height: 2.7rem;
+                }
+
+                .primary {
+                    min-height: 2.45rem;
+                }
+
+                .registration-content > footer {
+                    margin-top: .55rem;
+                    padding-top: .5rem;
+                }
             }
 
-            @media (max-width: 640px) {
-                .registration-shell { padding: 5.75rem 0.75rem 1rem; }
-                .registration-panel { grid-template-columns: 1fr; }
-                .registration-card { padding: 1.45rem 1.15rem; border-radius: 1rem; }
-                .registration-content > footer { gap: 0.35rem; }
-                .landing-footer { gap: 0.35rem; }
+            @media (max-width: 1100px) {
+                .registration-panel {
+                    width: min(920px, calc(100vw - 2rem));
+                }
+
+                .form-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+
+                .wide {
+                    grid-column: 1 / -1;
+                }
+            }
+
+            @media (max-width: 760px) {
+                .registration-shell {
+                    align-items: flex-start;
+                    padding: .65rem;
+                }
+
+                .registration-panel {
+                    width: 100%;
+                }
+
+                .registration-card {
+                    max-height: none;
+                    overflow: visible;
+                    padding: 1rem;
+                    border-radius: .9rem;
+                }
+
+                .register-topbar {
+                    grid-template-columns: 1fr;
+                    gap: .8rem;
+                }
+
+                .mode-tabs {
+                    width: 100%;
+                }
+
+                .form-grid,
+                .status-result dl {
+                    grid-template-columns: 1fr;
+                }
+
+                .wide {
+                    grid-column: 1;
+                }
+
+                .section-label > span {
+                    display: grid;
+                    gap: .05rem;
+                }
+
+                .result-actions {
+                    flex-direction: column;
+                }
+            }
+
+            @media (max-width: 420px) {
+                .registration-shell {
+                    padding: .4rem;
+                }
+
+                .registration-card {
+                    padding: .85rem .8rem;
+                }
+
+                .login-logo {
+                    width: 2.35rem;
+                    height: 2.35rem;
+                }
+
+                .login-title {
+                    font-size: 1.18rem;
+                }
+
+                .login-subtitle {
+                    font-size: .7rem;
+                }
+
+                .mode-tabs button {
+                    font-size: .7rem;
+                    padding-inline: .4rem;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .primary {
+                    transition: none;
+                }
             }
         `
     ]
