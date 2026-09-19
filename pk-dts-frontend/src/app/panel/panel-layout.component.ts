@@ -54,6 +54,11 @@ const PANEL_BACKGROUND_POLL_DELAY_MS = 250;
                             >
                                 <span class="nav-icon"><i [class]="category.icon"></i></span>
                                 <span class="nav-label">{{ category.label }}</span>
+                                <span
+                                    *ngIf="categoryNotificationCount(category)"
+                                    class="nav-count nav-category-count"
+                                    [attr.aria-label]="categoryNotificationCount(category) + ' pending items in ' + category.label"
+                                >{{ displayCategoryNotificationCount(category) }}</span>
                                 <i class="pi pi-chevron-down category-arrow"></i>
                             </button>
                             <div *ngIf="isCategoryOpen(category.id)" class="nav-children" [id]="'nav-category-' + category.id">
@@ -254,6 +259,13 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     trackCategory = (_index: number, category: PanelNavCategory) => category.id;
     notificationCount(item: PanelNavItem) { return item.notificationKey ? this.notificationCounts()[item.notificationKey] ?? 0 : 0; }
     displayNotificationCount(item: PanelNavItem) { const count = this.notificationCount(item); return count > 99 ? '99+' : String(count); }
+    categoryNotificationCount(category: PanelNavCategory) {
+        return category.items.reduce((total, item) => total + this.notificationCount(item), 0);
+    }
+    displayCategoryNotificationCount(category: PanelNavCategory) {
+        const count = this.categoryNotificationCount(category);
+        return count > 99 ? '99+' : String(count);
+    }
     trackNotification = (_index: number, item: UserNotification) => item.event_key;
     toggleNotifications(event: Event) { event.stopPropagation(); this.notificationsOpen.update((value) => !value); }
     openNotification(item: UserNotification) { this.notificationsService.read(item.event_key).subscribe(() => { this.notifications.update((items) => items.map((value) => value.event_key === item.event_key ? { ...value, read: true } : value)); this.unreadCount.set(this.notifications().filter((value) => !value.read).length); }); this.notificationsOpen.set(false); this.router.navigateByUrl(item.route); }
