@@ -45,6 +45,7 @@ import {
     DocumentSummary,
     DocumentUserSummary,
     LocationReference,
+    PaginatedResponse,
     RevisionFormValue,
     RevisionSummary,
     SequenceReference,
@@ -1903,7 +1904,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
 
         const folderMode = this.viewMode === 'folder';
-        const request = folderMode
+        const request: Observable<PaginatedResponse<DocumentSummary>> = folderMode
             ? this.documentsService.listDocuments().pipe(map((items) => ({ items, meta: { total: items.length } })))
             : this.documentsService.listDocumentsPage(this.documentListQuery());
 
