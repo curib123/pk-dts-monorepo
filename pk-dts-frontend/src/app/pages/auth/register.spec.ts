@@ -36,9 +36,14 @@ describe('Register', () => {
         expect(element.querySelector('.login-panel')).not.toBeNull();
         expect(element.querySelector('.registration-intro')).toBeNull();
         expect(element.querySelector('.login-card')).not.toBeNull();
-        expect(element.querySelector('.register-topbar')).not.toBeNull();
+        const header = element.querySelector('.register-header') as HTMLElement;
+        expect(header).not.toBeNull();
         expect(element.querySelector('.portal-label')).toBeNull();
-        expect(element.querySelector('.login-logo img')).not.toBeNull();
+        expect(element.querySelector('.login-logo')).toBeNull();
+        expect(element.querySelector('.dts-brand-logo')).toBeNull();
+        expect(header.firstElementChild?.classList.contains('mode-tabs')).toBeTrue();
+        expect(header.querySelector('.register-heading h1')?.textContent?.trim()).toBe('Request an account');
+        expect(header.querySelector('.register-heading p')?.textContent?.trim()).toBe('Complete the form below for account review and access approval.');
         expect(element.querySelector('form.registration-form')).not.toBeNull();
 
         const sections = element.querySelectorAll('.form-section');
