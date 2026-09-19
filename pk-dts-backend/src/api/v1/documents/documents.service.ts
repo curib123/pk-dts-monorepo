@@ -27,6 +27,7 @@ import AdmZip = require("adm-zip");
 import pdf = require("pdf-parse");
 import * as XLSX from "xlsx";
 import { PaginationQueryDto } from "../../../common/dto/pagination-query.dto";
+import { DocumentListQueryDto } from "./dto/document-list-query.dto";
 import { toBigIntId } from "../../../common/utils/prisma-id.util";
 import {
   getPagination,
@@ -983,15 +984,117 @@ export class DocumentsService {
   }
 
   async findAll(
-    query: PaginationQueryDto,
+    query: DocumentListQueryDto,
     statuses: DocumentStatus[] = [DocumentStatus.Approved],
     user?: AuthenticatedUser,
   ) {
     const { page, limit, skip, take } = getPagination(query);
+    const effectiveStatuses = query.status
+      ? statuses.filter((status) => status === query.status)
+      : statuses;
+    const search = query.search?.trim();
+    const categoryId = query.category_id
+      ? toBigIntId(query.category_id, "category_id")
+      : undefined;
+    const category = categoryId
+      ? await this.prisma.softcopyCategory.findUnique({
+          where: { softcopy_category_id: categoryId },
+          select: { softcopy_category_id: true, folder_name: true },
+        })
+      : null;
+
+    const hardcopyFilters: Prisma.HardcopyDocumentWhereInput = {
+      ...(query.area_id
+        ? { area_id: toBigIntId(query.area_id, "area_id") }
+        : {}),
+      ...(query.location_id
+        ? { location_id: toBigIntId(query.location_id, "location_id") }
+        : {}),
+      ...(query.specific_id
+        ? { specific_id: toBigIntId(query.specific_id, "specific_id") }
+        : {}),
+      ...(query.asset_id
+        ? { asset_id: toBigIntId(query.asset_id, "asset_id") }
+        : {}),
+      ...(query.sequence_id
+        ? { sequence_id: toBigIntId(query.sequence_id, "sequence_id") }
+        : {}),
+    };
+
     const where: Prisma.DocumentWhereInput = {
-      status: { in: statuses },
+      status: { in: effectiveStatuses },
       source_document_id: null,
       ...this.documentAccessWhere(user),
+      ...(query.document_type ? { document_type: query.document_type } : {}),
+      ...(query.assignment === "assigned"
+        ? { assignments: { some: {} } }
+        : query.assignment === "unassigned"
+          ? { assignments: { none: {} } }
+          : {}),
+      ...(Object.keys(hardcopyFilters).length
+        ? { hardcopy: { is: hardcopyFilters } }
+        : {}),
+      ...(category
+        ? {
+            softcopy: {
+              is: {
+                category: {
+                  is: {
+                    OR: [
+                      { softcopy_category_id: category.softcopy_category_id },
+                      { folder_name: { startsWith: `${category.folder_name}/` } },
+                    ],
+                  },
+                },
+              },
+            },
+          }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { document_title: { contains: search, mode: "insensitive" } },
+              { requested_by_name: { contains: search, mode: "insensitive" } },
+              { disposed_by_name: { contains: search, mode: "insensitive" } },
+              {
+                creator: {
+                  is: {
+                    OR: [
+                      { firstname: { contains: search, mode: "insensitive" } },
+                      { lastname: { contains: search, mode: "insensitive" } },
+                      { username: { contains: search, mode: "insensitive" } },
+                    ],
+                  },
+                },
+              },
+              {
+                hardcopy: {
+                  is: {
+                    OR: [
+                      { asset: { is: { asset_number: { contains: search, mode: "insensitive" } } } },
+                      { area: { is: { area_name: { contains: search, mode: "insensitive" } } } },
+                      { specific: { is: { specific_name: { contains: search, mode: "insensitive" } } } },
+                      { location: { is: { location_name: { contains: search, mode: "insensitive" } } } },
+                      { sequence: { is: { sequence_code: { contains: search, mode: "insensitive" } } } },
+                    ],
+                  },
+                },
+              },
+              {
+                softcopy: {
+                  is: {
+                    OR: [
+                      { document_number: { contains: search, mode: "insensitive" } },
+                      { category: { is: { category_name: { contains: search, mode: "insensitive" } } } },
+                      { category: { is: { folder_name: { contains: search, mode: "insensitive" } } } },
+                      { current_revision: { is: { file_name: { contains: search, mode: "insensitive" } } } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
     const [items, total] = await this.prisma.$transaction([
       this.prisma.document.findMany({
