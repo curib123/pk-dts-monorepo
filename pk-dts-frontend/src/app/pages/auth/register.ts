@@ -37,34 +37,111 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
                     <div class="registration-content">
 
-                <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="form-grid">
-                    <div class="section-label wide"><i class="pi pi-user"></i><span><strong>Personal details</strong><small>Tell us who you are</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('firstname')"><span>First name</span><input formControlName="firstname" autocomplete="given-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('lastname')"><span>Last name</span><input formControlName="lastname" autocomplete="family-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('middlename')"><span>Middle name <small>Optional</small></span><input formControlName="middlename" autocomplete="additional-name" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small></label>
+                <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="registration-form">
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-user" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Personal details</strong>
+                                <small>Tell us who you are</small>
+                            </div>
+                        </div>
 
-                    <div class="section-label wide"><i class="pi pi-briefcase"></i><span><strong>Work and access</strong><small>Help us assign the right permissions</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('username')"><span>Username</span><input formControlName="username" type="text" autocomplete="username" maxlength="150" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('position_title')"><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')"><span>Requested role</span><select formControlName="requested_role_id" required>
-                        <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
-                        <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
-                    </select>
-                    <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
-                    <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
-                    <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span></label>
-                    <label class="wide remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')"><span>Remarks <small>Optional</small></span>
-                        <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
-                        <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
-                    </label>
+                        <div class="form-section-fields three-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('firstname')">
+                                <span class="field-label">First name</span>
+                                <input formControlName="firstname" autocomplete="given-name" maxlength="100" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small>
+                            </label>
 
-                    <div class="section-label wide"><i class="pi pi-lock"></i><span><strong>Secure your account</strong><small>Use at least 8 characters</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('password')"><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()"><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small><small class="field-error" *ngIf="!isRegisterFieldInvalid('confirmPassword') && passwordMismatch()">Passwords do not match.</small></label>
-                    <div class="wide error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
-                    <button class="primary wide" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0"><i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</button>
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('lastname')">
+                                <span class="field-label">Last name</span>
+                                <input formControlName="lastname" autocomplete="family-name" maxlength="100" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('middlename')">
+                                <span class="field-label">Middle name <small class="optional-tag">Optional</small></span>
+                                <input formControlName="middlename" autocomplete="additional-name" maxlength="100" />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-briefcase" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Work and access</strong>
+                                <small>Help us assign the right permissions</small>
+                            </div>
+                        </div>
+
+                        <div class="form-section-fields three-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('username')">
+                                <span class="field-label">Username</span>
+                                <input formControlName="username" type="text" autocomplete="username" maxlength="150" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('position_title')">
+                                <span class="field-label">Position title <small class="optional-tag">Optional</small></span>
+                                <input formControlName="position_title" autocomplete="organization-title" maxlength="100" />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')">
+                                <span class="field-label">Requested role</span>
+                                <select formControlName="requested_role_id" required>
+                                    <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
+                                    <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
+                                </select>
+                                <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
+                                <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span>
+                            </label>
+
+                            <label class="form-field full-row remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')">
+                                <span class="field-label">Remarks <small class="optional-tag">Optional</small></span>
+                                <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-lock" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Secure your account</strong>
+                                <small>Use at least 8 characters</small>
+                            </div>
+                        </div>
+
+                        <div class="form-section-fields two-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('password')">
+                                <span class="field-label">Password</span>
+                                <input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()">
+                                <span class="field-label">Confirm password</span>
+                                <input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small>
+                                <small class="field-error" *ngIf="!isRegisterFieldInvalid('confirmPassword') && passwordMismatch()">Passwords do not match.</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <div class="error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i><span>{{ errorMessage() }}</span></div>
+                        <button class="primary" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0">
+                            <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+                            <span>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</span>
+                        </button>
+                    </div>
                 </form>
-
                 <section *ngIf="receipt() as result" class="receipt">
                     <i class="pi pi-check-circle"></i><span>Request submitted</span>
                     <h2>Save your private reference code</h2>
@@ -1041,9 +1118,19 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     font-size: 1.5rem;
                 }
 
+                .form-section-fields.three-columns,
+                .form-section-fields.two-columns,
                 .form-grid,
                 .status-result dl {
                     grid-template-columns: 1fr;
+                }
+
+                .form-field.full-row {
+                    grid-column: 1;
+                }
+
+                .form-section-heading {
+                    align-items: flex-start;
                 }
 
                 .wide {
@@ -1300,6 +1387,166 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 background: transparent;
             }
 
+            .registration-form {
+                display: grid;
+                gap: 1rem;
+                min-width: 0;
+            }
+
+            .form-section {
+                display: grid;
+                gap: .7rem;
+                min-width: 0;
+                padding-top: .85rem;
+                border-top: 1px solid #e8edf3;
+            }
+
+            .form-section:first-child {
+                padding-top: 0;
+                border-top: 0;
+            }
+
+            .form-section-heading {
+                display: flex;
+                align-items: center;
+                gap: .65rem;
+                min-width: 0;
+            }
+
+            .form-section-heading > i {
+                width: 1.9rem;
+                height: 1.9rem;
+                display: grid;
+                place-items: center;
+                flex: 0 0 auto;
+                border-radius: .5rem;
+                color: var(--registration-brand-deep);
+                background: var(--registration-brand-soft);
+                font-size: .82rem;
+            }
+
+            .form-section-copy {
+                display: grid;
+                gap: .08rem;
+                min-width: 0;
+            }
+
+            .form-section-copy strong {
+                display: block;
+                color: #26354a;
+                font-size: .8rem;
+                line-height: 1.25;
+            }
+
+            .form-section-copy small {
+                display: block;
+                color: #8793a5;
+                font-size: .66rem;
+                line-height: 1.3;
+            }
+
+            .form-section-fields {
+                display: grid;
+                gap: .7rem .85rem;
+                min-width: 0;
+            }
+
+            .form-section-fields.three-columns {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .form-section-fields.two-columns {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .form-field {
+                display: grid;
+                align-content: start;
+                gap: .32rem;
+                min-width: 0;
+            }
+
+            .form-field.full-row {
+                grid-column: 1 / -1;
+            }
+
+            .field-label {
+                display: flex !important;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: .35rem;
+                min-height: 1rem;
+                color: #334155 !important;
+                font-size: .72rem !important;
+                font-weight: 800 !important;
+                line-height: 1.3;
+            }
+
+            .optional-tag {
+                display: inline-flex;
+                align-items: center;
+                width: max-content;
+                border-radius: 999px;
+                background: #f1f5f9;
+                padding: .08rem .38rem;
+                color: #8490a1 !important;
+                font-size: .58rem !important;
+                font-weight: 750 !important;
+                line-height: 1.35;
+            }
+
+            .form-field .field-note,
+            .form-field .field-error {
+                display: block;
+                margin: 0;
+            }
+
+            .form-actions {
+                display: grid;
+                gap: .65rem;
+                padding-top: .1rem;
+            }
+
+            .form-actions .error {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+            }
+
+            .form-actions .primary {
+                width: 100%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: .5rem;
+            }
+
+            .register-topbar .mode-tabs {
+                gap: .45rem;
+            }
+
+            .register-topbar .mode-tabs button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: .45rem;
+                border: 1px solid transparent;
+                white-space: nowrap;
+            }
+
+            .register-topbar .mode-tabs button:not(.active) {
+                border-color: #e3e8ef;
+                background: #fff;
+            }
+
+            .registration-content > footer {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: .35rem;
+            }
+
             .form-grid {
                 display: grid;
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1534,6 +1781,24 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     padding: .38rem .6rem;
                 }
 
+                .registration-form {
+                    gap: .65rem;
+                }
+
+                .form-section {
+                    gap: .45rem;
+                    padding-top: .55rem;
+                }
+
+                .form-section-fields {
+                    gap: .5rem .7rem;
+                }
+
+                .form-section-heading > i {
+                    width: 1.65rem;
+                    height: 1.65rem;
+                }
+
                 .form-grid {
                     gap: .5rem .7rem;
                 }
@@ -1567,6 +1832,10 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             @media (max-width: 1100px) {
                 .registration-panel {
                     width: min(920px, calc(100vw - 2rem));
+                }
+
+                .form-section-fields.three-columns {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
 
                 .form-grid {
