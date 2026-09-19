@@ -11,7 +11,7 @@ import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer
 import { SearchableDropdownComponent, SearchableDropdownOption, SearchableDropdownValue } from '@/app/shared/components/searchable-dropdown/searchable-dropdown.component';
 import { DocumentAccessRequestsService } from './document-access-requests.service';
 import { AccessRequestDocument, DocumentAccessRequest, DocumentAccessRequestStatus } from './document-access-requests.types';
-import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type ViewTab = 'catalog' | 'mine' | 'pending';
 type AccessPageMode = 'requester' | 'reviewer' | 'all';
@@ -20,7 +20,7 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
 @Component({
     selector: 'app-document-access-requests-page',
     standalone: true,
-    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, ConfirmationDialogComponent, LoadingShimmerComponent, SearchableDropdownComponent],
+    imports: [WorkspaceSearchComponent, WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, ConfirmationDialogComponent, LoadingShimmerComponent, SearchableDropdownComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading()" label="Loading document access requests" [columns]="5" />
         <section class="access-page" [style.display]="loading() ? 'none' : null">
@@ -38,7 +38,7 @@ type PendingDecision = { request: DocumentAccessRequest; status: 'APPROVED' | 'R
             <article *ngIf="activeTab() === 'catalog' && canUseCatalog()" class="workspace">
                 <div class="workspace-head"><div><h2>Find a document</h2><p>Only approved metadata is shown here. Files, attachments, revisions, and document details stay protected.</p></div></div>
                 <div class="catalog-tools">
-                    <label class="search-box"><i class="pi pi-search"></i><input [(ngModel)]="search" (keyup.enter)="searchCatalog()" placeholder="Search document number or title" /><button *ngIf="search" type="button" (click)="search=''; searchCatalog()"><i class="pi pi-times"></i></button></label>
+                    <app-workspace-search [value]="search" (valueChange)="search = $event" (search)="searchCatalog()" placeholder="Search document number or title" ariaLabel="Search controlled documents" />
                     <select [(ngModel)]="documentType" (ngModelChange)="setDocumentType($event)"><option value="">All document types</option><option value="SOFTCOPY">Softcopy</option><option value="HARDCOPY">Hardcopy</option></select>
                     <app-searchable-dropdown inputId="access-location" [value]="locationId" [options]="locationOptions()" placeholder="All locations" filterPlaceholder="Search locations" emptyMessage="No document locations available." emptyFilterMessage="No matching location found." [showClear]="true" (valueChange)="setLocation($event)" />
                     <button class="search-action" type="button" (click)="searchCatalog()"><i class="pi pi-search"></i> Search</button>
