@@ -3,12 +3,13 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '@/app/shared/services/system-settings.service';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-system-settings-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule],
+    template: `<app-workspace-page>
         <section class="settings-page">
             <div *ngIf="saved" class="saved-message"><i class="pi pi-check-circle"></i> Settings saved and applied.</div>
             <div *ngIf="saveError()" class="saved-message error"><i class="pi pi-exclamation-circle"></i> {{ saveError() }}</div>
@@ -101,7 +102,7 @@ import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '
                 </article>
             </div>
         </section>
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             .settings-page { display: grid; gap: 1.25rem; color: #111827; }
