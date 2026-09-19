@@ -8,13 +8,35 @@ export class AuditLogsController {
 
   @Get('documents/:documentId/timeline')
   @RequirePermissions('activity-logs.view_logs')
-  timeline(@Param('documentId') documentId: string) { return this.service.timeline(documentId); }
+  timeline(@Param('documentId') documentId: string) {
+    return this.service.timeline(documentId);
+  }
 
   @Get()
   @RequirePermissions('activity-logs.view_logs')
   list(
-    @Query('search') search = '', @Query('module') module = '', @Query('action') action = '',
-    @Query('user') user = '', @Query('document') document = '', @Query('from') from = '', @Query('to') to = '',
-    @Query('page') page = '1', @Query('limit') limit = '20',
-  ) { return this.service.list(search, module, action, user, document, from, to, page, limit); }
+    @Query('search') search = '',
+    @Query('module') module = '',
+    @Query('action') action = '',
+    @Query('user') user = '',
+    @Query('document') document = '',
+    @Query('from') from = '',
+    @Query('to') to = '',
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('include_total') includeTotal = 'false',
+  ) {
+    return this.service.list(
+      search,
+      module,
+      action,
+      user,
+      document,
+      from,
+      to,
+      page,
+      limit,
+      includeTotal === 'true',
+    );
+  }
 }
