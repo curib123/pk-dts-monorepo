@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
     standalone: true,
     imports: [CommonModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-page-shell" [class.workspace-page-shell--compact]="compact">
             <ng-content></ng-content>
@@ -22,7 +21,6 @@ export class WorkspacePageComponent {
     selector: 'app-workspace-toolbar',
     standalone: true,
     imports: [CommonModule],
-    changeDetection: ChangeDetectionStrategy.OnPush,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-toolbar-shell" [class.workspace-toolbar-shell--stacked]="stacked">
@@ -40,7 +38,6 @@ export class WorkspaceToolbarComponent {
     standalone: true,
     imports: [CommonModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <nav class="workspace-tabs-shell" [attr.aria-label]="ariaLabel">
             <ng-content></ng-content>
@@ -55,7 +52,6 @@ export class WorkspaceTabsComponent {
     selector: 'app-workspace-section',
     standalone: true,
     imports: [CommonModule],
-    changeDetection: ChangeDetectionStrategy.OnPush,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-section-shell" [class.workspace-section-shell--flush]="flush">
@@ -82,7 +78,6 @@ export class WorkspaceSectionComponent {
     selector: 'app-workspace-search',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    changeDetection: ChangeDetectionStrategy.OnPush,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <label class="workspace-search-shell">
