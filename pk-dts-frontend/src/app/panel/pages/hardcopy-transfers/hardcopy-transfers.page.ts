@@ -131,8 +131,8 @@ export class HardcopyTransfersPage implements OnInit {
         });
     }
 
-    load() {
-        this.loading = true;
+    load(showLoading = this.transfers().length === 0) {
+        this.loading = showLoading;
         this.error.set('');
         const request = this.reviewerMode ? this.service.listPending() : this.service.listMine();
         request.subscribe({ next: items => { this.transfers.set(items ?? []); this.loading = false; }, error: error => { this.error.set(this.errorText(error)); this.loading = false; } });
