@@ -94,7 +94,7 @@ describe('WorkflowBuilderPage', () => {
         expect(text).toContain('Select a workflow to begin');
     });
 
-    it('fetches the selected workflow only after the workflow is clicked', async () => {
+    it('fetches the selected workflow and editor data only after the workflow is clicked', () => {
         const page = fixture.componentInstance;
 
         page.selectDefinition(page.definitions[0]);
@@ -104,6 +104,8 @@ describe('WorkflowBuilderPage', () => {
         expect(page.selectedVersion?.workflow_version_id).toBe('2');
         expect(page.versionLoading).toBeTrue();
         expect(workflows.getVersion).toHaveBeenCalledWith('1', '2');
+        expect(users.listUsers).toHaveBeenCalledTimes(1);
+        expect(roles.listRoles).toHaveBeenCalledTimes(1);
 
         versionRequest.next({
             workflow_version_id: '2',
@@ -113,20 +115,10 @@ describe('WorkflowBuilderPage', () => {
             graph
         });
         versionRequest.complete();
-
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
         fixture.detectChanges();
 
         expect(page.versionLoading).toBeFalse();
         expect(page.approvalNodes.length).toBe(1);
         expect(page.approvalNodes[0].label).toBe('Leader approval');
-        expect(users.listUsers).not.toHaveBeenCalled();
-        expect(roles.listRoles).not.toHaveBeenCalled();
-
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        fixture.detectChanges();
-
-        expect(users.listUsers).toHaveBeenCalledTimes(1);
-        expect(roles.listRoles).toHaveBeenCalledTimes(1);
     });
 });
