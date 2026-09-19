@@ -217,7 +217,6 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
                 definition.versions = [summary, ...definition.versions.filter((item) => item.workflow_version_id !== summary.workflow_version_id)]
                     .sort((left, right) => right.version_number - left.version_number);
                 this.selectedVersion = summary;
-                this.assignmentReferences = { users: [], roles: [] };
                 this.graph = this.prepareSequentialGraph(version.graph);
                 this.dirty = false;
                 this.replaceDefinition(definition);
