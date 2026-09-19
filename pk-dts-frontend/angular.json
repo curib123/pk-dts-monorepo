@@ -31,6 +31,7 @@
                         ],
                         "styles": [
                             "src/assets/styles.scss",
+                            "src/workspace-ui.scss",
                             "src/document-grid.scss",
                             "src/document-detail-modern.scss",
                             "src/assets/tailwind.css"
@@ -90,6 +91,7 @@
                         ],
                         "styles": [
                             "src/assets/styles.scss",
+                            "src/workspace-ui.scss",
                             "src/document-grid.scss",
                             "src/document-detail-modern.scss"
                         ],

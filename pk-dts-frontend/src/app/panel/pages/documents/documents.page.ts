@@ -31,6 +31,7 @@ import { DocumentAssignmentDialogComponent } from './components/document-assignm
 import { DocumentDirectoryDialogComponent } from './components/document-directory-dialog/document-directory-dialog.component';
 import { DocumentsService } from './documents.service';
 import { folderIdsToExpandForDocuments } from './folder-tree-navigation';
+import { WorkspacePageComponent, WorkspaceSearchComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaReference,
     AssetReference,
@@ -77,7 +78,7 @@ interface DocumentFolderNode {
 @Component({
     selector: 'app-documents-page',
     standalone: true,
-    imports: [
+    imports: [WorkspaceToolbarComponent, WorkspaceSearchComponent, WorkspacePageComponent, 
         CommonModule,
         FormsModule,
         ButtonModule,
@@ -97,7 +98,7 @@ interface DocumentFolderNode {
         DocumentAssignmentDialogComponent,
         DocumentDirectoryDialogComponent
     ],
-    template: `
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading documents" [columns]="7" />
         <section class="documents-page space-y-6" [style.display]="isLoading() ? 'none' : null">
             <div *ngIf="errorMessage()" class="surface-alert">
@@ -121,16 +122,19 @@ interface DocumentFolderNode {
             </div>
 
             <article class="surface-card document-search-card p-5 sm:p-6">
-                <div class="document-search-bar">
-                    <i class="pi pi-search"></i>
-                    <input id="search" pInputText [(ngModel)]="searchTerm" (ngModelChange)="onTableSearchChange()" placeholder="Search number, title, creator, asset, area, or file..." aria-label="Search documents" />
-                    <button *ngIf="searchTerm" class="search-clear-button" type="button" title="Clear search" aria-label="Clear search" (click)="searchTerm = ''; onTableSearchChange()"><i class="pi pi-times"></i></button>
-                    <button class="advanced-filter-button" [class.active]="advancedFiltersOpen || activeFilterCount()" type="button" title="Advanced search filters" aria-label="Advanced search filters" [attr.aria-expanded]="advancedFiltersOpen" (click)="advancedFiltersOpen = !advancedFiltersOpen">
+                <app-workspace-toolbar>
+                    <app-workspace-search
+                        [value]="searchTerm"
+                        (valueChange)="searchTerm = $event; onTableSearchChange()"
+                        placeholder="Search number, title, creator, asset, area, or file..."
+                        ariaLabel="Search documents"
+                    />
+                    <button workspace-actions class="advanced-filter-button" [class.active]="advancedFiltersOpen || activeFilterCount()" type="button" title="Advanced search filters" aria-label="Advanced search filters" [attr.aria-expanded]="advancedFiltersOpen" (click)="advancedFiltersOpen = !advancedFiltersOpen">
                         <i class="pi pi-sliders-h"></i>
                         <span>Advanced</span>
                         <strong *ngIf="activeFilterCount()">{{ activeFilterCount() }}</strong>
                     </button>
-                </div>
+                </app-workspace-toolbar>
                 <div *ngIf="advancedFiltersOpen" class="filter-shell legacy-document-filters" role="region" aria-label="Advanced document search filters">
                     <div class="filter-head advanced-filter-head">
                         <div class="advanced-filter-heading">
@@ -717,7 +721,7 @@ interface DocumentFolderNode {
                 </div>
             </div>
         </div>
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             :host {

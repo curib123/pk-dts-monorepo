@@ -26,4 +26,18 @@ describe('panel routes', () => {
         }
     });
 
+    it('gives every non-dashboard workspace centralized topbar metadata', () => {
+        const children = panelRoutes[0].children ?? [];
+        const redirects = new Set(['', 'my-requests', 'classification']);
+
+        for (const route of children) {
+            if (!route.path || route.path === 'dashboard' || redirects.has(route.path) || route.redirectTo) continue;
+
+            expect(route.data?.['title']).withContext(route.path).toBeTruthy();
+            expect(route.data?.['subtitle']).withContext(route.path).toBeTruthy();
+            expect(route.data?.['eyebrow']).withContext(route.path).toBeTruthy();
+            expect(route.data?.['icon']).withContext(route.path).toMatch(/^pi pi-/);
+        }
+    });
+
 });

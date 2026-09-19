@@ -48,7 +48,9 @@ describe('SoftcopyFoldersPage', () => {
 
     it('does not expose storage-location administration concepts', () => {
         const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-        expect(text).toContain('Softcopy Folders');
+        expect(text).toContain('Folder hierarchy');
+        expect((fixture.nativeElement as HTMLElement).querySelector('h1')).toBeNull();
+        expect((fixture.nativeElement as HTMLElement).querySelector('app-workspace-search')).not.toBeNull();
         expect(text).not.toContain('Asset Numbers');
         expect(text).not.toContain('Locations');
         expect(text).not.toContain('Sequences');

@@ -9,11 +9,12 @@ import { UserAccountSummary } from '../user-account/user-account.types';
 import { UserAccountService } from '../user-account/user-account.service';
 import { WorkflowBuilderService } from './workflow-builder.service';
 import { EditableWorkflowAssignmentType, WorkflowAssignmentReferences, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersionSummary } from './workflow-builder.types';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-workflow-builder-page',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [WorkspacePageComponent, CommonModule, FormsModule],
     templateUrl: './workflow-builder.page.html',
     styleUrl: './workflow-builder.page.scss'
 })

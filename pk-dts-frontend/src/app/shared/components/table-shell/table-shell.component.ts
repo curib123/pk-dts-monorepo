@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 @Component({
     selector: 'app-table-shell',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="table-frame" [class.table-frame--compact]="compact">
             <div class="table-scroll">
@@ -22,10 +23,10 @@ import { Component, Input } from '@angular/core';
 
             .table-frame {
                 overflow: hidden;
-                border: 1px solid rgba(148, 163, 184, 0.24);
+                border: 1px solid var(--app-border);
                 border-radius: 1rem;
-                background: #ffffff;
-                box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+                background: var(--app-surface);
+                box-shadow: var(--app-shadow-sm);
             }
 
             .table-scroll {
@@ -36,7 +37,7 @@ import { Component, Input } from '@angular/core';
                 width: 100%;
                 border-collapse: separate;
                 border-spacing: 0;
-                color: #0f172a;
+                color: var(--app-text);
                 font-size: 0.9rem;
                 text-align: left;
             }
@@ -46,10 +47,10 @@ import { Component, Input } from '@angular/core';
             }
 
             :host ::ng-deep thead {
-                background: #111827;
-                color: #ffffff;
+                background: var(--app-surface-muted);
+                color: var(--app-text-muted);
                 font-size: 0.72rem;
-                letter-spacing: 0.08em;
+                letter-spacing: 0.06em;
                 text-transform: uppercase;
             }
 
@@ -59,7 +60,7 @@ import { Component, Input } from '@angular/core';
             }
 
             :host ::ng-deep tbody {
-                background: #ffffff;
+                background: var(--app-surface);
             }
 
             :host ::ng-deep tbody tr {
@@ -73,7 +74,7 @@ import { Component, Input } from '@angular/core';
             }
 
             :host ::ng-deep tbody tr:hover {
-                background: #f8fafc;
+                background: var(--app-surface-muted);
             }
 
             :host ::ng-deep td {

@@ -4,21 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '@/app/auth/auth.service';
 import { StorageClassificationService } from '../storage-classification/storage-classification.service';
 import { SoftcopyCategorySummary } from '../storage-classification/storage-classification.types';
+import { WorkspacePageComponent, WorkspaceSearchComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-softcopy-folders-page',
     standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+    imports: [WorkspaceToolbarComponent, WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
+    template: `<app-workspace-page>
         <section class="folders-page">
-            <header class="folders-heading">
-                <div>
-                    <span class="eyebrow">DOCUMENTS</span>
-                    <h1>Softcopy Folders</h1>
-                    <p>Browse the digital filing hierarchy available to your account. Folder actions appear only when your role has the matching permission.</p>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-folder"></i></span>
+                    <div><strong>Folder hierarchy</strong><span>Browse and manage the digital filing structure available to your role.</span></div>
                 </div>
-                <button *ngIf="canCreate()" type="button" class="primary" (click)="beginCreate()"><i class="pi pi-plus"></i> New folder</button>
-            </header>
+                <button workspace-actions *ngIf="canCreate()" type="button" class="primary" (click)="beginCreate()"><i class="pi pi-plus"></i> New folder</button>
+            </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i><span>{{ error() }}</span></div>
             <div *ngIf="message()" class="feedback success"><i class="pi pi-check-circle"></i><span>{{ message() }}</span></div>
@@ -39,10 +39,10 @@ import { SoftcopyCategorySummary } from '../storage-classification/storage-class
             </section>
 
             <section class="folder-card">
-                <div class="folder-toolbar">
-                    <label class="search"><i class="pi pi-search"></i><input [(ngModel)]="search" placeholder="Search folders" /><button *ngIf="search" type="button" (click)="search=''" aria-label="Clear search"><i class="pi pi-times"></i></button></label>
-                    <button type="button" class="refresh" (click)="load()" [disabled]="loading()"><i class="pi pi-refresh" [class.pi-spin]="loading()"></i> Refresh</button>
-                </div>
+                <app-workspace-toolbar>
+                    <app-workspace-search [(value)]="search" placeholder="Search folders" ariaLabel="Search folders" />
+                    <button workspace-actions type="button" class="refresh" (click)="load()" [disabled]="loading()"><i class="pi pi-refresh" [class.pi-spin]="loading()"></i> Refresh</button>
+                </app-workspace-toolbar>
 
                 <div *ngIf="loading()" class="loading"><i class="pi pi-spin pi-spinner"></i> Loading folders…</div>
 
@@ -70,7 +70,7 @@ import { SoftcopyCategorySummary } from '../storage-classification/storage-class
                 <div><button type="button" class="secondary" (click)="pendingDelete.set(null)">Cancel</button><button type="button" class="danger-button" [disabled]="saving()" (click)="confirmDelete()">Delete folder</button></div>
             </section>
         </section>
-    `,
+    </app-workspace-page>`,
     styles: [`
         :host{display:block}.folders-page{display:grid;gap:1rem;color:#172033}.folders-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;border-radius:1.25rem;background:#fff;padding:1.35rem 1.5rem;box-shadow:0 10px 30px rgba(15,23,42,.06)}.eyebrow{color:#0369a1;font-size:.68rem;font-weight:900;letter-spacing:.14em}.folders-heading h1{margin:.25rem 0 .35rem;font-size:1.8rem}.folders-heading p{max-width:48rem;margin:0;color:#64748b;font-size:.82rem;line-height:1.55}.primary,.secondary,.danger-button,.refresh,.icon-button{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;border:0;border-radius:.72rem;font-weight:850;cursor:pointer}.primary{background:var(--brand-primary-deep);color:#fff;padding:.7rem .9rem}.secondary,.refresh{background:#eef2f7;color:#475569;padding:.7rem .85rem}.danger-button{background:var(--brand-primary);color:#fff;padding:.7rem .85rem}.feedback,.loading{display:flex;align-items:center;gap:.6rem;border-radius:.8rem;padding:.8rem 1rem}.feedback.error{background:var(--brand-soft);color:var(--brand-primary-deep)}.feedback.success{background:#ecfdf5;color:#166534}.editor-card,.folder-card,.delete-confirm{border-radius:1.25rem;background:#fff;padding:1.1rem 1.2rem;box-shadow:0 10px 30px rgba(15,23,42,.05)}.editor-card{display:grid;gap:.9rem}.editor-copy strong,.editor-copy span{display:block}.editor-copy span{margin-top:.2rem;color:#64748b;font-size:.76rem}.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.editor-grid label{display:grid;gap:.35rem}.editor-grid label span{color:#475569;font-size:.72rem;font-weight:800}.editor-grid input,.editor-grid select{width:100%;box-sizing:border-box;border:1px solid #dbe4ee;border-radius:.72rem;background:#f8fafc;padding:.72rem .75rem;color:#172033}.editor-actions{display:flex;justify-content:flex-end;gap:.6rem}.folder-card{display:grid;gap:.9rem}.folder-toolbar{display:flex;justify-content:space-between;gap:.75rem}.search{display:flex;align-items:center;gap:.5rem;min-width:min(28rem,75%);border-radius:.75rem;background:#f8fafc;padding:0 .75rem}.search i{color:#64748b}.search input{width:100%;height:2.7rem;border:0;background:transparent;outline:0}.search button{border:0;background:transparent;color:#64748b}.folder-list{display:grid;gap:.55rem}.folder-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:.8rem;border:1px solid #e7edf4;border-radius:.9rem;padding:.8rem .9rem}.folder-icon{display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:.75rem;background:#eff6ff;color:#0369a1}.folder-copy strong,.folder-copy span,.folder-copy small{display:block}.folder-copy span{margin-top:.12rem;color:#64748b;font-size:.72rem}.folder-copy small{margin-top:.2rem;color:#94a3b8;font-size:.67rem}.status{border-radius:999px;background:#ecfdf5;padding:.3rem .55rem;color:#166534;font-size:.65rem;font-weight:850}.status.inactive{background:#f1f5f9;color:#64748b}.row-actions{display:flex;gap:.35rem}.icon-button{width:2.2rem;height:2.2rem;background:#f8fafc;color:#475569}.icon-button.danger{color:var(--brand-primary)}.empty-state{display:grid;place-items:center;gap:.35rem;min-height:13rem;color:#64748b;text-align:center}.empty-state i{font-size:2rem;color:#94a3b8}.empty-state span{font-size:.76rem}.delete-confirm{display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px solid var(--brand-border);background:var(--brand-soft)}.delete-confirm strong,.delete-confirm span{display:block}.delete-confirm span{margin-top:.2rem;color:var(--brand-primary-deep);font-size:.72rem}.delete-confirm>div:last-child{display:flex;gap:.5rem}.primary:disabled,.secondary:disabled,.danger-button:disabled,.refresh:disabled{cursor:not-allowed;opacity:.55}@media(max-width:720px){.folders-heading,.folder-toolbar,.delete-confirm{flex-direction:column}.editor-grid{grid-template-columns:1fr}.search{min-width:0;width:100%;box-sizing:border-box}.folder-row{grid-template-columns:auto 1fr}.status,.row-actions{grid-column:2}}
     `]

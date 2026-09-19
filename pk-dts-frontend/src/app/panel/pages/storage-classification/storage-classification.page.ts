@@ -19,6 +19,7 @@ import { RecordCardComponent, RecordGridComponent } from '@/app/shared/component
 import { ResourceViewDialogComponent, ResourceViewDialogData } from '../roles-permissions/components/resource-view-dialog/resource-view-dialog.component';
 import { StorageResourceFormDialogComponent } from './components/storage-resource-form-dialog/storage-resource-form-dialog.component';
 import { StorageClassificationService } from './storage-classification.service';
+import { WorkspacePageComponent, WorkspaceTabsComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaDetail,
     AreaSummary,
@@ -55,47 +56,10 @@ interface ResourceOption {
 @Component({
     selector: 'app-storage-classification-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
-    template: `
+    imports: [WorkspaceSearchComponent, WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading storage classifications" [columns]="6" />
         <section class="storage-page space-y-6" [style.display]="isLoading() ? 'none' : null">
-            <div class="surface-card overflow-hidden legacy-workspace-header">
-                <div class="hero-strip"></div>
-                <div class="p-6 sm:p-7">
-                    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                        <div class="space-y-3">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Storage and Classification</div>
-                            <div>
-                                <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">Catalog workspace</h1>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Manage storage and classification catalogs for areas, asset numbers, specifics, locations, and sequences from one control surface.</p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3">
-                            <p-button *ngIf="canCreateActiveResource()" [label]="'Create ' + activeResourceLabel()" icon="pi pi-plus" (onClick)="openFormDialog()" />
-                        </div>
-                    </div>
-
-                    <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                        <div class="stat-card">
-                            <div class="stat-label">Active Catalog</div>
-                            <div class="stat-value text-[1.35rem]!">{{ activeResourceLabel() }}</div>
-                            <div class="stat-hint">The resource type currently shown below</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Records</div>
-                            <div class="stat-value">{{ totalRecords() }}</div>
-                            <div class="stat-hint">Entries available for this active catalog</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Loaded On Page</div>
-                            <div class="stat-value">{{ currentItems().length }}</div>
-                            <div class="stat-hint">Records loaded in the current table view</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div *ngIf="errorMessage()" class="surface-alert">
                 <div class="flex items-start gap-3">
                     <i class="pi pi-exclamation-triangle mt-1 text-red-500"></i>
@@ -107,12 +71,12 @@ interface ResourceOption {
             </div>
 
             <article class="surface-card p-5 sm:p-6">
-                <div class="resource-tabs">
+                <app-workspace-tabs ariaLabel="Storage catalog types">
                     <button *ngFor="let option of resourceOptions" type="button" class="resource-tab" [class.active]="activeResource() === option.key" (click)="selectResource(option.key)">
                         <i [class]="option.icon"></i>
                         <span>{{ option.label }}</span>
                     </button>
-                </div>
+                </app-workspace-tabs>
 
                 <div class="section-head mt-5">
                     <div>
@@ -122,11 +86,7 @@ interface ResourceOption {
                     <p-button *ngIf="canCreateActiveResource()" [label]="'Create ' + activeResourceLabel()" icon="pi pi-plus" (onClick)="openFormDialog()" />
                 </div>
 
-                <div class="catalog-search">
-                    <i class="pi pi-search"></i>
-                    <input [(ngModel)]="searchTerm" (ngModelChange)="first = 0" type="search" [placeholder]="'Search all ' + activeResourceLabel().toLowerCase() + ' records'" aria-label="Search all storage and classification records" />
-                    <button *ngIf="searchTerm" type="button" aria-label="Clear search" (click)="searchTerm = ''; first = 0"><i class="pi pi-times"></i></button>
-                </div>
+                <app-workspace-search [value]="searchTerm" (valueChange)="searchTerm = $event; first = 0" [placeholder]="'Search all ' + activeResourceLabel().toLowerCase() + ' records'" ariaLabel="Search storage and classification records" />
 
                 <app-data-view-switch [(mode)]="viewMode" [title]="activeResourceLabel() + ' results'" />
 
@@ -217,7 +177,7 @@ interface ResourceOption {
         />
 
         <app-alert-modal [(visible)]="noticeVisible" [severity]="notice()?.severity ?? 'info'" [title]="notice()?.title ?? 'Notice'" [message]="notice()?.message ?? ''" [details]="notice()?.details ?? ''" />
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             .legacy-workspace-header { display: none; }

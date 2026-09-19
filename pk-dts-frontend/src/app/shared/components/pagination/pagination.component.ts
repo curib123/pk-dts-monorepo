@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { PaginatorModule } from 'primeng/paginator';
 import type { PaginatorState } from 'primeng/types/paginator';
 
@@ -7,6 +7,7 @@ import type { PaginatorState } from 'primeng/types/paginator';
     selector: 'app-pagination',
     standalone: true,
     imports: [CommonModule, PaginatorModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="pagination-shell">
             <p-paginator
@@ -36,12 +37,12 @@ import type { PaginatorState } from 'primeng/types/paginator';
 
             :host ::ng-deep .brand-paginator {
                 width: 100%;
-                border: 1px solid rgba(148, 163, 184, 0.18);
-                border-radius: 1.25rem;
-                background: rgba(255, 255, 255, 0.94);
+                border: 1px solid var(--app-border);
+                border-radius: 1rem;
+                background: var(--app-surface);
                 padding: 0.35rem 0.5rem;
-                color: #334155;
-                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+                color: var(--app-text);
+                box-shadow: var(--app-shadow-sm);
             }
 
             :host ::ng-deep .brand-paginator .p-paginator-pages .p-paginator-page {
@@ -66,7 +67,7 @@ import type { PaginatorState } from 'primeng/types/paginator';
             }
 
             :host ::ng-deep .brand-paginator .p-paginator-current {
-                color: #64748b;
+                color: var(--app-text-muted);
             }
 
             :host-context(.app-dark) ::ng-deep .brand-paginator {
