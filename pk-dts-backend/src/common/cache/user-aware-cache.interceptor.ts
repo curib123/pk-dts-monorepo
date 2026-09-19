@@ -41,7 +41,8 @@ export class UserAwareCacheInterceptor extends CacheInterceptor {
     if (
       path.includes("/auth/") ||
       path.includes("/health") ||
-      path.includes("/backup-restore")
+      path.includes("/backup-restore") ||
+      path.includes("/notifications/stream")
     ) {
       return undefined;
     }

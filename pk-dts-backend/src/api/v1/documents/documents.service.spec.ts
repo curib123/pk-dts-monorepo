@@ -339,6 +339,45 @@ describe('DocumentsService', () => {
     );
   });
 
+  it('applies pagination, search, and storage filters in the database query', async () => {
+    prisma.document.findMany.mockResolvedValue([]);
+    prisma.document.count.mockResolvedValue(0);
+
+    await service.findAll(
+      {
+        page: 2,
+        limit: 20,
+        search: 'records',
+        document_type: DocumentType.HARDCOPY,
+        status: DocumentStatus.Approved,
+        assignment: 'assigned',
+        area_id: '10',
+        location_id: '11',
+      } as any,
+      [DocumentStatus.Approved, DocumentStatus.Completed],
+      adminUser,
+    );
+
+    expect(prisma.document.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 20,
+        where: expect.objectContaining({
+          status: { in: [DocumentStatus.Approved] },
+          document_type: DocumentType.HARDCOPY,
+          assignments: { some: {} },
+          hardcopy: {
+            is: expect.objectContaining({
+              area_id: 10n,
+              location_id: 11n,
+            }),
+          },
+          OR: expect.any(Array),
+        }),
+      }),
+    );
+  });
+
   it('enforces exactly one Hardcopy Approval workflow stage', () => {
     const parseWorkflowPlan = (service as any).parseWorkflowPlan.bind(service);
 

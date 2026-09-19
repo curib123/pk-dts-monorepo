@@ -20,6 +20,22 @@ export interface PaginatedResponse<T> {
     meta?: PaginatedMeta;
 }
 
+export interface DocumentListQuery {
+    page: number;
+    limit: number;
+    search?: string;
+    document_type?: DocumentTypeValue | '';
+    status?: DocumentStatusValue | '';
+    assignment?: 'assigned' | 'unassigned' | '';
+    area_id?: string;
+    location_id?: string;
+    specific_id?: string;
+    asset_id?: string;
+    sequence_id?: string;
+    category_id?: string;
+    disposed_by?: string;
+}
+
 export type DocumentTypeValue = 'HARDCOPY' | 'SOFTCOPY';
 export type DocumentStatusValue = 'Draft' | 'PendingApproval' | 'ForNotedBy' | 'ForPlantManagerApproval' | 'ForDocumentControllerAdmin' | 'ForApproval' | 'Approved' | 'Completed' | 'ReturnedForCorrection' | 'Rejected' | 'Cancelled' | 'ForTransfer' | 'Transferred' | 'PendingRecipientAcceptance' | 'ForRevision' | 'Disposed';
 export type DocumentBusinessTypeValue = 'Forms' | 'Manual' | 'Procedures' | 'WorkInstruction' | 'Monitoring' | 'Others';

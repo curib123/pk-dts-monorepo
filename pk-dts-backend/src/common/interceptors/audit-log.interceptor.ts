@@ -2,17 +2,21 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { tap } from 'rxjs';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { NotificationStreamService } from '../../api/v1/notifications/notification-stream.service';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly notificationStream: NotificationStreamService) {}
   intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const method = String(request.method || '').toUpperCase();
     const path = String(request.originalUrl || request.url || '').split('?')[0];
     const shouldLog = user && (method !== 'GET' || /^\/api\/v1\/documents\/\d+/.test(path));
-    return next.handle().pipe(tap({ next: (response) => { if (shouldLog) void this.write(request, user, method, path, response); } }));
+    return next.handle().pipe(tap({ next: (response) => {
+      if (shouldLog) void this.write(request, user, method, path, response);
+      if (user && method !== 'GET') this.notificationStream.invalidate();
+    } }));
   }
   private async write(request: any, user: any, method: string, path: string, response: any) {
     try {

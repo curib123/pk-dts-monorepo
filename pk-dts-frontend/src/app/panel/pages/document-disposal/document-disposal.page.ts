@@ -34,15 +34,15 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Disposed records</div>
-                        <div class="stat-value">{{ disposedDocuments().length }}</div>
+                        <div class="stat-value">{{ totalRecords() }}</div>
                     </div>
                 </div>
 
                 <div class="disposal-filters">
-                    <app-workspace-search class="disposal-search" [value]="searchTerm" (valueChange)="searchTerm = $event; resetPagination()" label="Search" placeholder="Search number, title, remarks, disposer, area, or location..." />
+                    <app-workspace-search class="disposal-search" [value]="searchTerm" (valueChange)="searchTerm = $event; onFilterInput()" label="Search" placeholder="Search number, title, remarks, disposer, area, or location..." />
                     <div class="field disposed-by-field">
                         <label for="disposed-by-filter">Disposed by</label>
-                        <input id="disposed-by-filter" [(ngModel)]="disposedByFilter" (ngModelChange)="resetPagination()" class="text-field" placeholder="Filter by account or manual name" />
+                        <input id="disposed-by-filter" [(ngModel)]="disposedByFilter" (ngModelChange)="onFilterInput()" class="text-field" placeholder="Filter by account or manual name" />
                     </div>
                     <div class="filter-reset">
                         <p-button label="Reset filters" severity="secondary" text icon="pi pi-refresh" (onClick)="resetFilters()" />
@@ -114,15 +114,15 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
                     </app-record-card>
                 </app-record-grid>
 
-                <div *ngIf="disposedDocuments().length" class="pagination-footer mt-5 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div *ngIf="totalRecords()" class="pagination-footer mt-5 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="text-sm text-slate-500">
                         Showing <span class="font-bold text-slate-900">{{ pageStart() }}</span> to <span class="font-bold text-slate-900">{{ pageEnd() }}</span>
-                        of <span class="font-bold text-slate-900">{{ disposedDocuments().length }}</span> disposed records
+                        of <span class="font-bold text-slate-900">{{ totalRecords() }}</span> disposed records
                     </div>
                     <app-pagination
                         [first]="first"
                         [rows]="rows"
-                        [totalRecords]="disposedDocuments().length"
+                        [totalRecords]="totalRecords()"
                         [rowsPerPageOptions]="rowsPerPageOptions"
                         [pageLinkSize]="4"
                         [showCurrentPageReport]="false"
@@ -188,13 +188,16 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     noticeMessage = signal('');
     loading = signal(true);
 
-    ngOnDestroy() { this.detailRequest?.unsubscribe(); }
+    ngOnDestroy() {
+        this.detailRequest?.unsubscribe();
+        if (this.filterTimer) clearTimeout(this.filterTimer);
+    }
 
     searchTerm = '';
     disposedByFilter = '';
-    private disposedDocumentsSource: DocumentSummary[] | null = null;
-    private disposedDocumentsKey = '';
-    private disposedDocumentsResult: DocumentSummary[] = [];
+    totalRecords = signal(0);
+    private filterTimer: ReturnType<typeof setTimeout> | null = null;
+    private loadRequestId = 0;
     first = 0;
     rows = 10;
     rowsPerPageOptions = [10, 20, 50];
@@ -207,65 +210,45 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     }
 
     disposedDocuments() {
-        const documents = this.documents();
-        const search = this.searchTerm.trim().toLowerCase();
-        const disposedBy = this.disposedByFilter.trim().toLowerCase();
-        const filterKey = `${search}\u001f${disposedBy}`;
-
-        if (this.disposedDocumentsSource === documents && this.disposedDocumentsKey === filterKey) {
-            return this.disposedDocumentsResult;
-        }
-
-        const filtered = documents
-            .filter((document) => document.status === 'Disposed')
-            .filter((document) => {
-                const disposerName = this.fullName(document.disposer);
-                const haystack = [
-                    document.document_number,
-                    document.document_title,
-                    document.disposal_remarks || '',
-                    document.disposed_by_name || '',
-                    disposerName,
-                    document.hardcopy?.area?.area_name || '',
-                    document.hardcopy?.location?.location_name || ''
-                ].join(' ').toLowerCase();
-
-                const matchesSearch = !search || haystack.includes(search);
-                const matchesDisposedBy = !disposedBy || [document.disposed_by_name || '', disposerName].join(' ').toLowerCase().includes(disposedBy);
-                return matchesSearch && matchesDisposedBy;
-            });
-
-        this.disposedDocumentsSource = documents;
-        this.disposedDocumentsKey = filterKey;
-        this.disposedDocumentsResult = filtered;
-        return filtered;
+        return this.documents();
     }
 
     pagedDocuments() {
-        return this.disposedDocuments().slice(this.first, this.first + this.rows);
+        return this.documents();
     }
 
     pageStart() {
-        return this.disposedDocuments().length === 0 ? 0 : this.first + 1;
+        return this.totalRecords() === 0 ? 0 : this.first + 1;
     }
 
     pageEnd() {
-        return Math.min(this.first + this.rows, this.disposedDocuments().length);
+        return Math.min(this.first + this.documents().length, this.totalRecords());
     }
 
     onPageChange(event: { first?: number; rows?: number }) {
         this.first = event.first ?? 0;
         this.rows = event.rows ?? this.rows;
+        this.loadData(false);
     }
 
     resetPagination() {
         this.first = 0;
     }
 
+    onFilterInput() {
+        this.resetPagination();
+        if (this.filterTimer) clearTimeout(this.filterTimer);
+        this.filterTimer = setTimeout(() => {
+            this.filterTimer = null;
+            this.loadData(false);
+        }, 250);
+    }
+
     resetFilters() {
         this.searchTerm = '';
         this.disposedByFilter = '';
         this.resetPagination();
+        this.loadData(false);
     }
 
     openDetail(document: DocumentSummary) {
@@ -298,17 +281,23 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     }
 
     restore(document: DocumentSummary) {
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        this.documents.update((items) => items.filter((item) => item.document_id !== document.document_id));
+        this.totalRecords.update((total) => Math.max(0, total - 1));
+
         this.documentsService.restoreDocument(document.document_id).subscribe({
             next: () => {
-                this.documents.update((items) => items.filter((item) => item.document_id !== document.document_id));
                 this.noticeSeverity.set('success');
                 this.noticeTitle.set('Document restored');
                 this.noticeMessage.set(`${document.document_number || document.document_title} was restored successfully.`);
                 this.noticeVisible = false;
                 this.alerts.success(this.noticeTitle(), this.noticeMessage());
-                this.resetPagination();
+                this.loadData(false);
             },
             error: () => {
+                this.documents.set(previousDocuments);
+                this.totalRecords.set(previousTotal);
                 this.noticeSeverity.set('error');
                 this.noticeTitle.set('Restore failed');
                 this.noticeMessage.set('The document could not be restored right now.');
@@ -317,7 +306,6 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
             }
         });
     }
-
 
     fullName(user?: { firstname?: string; lastname?: string } | null) {
         return [user?.firstname, user?.lastname].filter(Boolean).join(' ');
@@ -333,14 +321,32 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
 
     trackDocument = (_index: number, document: DocumentSummary) => document.document_id;
 
-    private loadData() {
-        this.loading.set(true);
-        this.documentsService.listDisposedDocuments().subscribe({
-            next: (documents) => {
-                this.documents.set(documents ?? []);
+    private loadData(showLoading = this.documents().length === 0) {
+        const requestId = ++this.loadRequestId;
+        this.loading.set(showLoading);
+        this.documentsService.listDisposedDocumentsPage({
+            page: Math.floor(this.first / this.rows) + 1,
+            limit: this.rows,
+            search: this.searchTerm.trim(),
+            disposed_by: this.disposedByFilter.trim()
+        }).subscribe({
+            next: (response) => {
+                if (requestId !== this.loadRequestId) return;
+                const items = response.items ?? [];
+                const total = response.meta?.total ?? items.length;
+                if (total > 0 && this.first >= total) {
+                    this.first = Math.max(0, Math.floor((total - 1) / this.rows) * this.rows);
+                    this.loading.set(false);
+                    this.loadData(false);
+                    return;
+                }
+                this.documents.set(items);
+                this.totalRecords.set(total);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false)
+            error: () => {
+                if (requestId === this.loadRequestId) this.loading.set(false);
+            }
         });
     }
 }

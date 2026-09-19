@@ -17,7 +17,8 @@ describe('PanelLayoutComponent', () => {
             getNavigationCounts: jasmine.createSpy().and.returnValue(of({ approval_review: 0, document_requests: 0, disposal_requests: 0, access_requests: 0, hardcopy_transfers: 0, user_accounts: 0 }))
         };
         const notifications = {
-            list: jasmine.createSpy().and.returnValue(of({ items: [], unread_count: 0 }))
+            list: jasmine.createSpy().and.returnValue(of({ items: [], unread_count: 0 })),
+            watchInvalidations: jasmine.createSpy().and.returnValue(EMPTY)
         };
 
         TestBed.configureTestingModule({
@@ -83,7 +84,8 @@ describe('PanelLayoutComponent', () => {
             }))
         };
         const notifications = {
-            list: jasmine.createSpy().and.returnValue(of({ items: [], unread_count: 0 }))
+            list: jasmine.createSpy().and.returnValue(of({ items: [], unread_count: 0 })),
+            watchInvalidations: jasmine.createSpy().and.returnValue(EMPTY)
         };
 
         TestBed.configureTestingModule({

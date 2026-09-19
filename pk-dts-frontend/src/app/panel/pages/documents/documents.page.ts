@@ -40,10 +40,12 @@ import {
     BatchSoftcopyFolderImportResponse,
     DocumentDetail,
     DocumentFormValue,
+    DocumentListQuery,
     DocumentStatusValue,
     DocumentSummary,
     DocumentUserSummary,
     LocationReference,
+    PaginatedResponse,
     RevisionFormValue,
     RevisionSummary,
     SequenceReference,
@@ -145,7 +147,7 @@ interface DocumentFolderNode {
                             </div>
                         </div>
                         <div class="filter-badges">
-                            <span class="filter-badge">{{ filteredDocuments().length }} match{{ filteredDocuments().length === 1 ? '' : 'es' }}</span>
+                            <span class="filter-badge">{{ resultTotal() }} match{{ resultTotal() === 1 ? '' : 'es' }}</span>
                             <span *ngIf="selectedType" class="filter-badge">{{ selectedType }}</span>
                             <span *ngIf="selectedStatus" class="filter-badge">{{ selectedStatus }}</span>
                             <span *ngIf="selectedAssignmentStatus" class="filter-badge">{{ selectedAssignmentStatus === 'assigned' ? 'Assigned' : 'Unassigned' }}</span>
@@ -165,14 +167,14 @@ interface DocumentFolderNode {
                         </div>
                         <div class="field">
                             <label for="status-filter">Status</label>
-                            <select id="status-filter" [(ngModel)]="selectedStatus" (ngModelChange)="resetPagination()" class="select-field">
+                            <select id="status-filter" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()" class="select-field">
                                 <option value="">All</option>
                                 <option *ngFor="let status of documentStatuses" [value]="status">{{ statusLabel(status) }}</option>
                             </select>
                         </div>
                         <div class="field">
                             <label for="assignment-filter">Assignment</label>
-                            <select id="assignment-filter" [(ngModel)]="selectedAssignmentStatus" (ngModelChange)="resetPagination()" class="select-field">
+                            <select id="assignment-filter" [(ngModel)]="selectedAssignmentStatus" (ngModelChange)="onFilterChange()" class="select-field">
                                 <option value="">All assignments</option>
                                 <option value="assigned">Assigned documents</option>
                                 <option value="unassigned">Unassigned documents</option>
@@ -197,7 +199,7 @@ interface DocumentFolderNode {
                                 />
                             </ng-container>
                             <ng-template #defaultAreaFilter>
-                                <select id="area-filter" [(ngModel)]="selectedAreaId" (ngModelChange)="resetPagination()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
+                                <select id="area-filter" [(ngModel)]="selectedAreaId" (ngModelChange)="onFilterChange()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
                                     <option value="">{{ selectedType === 'SOFTCOPY' ? 'Not used for softcopy' : 'All' }}</option>
                                     <option *ngFor="let area of areas(); trackBy: trackArea" [value]="area.area_id">{{ area.area_name }}</option>
                                 </select>
@@ -209,7 +211,7 @@ interface DocumentFolderNode {
                     <div *ngIf="selectedType !== 'HARDCOPY'" class="filter-section-grid digital-filter-grid">
                         <div class="field">
                             <label for="folder-filter">Softcopy folder / subfolder</label>
-                            <select id="folder-filter" [(ngModel)]="selectedCategoryId" (ngModelChange)="resetPagination()" class="select-field">
+                            <select id="folder-filter" [(ngModel)]="selectedCategoryId" (ngModelChange)="onFilterChange()" class="select-field">
                                 <option value="">All folders and subfolders</option>
                                 <option *ngFor="let category of softcopyCategories(); trackBy: trackSoftcopyCategory" [value]="category.softcopy_category_id">{{ category.folder_name || category.category_name }}</option>
                             </select>
@@ -233,7 +235,7 @@ interface DocumentFolderNode {
                                 />
                             </ng-container>
                             <ng-template #defaultLocationFilter>
-                                <select id="location-filter" [(ngModel)]="selectedLocationId" (ngModelChange)="resetPagination()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
+                                <select id="location-filter" [(ngModel)]="selectedLocationId" (ngModelChange)="onFilterChange()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
                                     <option value="">{{ selectedType === 'SOFTCOPY' ? 'Not used for softcopy' : 'All locations' }}</option>
                                     <option *ngFor="let location of locations(); trackBy: trackLocation" [value]="location.location_id">{{ location.location_name }}</option>
                                 </select>
@@ -255,7 +257,7 @@ interface DocumentFolderNode {
                                 />
                             </ng-container>
                             <ng-template #defaultSpecificFilter>
-                                <select id="specific-filter" [(ngModel)]="selectedSpecificId" (ngModelChange)="resetPagination()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
+                                <select id="specific-filter" [(ngModel)]="selectedSpecificId" (ngModelChange)="onFilterChange()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
                                     <option value="">{{ selectedType === 'SOFTCOPY' ? 'Not used for softcopy' : 'All specifics' }}</option>
                                     <option *ngFor="let specific of specifics(); trackBy: trackSpecific" [value]="specific.specific_id">{{ specific.specific_name }}</option>
                                 </select>
@@ -277,7 +279,7 @@ interface DocumentFolderNode {
                                 />
                             </ng-container>
                             <ng-template #defaultAssetFilter>
-                                <select id="asset-filter" [(ngModel)]="selectedAssetId" (ngModelChange)="resetPagination()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
+                                <select id="asset-filter" [(ngModel)]="selectedAssetId" (ngModelChange)="onFilterChange()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
                                     <option value="">{{ selectedType === 'SOFTCOPY' ? 'Not used for softcopy' : 'All asset numbers' }}</option>
                                     <option *ngFor="let asset of assets(); trackBy: trackAsset" [value]="asset.asset_id">{{ asset.asset_number }}</option>
                                 </select>
@@ -299,7 +301,7 @@ interface DocumentFolderNode {
                                 />
                             </ng-container>
                             <ng-template #defaultSequenceFilter>
-                                <select id="sequence-filter" [(ngModel)]="selectedSequenceId" (ngModelChange)="resetPagination()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
+                                <select id="sequence-filter" [(ngModel)]="selectedSequenceId" (ngModelChange)="onFilterChange()" class="select-field" [disabled]="selectedType === 'SOFTCOPY'">
                                     <option value="">{{ selectedType === 'SOFTCOPY' ? 'Not used for softcopy' : 'All sequences' }}</option>
                                     <option *ngFor="let sequence of sequences(); trackBy: trackSequence" [value]="sequence.sequence_id">{{ sequence.sequence_code }}</option>
                                 </select>
@@ -526,16 +528,16 @@ interface DocumentFolderNode {
                     <span>No documents match your search.</span>
                 </div>
 
-                <div *ngIf="filteredDocuments().length && viewMode !== 'folder'" class="pagination-footer mt-5 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div *ngIf="resultTotal() && viewMode !== 'folder'" class="pagination-footer mt-5 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="text-sm text-slate-500">
                         Showing <span class="font-bold text-slate-900">{{ pageStart() }}</span> to <span class="font-bold text-slate-900">{{ pageEnd() }}</span> of
-                        <span class="font-bold text-slate-900">{{ filteredDocuments().length }}</span> document{{ filteredDocuments().length === 1 ? '' : 's' }}
+                        <span class="font-bold text-slate-900">{{ resultTotal() }}</span> document{{ resultTotal() === 1 ? '' : 's' }}
                     </div>
 
                     <app-pagination
                         [first]="first"
                         [rows]="rows"
-                        [totalRecords]="filteredDocuments().length"
+                        [totalRecords]="resultTotal()"
                         [rowsPerPageOptions]="rowsPerPageOptions"
                         [pageLinkSize]="4"
                         [showCurrentPageReport]="false"
@@ -560,7 +562,7 @@ interface DocumentFolderNode {
             [canAssignUsers]="canAssignDocuments()"
             [canDirectCreate]="canDirectCreateSoftcopy()"
             [currentUserName]="currentUserName()"
-            [referenceLoading]="isLoading()"
+            [referenceLoading]="referenceLoading()"
             [saving]="isSaving()"
             (save)="saveDocument($event)"
         />
@@ -1276,6 +1278,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     softcopyCategories = signal<SoftcopyCategoryReference[]>([]);
 
     isLoading = signal(true);
+    referenceLoading = signal(false);
     isSaving = signal(false);
     errorMessage = signal('');
     referenceWarningMessage = signal('');
@@ -1333,6 +1336,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     first = 0;
     rows = 10;
+    totalRecords = signal(0);
     viewMode: DocumentWorkspaceViewMode = 'list';
     workspaceType: WorkspaceDocumentType = '';
     rowsPerPageOptions = [10, 20, 50];
@@ -1350,6 +1354,9 @@ export class DocumentsPage implements OnInit, OnDestroy {
     selectedCategoryId = '';
     private pendingDocumentId = '';
     private expandedFolders = new Set<string>();
+    private tableSearchTimer: ReturnType<typeof setTimeout> | null = null;
+    private referenceLoadingStarted = false;
+    private referenceDataLoaded = false;
 
     documentForm: DocumentFormValue = this.emptyDocumentForm();
     revisionForm: RevisionFormValue = this.emptyRevisionForm();
@@ -1440,6 +1447,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     filteredDocuments() {
         const documents = this.documents();
+        if (this.viewMode !== 'folder') return documents;
         const categories = this.softcopyCategories();
         const search = this.searchTerm.trim().toLowerCase();
         const filterKey = [
@@ -1780,7 +1788,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.folderDialogVisible = false;
                 this.expandedFolders.add(`softcopy:${this.folderDialogCategoryId}`);
                 this.showNotice('success', this.folderDialogMode === 'edit' ? 'Folder updated' : 'Subfolder created', this.folderDialogMode === 'edit' ? 'The folder name was updated successfully.' : `${categoryName} was created inside ${this.folderDialogParentPath}.`);
-                this.loadData();
+                this.referenceDataLoaded = false;
+                this.referenceLoadingStarted = false;
+                this.loadReferenceData(true);
+                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.folderSaving.set(false);
@@ -1801,16 +1812,22 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
     }
 
+    resultTotal() {
+        return this.viewMode === 'folder' ? this.filteredDocuments().length : this.totalRecords();
+    }
+
     pagedDocuments() {
-        return this.filteredDocuments().slice(this.first, this.first + this.rows);
+        return this.viewMode === 'folder'
+            ? this.filteredDocuments().slice(this.first, this.first + this.rows)
+            : this.documents();
     }
 
     pageStart() {
-        return this.filteredDocuments().length === 0 ? 0 : this.first + 1;
+        return this.resultTotal() === 0 ? 0 : this.first + 1;
     }
 
     pageEnd() {
-        return Math.min(this.first + this.rows, this.filteredDocuments().length);
+        return Math.min(this.first + (this.viewMode === 'folder' ? this.rows : this.documents().length), this.resultTotal());
     }
 
     hardcopyCount() {
@@ -1841,6 +1858,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.searchTerm = query;
                 this.resetPagination();
                 this.syncFolderExpansionForSearch();
+                if (!this.isLoading()) this.onTableSearchChange();
             }
 
             const documentId = params.get('document') ?? '';
@@ -1855,12 +1873,14 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     setViewMode(mode: DocumentWorkspaceViewMode) {
+        if (this.viewMode === mode) return;
         this.viewMode = mode;
         this.first = 0;
         if (mode === 'folder') {
             this.expandedFolders.clear();
             this.syncFolderExpansionForSearch();
         }
+        this.loadData(false);
     }
 
     ngOnDestroy() {
@@ -1868,6 +1888,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
         if (this.assistantSearchTimer) {
             clearTimeout(this.assistantSearchTimer);
             this.assistantSearchTimer = null;
+        }
+        if (this.tableSearchTimer) {
+            clearTimeout(this.tableSearchTimer);
+            this.tableSearchTimer = null;
         }
     }
 
@@ -1877,17 +1901,33 @@ export class DocumentsPage implements OnInit, OnDestroy {
         this.errorMessage.set('');
         if (refreshReferences) this.referenceWarningMessage.set('');
 
-        this.documentsService.listDocuments().subscribe({
-            next: (documents) => {
+        if (refreshReferences && !this.referenceDataLoaded && !this.referenceLoadingStarted) {
+            this.loadReferenceData();
+        }
+
+        const folderMode = this.viewMode === 'folder';
+        const request: Observable<PaginatedResponse<DocumentSummary>> = folderMode
+            ? this.documentsService.listDocuments().pipe(map((items) => ({ items, meta: { total: items.length } })))
+            : this.documentsService.listDocumentsPage(this.documentListQuery());
+
+        request.subscribe({
+            next: (response) => {
                 if (requestId !== this.dataLoadRequest) return;
-                this.documents.set(documents ?? []);
+                const items = response.items ?? [];
+                const total = response.meta?.total ?? items.length;
+
+                if (!folderMode && total > 0 && this.first >= total) {
+                    this.first = Math.max(0, Math.floor((total - 1) / this.rows) * this.rows);
+                    this.isLoading.set(false);
+                    this.loadData(false);
+                    return;
+                }
+
+                this.documents.set(items);
+                this.totalRecords.set(total);
                 this.isLoading.set(false);
                 this.clampPagination();
-                this.syncFolderExpansionForSearch();
-
-                if (refreshReferences) {
-                    this.loadReferenceData(requestId);
-                }
+                if (folderMode) this.syncFolderExpansionForSearch();
             },
             error: (error: unknown) => {
                 if (requestId !== this.dataLoadRequest) return;
@@ -1897,7 +1937,27 @@ export class DocumentsPage implements OnInit, OnDestroy {
         });
     }
 
-    private loadReferenceData(requestId: number) {
+    private documentListQuery(): DocumentListQuery {
+        return {
+            page: Math.floor(this.first / this.rows) + 1,
+            limit: this.rows,
+            search: this.searchTerm.trim(),
+            document_type: this.selectedType as WorkspaceDocumentType,
+            status: this.selectedStatus as DocumentStatusValue | '',
+            assignment: this.selectedAssignmentStatus,
+            area_id: this.selectedAreaId,
+            location_id: this.selectedLocationId,
+            specific_id: this.selectedSpecificId,
+            asset_id: this.selectedAssetId,
+            sequence_id: this.selectedSequenceId,
+            category_id: this.selectedCategoryId
+        };
+    }
+
+    private loadReferenceData(force = false) {
+        if (this.referenceLoadingStarted && !force) return;
+        this.referenceLoadingStarted = true;
+        this.referenceLoading.set(true);
         const referenceIssues: string[] = [];
         forkJoin({
             users: this.auth.hasPermission('user-accounts.view')
@@ -1911,7 +1971,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
             softcopyCategories: this.withReferenceFallback('softcopy folders', this.documentsService.listSoftcopyCategories(), referenceIssues)
         }).subscribe({
             next: ({ users, areas, assets, specifics, locations, sequences, softcopyCategories }) => {
-                if (requestId !== this.dataLoadRequest) return;
                 this.users.set(users ?? []);
                 this.areas.set(areas ?? []);
                 this.assets.set(assets ?? []);
@@ -1919,12 +1978,19 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.locations.set(locations ?? []);
                 this.sequences.set(sequences ?? []);
                 this.softcopyCategories.set((softcopyCategories ?? []).filter((category) => category.is_active !== false));
+                this.referenceDataLoaded = referenceIssues.length === 0;
+                this.referenceLoadingStarted = false;
+                this.referenceLoading.set(false);
                 this.syncFolderExpansionForSearch();
                 if (referenceIssues.length) {
                     this.referenceWarningMessage.set(
                         `The document list loaded, but ${referenceIssues.join('; ')} could not be loaded. Filters and dialogs may be limited until those endpoints recover.`
                     );
                 }
+            },
+            error: () => {
+                this.referenceLoadingStarted = false;
+                this.referenceLoading.set(false);
             }
         });
     }
@@ -1932,6 +1998,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     onPageChange(event: { first?: number; rows?: number }) {
         this.first = event.first ?? 0;
         this.rows = event.rows ?? this.rows;
+        if (this.viewMode !== 'folder') this.loadData(false);
     }
 
     resetPagination() {
@@ -1976,6 +2043,21 @@ export class DocumentsPage implements OnInit, OnDestroy {
     onTableSearchChange() {
         this.resetPagination();
         this.syncFolderExpansionForSearch();
+        if (this.viewMode === 'folder') return;
+        if (this.tableSearchTimer) clearTimeout(this.tableSearchTimer);
+        this.tableSearchTimer = setTimeout(() => {
+            this.tableSearchTimer = null;
+            this.loadData(false);
+        }, 250);
+    }
+
+    onFilterChange() {
+        this.resetPagination();
+        if (this.viewMode === 'folder') {
+            this.syncFolderExpansionForSearch();
+            return;
+        }
+        this.loadData(false);
     }
 
     onTypeFilterChange() {
@@ -1987,33 +2069,32 @@ export class DocumentsPage implements OnInit, OnDestroy {
             this.selectedSequenceId = '';
         }
         if (this.selectedType === 'HARDCOPY') this.selectedCategoryId = '';
-
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     onAreaFilterChange(value: SearchableDropdownValue) {
         this.selectedAreaId = this.normalizeSelectValue(value);
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     onLocationFilterChange(value: SearchableDropdownValue) {
         this.selectedLocationId = this.normalizeSelectValue(value);
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     onSpecificFilterChange(value: SearchableDropdownValue) {
         this.selectedSpecificId = this.normalizeSelectValue(value);
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     onAssetFilterChange(value: SearchableDropdownValue) {
         this.selectedAssetId = this.normalizeSelectValue(value);
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     onSequenceFilterChange(value: SearchableDropdownValue) {
         this.selectedSequenceId = this.normalizeSelectValue(value);
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     resetFilters() {
@@ -2027,7 +2108,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         this.selectedAssetId = '';
         this.selectedSequenceId = '';
         this.selectedCategoryId = '';
-        this.resetPagination();
+        this.onFilterChange();
     }
 
     toggleAssistant() {
@@ -2051,7 +2132,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     applyAssistantQueryToSearch() {
         this.searchTerm = this.assistantQuery.trim();
-        this.resetPagination();
+        this.onTableSearchChange();
     }
 
     runAssistantSearch() {
@@ -2174,7 +2255,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.attachmentTarget = null;
                 this.attachmentFiles = [];
                 this.showNotice('success', 'Scans attached', `Supporting evidence was added to ${target.document_title}.`);
-                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.attachmentSaving.set(false);
@@ -2185,15 +2265,37 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     saveAssignments(userIds: string[]) {
         if (!this.assignmentDocument) return;
+        const documentId = this.assignmentDocument.document_id;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const selectedUsers = this.users().filter((user) => userIds.includes(user.user_id));
+        const optimisticAssignments = selectedUsers.map((user) => ({ user, assigned_at: new Date().toISOString() }));
+        const shouldDisappear =
+            (this.selectedAssignmentStatus === 'assigned' && optimisticAssignments.length === 0)
+            || (this.selectedAssignmentStatus === 'unassigned' && optimisticAssignments.length > 0);
+
+        this.documents.update((items) =>
+            shouldDisappear
+                ? items.filter((document) => document.document_id !== documentId)
+                : items.map((document) => document.document_id === documentId ? { ...document, assignments: optimisticAssignments } : document)
+        );
+        if (shouldDisappear && this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+
         this.assignmentSaving.set(true);
-        this.documentsService.assignDocumentUsers(this.assignmentDocument.document_id, userIds).subscribe({
-            next: () => {
+        this.documentsService.assignDocumentUsers(documentId, userIds).subscribe({
+            next: (updated) => {
                 this.assignmentSaving.set(false);
                 this.assignmentDialogVisible = false;
+                if (!shouldDisappear) {
+                    this.documents.update((items) => items.map((document) => document.document_id === documentId ? { ...document, ...updated } : document));
+                } else if (this.viewMode !== 'folder') {
+                    this.loadData(false);
+                }
                 this.showNotice('success', 'Access updated', 'The assigned users were updated successfully.');
-                this.loadData(false);
             },
             error: (error: unknown) => {
+                this.documents.set(previousDocuments);
+                this.totalRecords.set(previousTotal);
                 this.assignmentSaving.set(false);
                 this.handleActionError(error, 'Unable to update document access');
             }
@@ -2216,32 +2318,47 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
 
         this.isSaving.set(true);
+        const targetDocument = this.statusTargetDocument;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const directDisposal = event.action === 'dispose' && this.auth.hasPermission('documents.dispose');
+        if (directDisposal) {
+            this.documents.update((items) => items.filter((document) => document.document_id !== targetDocument.document_id));
+            if (this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+        }
+
         const request: Observable<unknown> =
             event.action === 'dispose'
-                  ? (this.auth.hasPermission('documents.dispose') ? this.documentsService.disposeDocument(this.statusTargetDocument.document_id, {
+                  ? (directDisposal ? this.documentsService.disposeDocument(targetDocument.document_id, {
                       disposal_action: event.disposal_action,
                       disposal_action_other: event.disposal_action_other,
                       disposal_remarks: event.disposal_remarks,
                       disposed_by_user_id: event.disposed_by_user_id
-                  }) : this.documentsService.requestDocumentDisposal(this.statusTargetDocument.document_id, {
+                  }) : this.documentsService.requestDocumentDisposal(targetDocument.document_id, {
                       disposal_action: event.disposal_action,
                       disposal_action_other: event.disposal_action_other,
                       disposal_remarks: event.disposal_remarks,
                       disposed_by_user_id: event.disposed_by_user_id
                   }))
-                : this.documentsService.restoreDocument(this.statusTargetDocument.document_id);
+                : this.documentsService.restoreDocument(targetDocument.document_id);
 
         request.subscribe({
             next: () => {
-                const requested = event.action === 'dispose' && !this.auth.hasPermission('documents.dispose');
+                const requested = event.action === 'dispose' && !directDisposal;
                 const nextStatusLabel = event.action === 'dispose' ? (requested ? 'submitted for disposal approval' : 'disposed') : 'restored';
                 this.isSaving.set(false);
                 this.statusDialogVisible = false;
                 this.statusTargetDocument = null;
                 this.showNotice('success', requested ? 'Disposal request submitted' : 'Document state updated', `The document was ${nextStatusLabel} successfully.`);
-                this.loadData(false);
+                if (directDisposal && this.viewMode !== 'folder') this.loadData(false);
             },
-            error: (error: unknown) => this.handleActionError(error, 'Unable to change document state')
+            error: (error: unknown) => {
+                if (directDisposal) {
+                    this.documents.set(previousDocuments);
+                    this.totalRecords.set(previousTotal);
+                }
+                this.handleActionError(error, 'Unable to change document state');
+            }
         });
     }
 
@@ -2573,20 +2690,32 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     confirmDelete() {
-        if (!this.deletingDocument) {
-            return;
-        }
+        if (!this.deletingDocument) return;
 
+        const target = this.deletingDocument;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const deletedNumber = target.document_number || target.document_title || 'Document';
+
+        this.documents.update((items) => items.filter((document) => document.document_id !== target.document_id));
+        if (this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+        this.deleteConfirmVisible = false;
         this.isSaving.set(true);
-        this.documentsService.deleteDocument(this.deletingDocument.document_id).subscribe({
+
+        this.documentsService.deleteDocument(target.document_id).subscribe({
             next: () => {
-                const deletedNumber = this.deletingDocument?.document_number || 'Document';
                 this.isSaving.set(false);
                 this.deletingDocument = null;
                 this.showNotice('success', 'Document deleted', `${deletedNumber} was removed successfully.`);
-                this.loadData(false);
+                if (this.viewMode !== 'folder') this.loadData(false);
             },
-            error: (error: unknown) => this.handleActionError(error, 'Unable to delete document')
+            error: (error: unknown) => {
+                this.documents.set(previousDocuments);
+                this.totalRecords.set(previousTotal);
+                this.deletingDocument = target;
+                this.deleteConfirmVisible = true;
+                this.handleActionError(error, 'Unable to delete document');
+            }
         });
     }
 
@@ -2610,7 +2739,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         const document = this.selectedDocumentDetail();
         if (!document || !confirm('Delete this attached scan document?')) return;
         this.documentsService.deleteAttachment(document.document_id, attachmentId).subscribe({
-            next: (updated) => { this.selectedDocumentDetail.set(updated); this.loadData(false); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
+            next: (updated) => { this.selectedDocumentDetail.set(updated); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
             error: (error: unknown) => this.handleActionError(error, 'Unable to delete attachment')
         });
     }
@@ -2759,7 +2888,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     trackSoftcopyCategory = (_index: number, category: SoftcopyCategoryReference) => category.softcopy_category_id;
 
     private clampPagination() {
-        const total = this.filteredDocuments().length;
+        const total = this.resultTotal();
         if (total === 0) {
             this.first = 0;
             return;
