@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { Subject, catchError, filter, forkJoin, of, switchMap, takeUntil, timer } from 'rxjs';
+import { Subject, catchError, filter, forkJoin, of, takeUntil, timer } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
