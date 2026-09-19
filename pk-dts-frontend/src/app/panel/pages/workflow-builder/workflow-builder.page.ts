@@ -204,8 +204,22 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.workflowsApi.createVersion(this.selectedDefinition.workflow_definition_id, this.normalizedGraph()).subscribe({
             next: (version) => {
                 this.saving = false;
-                this.load(this.selectedDefinition!.workflow_definition_id, version.workflow_version_id);
-                this.message = 'New sequential workflow version created.';
+                const definition = this.selectedDefinition!;
+                const summary: WorkflowVersionSummary = {
+                    workflow_version_id: version.workflow_version_id,
+                    workflow_definition_id: version.workflow_definition_id,
+                    version_number: version.version_number,
+                    status: version.status,
+                    published_at: version.published_at
+                };
+                definition.versions = [summary, ...definition.versions.filter((item) => item.workflow_version_id !== summary.workflow_version_id)]
+                    .sort((left, right) => right.version_number - left.version_number);
+                this.selectedVersion = summary;
+                this.graph = this.prepareSequentialGraph(version.graph);
+                this.dirty = false;
+                this.replaceDefinition(definition);
+                this.ensureReferenceDataForGraph();
+                this.message = 'New workflow draft created.';
             },
             error: (error) => { this.saving = false; this.error = this.errorText(error); }
         });
@@ -237,10 +251,24 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         if (!confirm(`Publish version ${this.selectedVersion.version_number}? Published versions cannot be edited.`)) return;
         this.saving = true;
         this.workflowsApi.publish(this.selectedDefinition.workflow_definition_id, this.selectedVersion.workflow_version_id).subscribe({
-            next: () => {
+            next: (published) => {
                 this.saving = false;
-                this.load(this.selectedDefinition!.workflow_definition_id, this.selectedVersion!.workflow_version_id);
-                this.message = 'Workflow version published.';
+                const definition = this.selectedDefinition!;
+                definition.versions = definition.versions.map((version) => ({
+                    ...version,
+                    status: version.workflow_version_id === published.workflow_version_id
+                        ? 'PUBLISHED'
+                        : version.status === 'PUBLISHED'
+                            ? 'ARCHIVED'
+                            : version.status,
+                    published_at: version.workflow_version_id === published.workflow_version_id
+                        ? published.published_at
+                        : version.published_at
+                }));
+                this.selectedVersion = definition.versions.find((version) => version.workflow_version_id === published.workflow_version_id);
+                this.dirty = false;
+                this.replaceDefinition(definition);
+                this.message = 'Workflow published. New requests can now use this version.';
             },
             error: (error) => { this.saving = false; this.error = this.errorText(error); }
         });
@@ -250,8 +278,11 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         if (!this.selectedDefinition || !this.canConfigure) return;
         this.workflowsApi.setActive(this.selectedDefinition.workflow_definition_id, !this.selectedDefinition.is_active).subscribe({
             next: (definition) => {
-                this.selectedDefinition = definition;
-                this.load(definition.workflow_definition_id, this.selectedVersion?.workflow_version_id);
+                const current = this.selectedDefinition!;
+                current.is_active = definition.is_active;
+                this.selectedDefinition = current;
+                this.replaceDefinition(current);
+                this.message = current.is_active ? 'Workflow activated.' : 'Workflow deactivated.';
             },
             error: (error) => this.error = this.errorText(error)
         });
@@ -611,6 +642,13 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
             ],
             edges: [{ key: 'approval-1-approve', from: 'approval-1', to: 'approved', outcome: 'APPROVE' }]
         };
+    }
+
+    private replaceDefinition(definition: WorkflowDefinition) {
+        this.definitions = this.definitions.map((item) =>
+            item.workflow_definition_id === definition.workflow_definition_id ? { ...definition } : item
+        );
+        this.selectedDefinition = this.definitions.find((item) => item.workflow_definition_id === definition.workflow_definition_id);
     }
 
     private clearFeedback() { this.message = ''; this.error = ''; }
