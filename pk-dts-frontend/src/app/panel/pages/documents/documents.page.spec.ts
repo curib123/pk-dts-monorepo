@@ -38,7 +38,10 @@ describe('DocumentsPage hardcopy transfer actions', () => {
             'listSpecifics',
             'listLocations',
             'listSequences',
-            'listSoftcopyCategories'
+            'listSoftcopyCategories',
+            'requestHardcopyEdit',
+            'updateDocument',
+            'createDocument'
         ]);
         documentsService.listDocuments.and.returnValue(of([]));
         documentsService.listUsers.and.returnValue(of([]));
@@ -48,6 +51,9 @@ describe('DocumentsPage hardcopy transfer actions', () => {
         documentsService.listLocations.and.returnValue(of([]));
         documentsService.listSequences.and.returnValue(of([]));
         documentsService.listSoftcopyCategories.and.returnValue(of([]));
+        documentsService.requestHardcopyEdit.and.returnValue(of({ ...hardcopyDocument, document_id: '99', source_document_id: '42' } as DocumentSummary));
+        documentsService.updateDocument.and.returnValue(of(hardcopyDocument));
+        documentsService.createDocument.and.returnValue(of(hardcopyDocument));
 
         router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
@@ -105,6 +111,22 @@ describe('DocumentsPage hardcopy transfer actions', () => {
         page.toggleFolder(roots[0].children[0].id);
         fixture.detectChanges(false);
         expect(transferButtons(fixture.nativeElement)).toBe(1);
+    });
+
+    it('submits Update Hardcopy Document as an approval request instead of directly patching the controlled record', () => {
+        const fixture = TestBed.createComponent(DocumentsPage);
+        fixture.detectChanges();
+        const page = fixture.componentInstance;
+
+        page.openDocumentDialog(hardcopyDocument);
+        expect(page.documentFormMode).toBe('update');
+
+        const form = { ...page.documentForm, document_title: 'Updated hardcopy title' };
+        page.saveDocument(form);
+
+        expect(documentsService.requestHardcopyEdit).toHaveBeenCalledOnceWith('42', form);
+        expect(documentsService.updateDocument).not.toHaveBeenCalled();
+        expect(documentsService.createDocument).not.toHaveBeenCalled();
     });
 
     function transferButtons(element: HTMLElement) {
