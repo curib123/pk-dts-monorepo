@@ -24,8 +24,8 @@ export class WorkspacePageComponent {
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-toolbar-shell" [class.workspace-toolbar-shell--stacked]="stacked">
-            <div class="workspace-toolbar-actions"><ng-content select="[workspace-actions]"></ng-content></div>
             <div class="workspace-toolbar-main"><ng-content></ng-content></div>
+            <div class="workspace-toolbar-actions"><ng-content select="[workspace-actions]"></ng-content></div>
         </section>
     `
 })
