@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { Observable, Subscription, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
-import * as XLSX from 'xlsx';
+import type { WorkBook } from 'xlsx';
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertModalComponent } from '@/app/shared/components/alert-modal/alert-modal.component';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
@@ -1261,6 +1261,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
     private alerts = inject(AlertDialogService);
     private assistantSearchTimer: ReturnType<typeof setTimeout> | null = null;
     private dataLoadRequest = 0;
+    private filteredDocumentsSource: DocumentSummary[] | null = null;
+    private filteredCategoriesSource: SoftcopyCategoryReference[] | null = null;
+    private filteredDocumentsKey = '';
+    private filteredDocumentsResult: DocumentSummary[] = [];
 
     documents = signal<DocumentSummary[]>([]);
     users = signal<DocumentUserSummary[]>([]);
@@ -1435,8 +1439,33 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     filteredDocuments() {
+        const documents = this.documents();
+        const categories = this.softcopyCategories();
         const search = this.searchTerm.trim().toLowerCase();
-        return this.documents().filter((document) => {
+        const filterKey = [
+            search,
+            this.selectedType,
+            this.selectedStatus,
+            this.selectedAreaId,
+            this.selectedLocationId,
+            this.selectedSpecificId,
+            this.selectedAssetId,
+            this.selectedSequenceId,
+            this.selectedCategoryId,
+            this.selectedAssignmentStatus
+        ].join('\u001f');
+
+        if (
+            this.filteredDocumentsSource === documents
+            && this.filteredCategoriesSource === categories
+            && this.filteredDocumentsKey === filterKey
+        ) {
+            return this.filteredDocumentsResult;
+        }
+
+        const selectedCategory = categories.find((category) => category.softcopy_category_id === this.selectedCategoryId);
+        const selectedFolder = selectedCategory?.folder_name || '';
+        const filtered = documents.filter((document) => {
             const matchesSearch =
                 !search ||
                 [
@@ -1468,8 +1497,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
             const matchesSpecific = !this.selectedSpecificId || (document.hardcopy?.specific?.specific_id || '') === this.selectedSpecificId;
             const matchesAsset = !this.selectedAssetId || (document.hardcopy?.asset?.asset_id || '') === this.selectedAssetId;
             const matchesSequence = !this.selectedSequenceId || (document.hardcopy?.sequence?.sequence_id || '') === this.selectedSequenceId;
-            const selectedCategory = this.softcopyCategories().find((category) => category.softcopy_category_id === this.selectedCategoryId);
-            const selectedFolder = selectedCategory?.folder_name || '';
             const documentFolder = document.softcopy?.category?.folder_name || '';
             const matchesCategory = !this.selectedCategoryId || (selectedFolder ? documentFolder === selectedFolder || documentFolder.startsWith(`${selectedFolder}/`) : (document.softcopy?.category?.softcopy_category_id || '') === this.selectedCategoryId);
             const isAssigned = !!document.assignments?.length;
@@ -1477,6 +1504,12 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
             return matchesSearch && matchesType && matchesStatus && matchesArea && matchesLocation && matchesSpecific && matchesAsset && matchesSequence && matchesCategory && matchesAssignment;
         });
+
+        this.filteredDocumentsSource = documents;
+        this.filteredCategoriesSource = categories;
+        this.filteredDocumentsKey = filterKey;
+        this.filteredDocumentsResult = filtered;
+        return filtered;
     }
 
     documentFolders(): DocumentFolderNode[] {
@@ -1654,7 +1687,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.documents.update((items) => items.map((item) => (item.document_id === documentId ? { ...item, ...updatedDocument } : item)));
                 this.expandedFolders.add(folder.id);
                 this.showNotice('success', 'Document moved', `${document.document_title} was moved to ${folder.path}.`);
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to move document')
         });
@@ -1838,12 +1871,11 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
     }
 
-    loadData() {
+    loadData(refreshReferences = true) {
         const requestId = ++this.dataLoadRequest;
-        this.isLoading.set(true);
+        this.isLoading.set(this.documents().length === 0);
         this.errorMessage.set('');
-        this.referenceWarningMessage.set('');
-        const referenceIssues: string[] = [];
+        if (refreshReferences) this.referenceWarningMessage.set('');
 
         this.documentsService.listDocuments().subscribe({
             next: (documents) => {
@@ -1852,6 +1884,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.isLoading.set(false);
                 this.clampPagination();
                 this.syncFolderExpansionForSearch();
+
+                if (refreshReferences) {
+                    this.loadReferenceData(requestId);
+                }
             },
             error: (error: unknown) => {
                 if (requestId !== this.dataLoadRequest) return;
@@ -1859,7 +1895,10 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.isLoading.set(false);
             }
         });
+    }
 
+    private loadReferenceData(requestId: number) {
+        const referenceIssues: string[] = [];
         forkJoin({
             users: this.auth.hasPermission('user-accounts.view')
                 ? this.withReferenceFallback('users', this.documentsService.listUsers(), referenceIssues)
@@ -2135,7 +2174,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.attachmentTarget = null;
                 this.attachmentFiles = [];
                 this.showNotice('success', 'Scans attached', `Supporting evidence was added to ${target.document_title}.`);
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.attachmentSaving.set(false);
@@ -2152,7 +2191,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.assignmentSaving.set(false);
                 this.assignmentDialogVisible = false;
                 this.showNotice('success', 'Access updated', 'The assigned users were updated successfully.');
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.assignmentSaving.set(false);
@@ -2200,7 +2239,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.statusDialogVisible = false;
                 this.statusTargetDocument = null;
                 this.showNotice('success', requested ? 'Disposal request submitted' : 'Document state updated', `The document was ${nextStatusLabel} successfully.`);
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to change document state')
         });
@@ -2282,10 +2321,11 @@ export class DocumentsPage implements OnInit, OnDestroy {
         this.batchFileName = file.name;
 
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             try {
+                const XLSX = await import('xlsx');
                 const workbook = XLSX.read(reader.result, { type: 'array' });
-                const rows = this.parseBatchWorkbook(workbook);
+                const rows = this.parseBatchWorkbook(workbook, XLSX);
                 this.batchRows.set(rows);
 
                 if (!rows.length) {
@@ -2347,7 +2387,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                     'Batch import finished',
                     `Created ${response.summary.created}, skipped ${response.summary.skipped}, and flagged ${response.summary.errors} row${response.summary.errors === 1 ? '' : 's'}.`
                 );
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.batchSaving.set(false);
@@ -2389,7 +2429,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                         ? `The proposed changes to "${documentLabel}" were sent through the Hardcopy approval workflow. The controlled record will change only after final approval.`
                         : `The document "${documentLabel}" was saved successfully.`
                 );
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to save document')
         });
@@ -2491,7 +2531,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.revisionExistingRevisions = [];
                 this.revisionTargetStatus = '';
                 this.showNotice('success', 'Revision uploaded', 'The new revision was uploaded successfully.');
-                this.loadData();
+                this.loadData(false);
                 if (this.detailDialogVisible && this.revisionTargetDocumentId) {
                     this.openDetailDialogById(this.revisionTargetDocumentId);
                 }
@@ -2520,7 +2560,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.directoryContextDocumentNumber = '';
                 this.directoryCurrentCategoryId = '';
                 this.showNotice('success', 'Directory changed', 'The controlled file was moved to the selected folder.');
-                this.loadData();
+                this.loadData(false);
                 if (this.detailDialogVisible && documentId) this.openDetailDialogById(documentId);
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to change directory')
@@ -2544,7 +2584,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.isSaving.set(false);
                 this.deletingDocument = null;
                 this.showNotice('success', 'Document deleted', `${deletedNumber} was removed successfully.`);
-                this.loadData();
+                this.loadData(false);
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to delete document')
         });
@@ -2570,7 +2610,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         const document = this.selectedDocumentDetail();
         if (!document || !confirm('Delete this attached scan document?')) return;
         this.documentsService.deleteAttachment(document.document_id, attachmentId).subscribe({
-            next: (updated) => { this.selectedDocumentDetail.set(updated); this.loadData(); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
+            next: (updated) => { this.selectedDocumentDetail.set(updated); this.loadData(false); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
             error: (error: unknown) => this.handleActionError(error, 'Unable to delete attachment')
         });
     }
@@ -2797,7 +2837,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         return lastDotIndex >= 0 ? fileName.slice(lastDotIndex).toLowerCase() : '';
     }
 
-    private parseBatchWorkbook(workbook: XLSX.WorkBook) {
+    private parseBatchWorkbook(workbook: WorkBook, XLSX: typeof import('xlsx')) {
         const rows: BatchHardcopyImportRow[] = [];
         const requiredHeaders = ['SEQUENCE', 'DOCUMENT NAME', 'LOCATION', 'ASSET NUMBER', 'AREA', 'SPECIFIC'];
 

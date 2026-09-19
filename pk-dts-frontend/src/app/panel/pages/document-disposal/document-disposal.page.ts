@@ -192,6 +192,9 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
 
     searchTerm = '';
     disposedByFilter = '';
+    private disposedDocumentsSource: DocumentSummary[] | null = null;
+    private disposedDocumentsKey = '';
+    private disposedDocumentsResult: DocumentSummary[] = [];
     first = 0;
     rows = 10;
     rowsPerPageOptions = [10, 20, 50];
@@ -204,25 +207,38 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     }
 
     disposedDocuments() {
+        const documents = this.documents();
         const search = this.searchTerm.trim().toLowerCase();
         const disposedBy = this.disposedByFilter.trim().toLowerCase();
-        return this.documents()
+        const filterKey = `${search}\u001f${disposedBy}`;
+
+        if (this.disposedDocumentsSource === documents && this.disposedDocumentsKey === filterKey) {
+            return this.disposedDocumentsResult;
+        }
+
+        const filtered = documents
             .filter((document) => document.status === 'Disposed')
             .filter((document) => {
+                const disposerName = this.fullName(document.disposer);
                 const haystack = [
                     document.document_number,
                     document.document_title,
                     document.disposal_remarks || '',
                     document.disposed_by_name || '',
-                    this.fullName(document.disposer),
+                    disposerName,
                     document.hardcopy?.area?.area_name || '',
-                    document.hardcopy?.location?.location_name || '',
+                    document.hardcopy?.location?.location_name || ''
                 ].join(' ').toLowerCase();
 
                 const matchesSearch = !search || haystack.includes(search);
-                const matchesDisposedBy = !disposedBy || [document.disposed_by_name || '', this.fullName(document.disposer)].join(' ').toLowerCase().includes(disposedBy);
+                const matchesDisposedBy = !disposedBy || [document.disposed_by_name || '', disposerName].join(' ').toLowerCase().includes(disposedBy);
                 return matchesSearch && matchesDisposedBy;
             });
+
+        this.disposedDocumentsSource = documents;
+        this.disposedDocumentsKey = filterKey;
+        this.disposedDocumentsResult = filtered;
+        return filtered;
     }
 
     pagedDocuments() {
@@ -284,12 +300,13 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     restore(document: DocumentSummary) {
         this.documentsService.restoreDocument(document.document_id).subscribe({
             next: () => {
+                this.documents.update((items) => items.filter((item) => item.document_id !== document.document_id));
                 this.noticeSeverity.set('success');
                 this.noticeTitle.set('Document restored');
                 this.noticeMessage.set(`${document.document_number || document.document_title} was restored successfully.`);
                 this.noticeVisible = false;
                 this.alerts.success(this.noticeTitle(), this.noticeMessage());
-                this.loadData();
+                this.resetPagination();
             },
             error: () => {
                 this.noticeSeverity.set('error');

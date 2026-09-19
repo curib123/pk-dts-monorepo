@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { Subject, catchError, filter, of, switchMap, takeUntil, timer } from 'rxjs';
+import { Subject, catchError, filter, forkJoin, of, switchMap, takeUntil, timer } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
@@ -11,7 +11,7 @@ import { DashboardService } from './pages/dashboard/dashboard.service';
 import { NavigationNotificationCounts } from './pages/dashboard/dashboard.types';
 import { NotificationsService, UserNotification } from './notifications.service';
 
-const PANEL_BACKGROUND_POLL_DELAY_MS = 250;
+const PANEL_BACKGROUND_POLL_DELAY_MS = 1_500;
 
 @Component({
     selector: 'app-panel-layout',
@@ -186,22 +186,37 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     notificationsOpen = signal(false);
 
     ngOnInit() {
-        this.auth.refreshProfile()?.subscribe({
-            next: () => this.openActiveCategory(),
-            error: () => {
-                this.auth.logout();
-                this.router.navigate(['/auth/login']);
-            }
-        });
+        timer(600)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.auth.refreshProfile()?.subscribe({
+                    next: () => this.openActiveCategory(),
+                    error: () => {
+                        this.auth.logout();
+                        this.router.navigate(['/auth/login']);
+                    }
+                });
+            });
         this.syncPageMeta();
         this.openActiveCategory();
         timer(PANEL_BACKGROUND_POLL_DELAY_MS, 30_000)
             .pipe(
-                switchMap(() => this.dashboardService.getNavigationCounts().pipe(catchError(() => of(null)))),
+                filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
+                switchMap(() =>
+                    forkJoin({
+                        counts: this.dashboardService.getNavigationCounts().pipe(catchError(() => of(null))),
+                        feed: this.notificationsService.list().pipe(catchError(() => of(null)))
+                    })
+                ),
                 takeUntil(this.destroy$)
             )
-            .subscribe((counts) => { if (counts) this.notificationCounts.set(counts); });
-        timer(PANEL_BACKGROUND_POLL_DELAY_MS, 30_000).pipe(switchMap(() => this.notificationsService.list().pipe(catchError(() => of(null)))), takeUntil(this.destroy$)).subscribe((feed) => { if (feed) { this.notifications.set(feed.items); this.unreadCount.set(feed.unread_count); } });
+            .subscribe(({ counts, feed }) => {
+                if (counts) this.notificationCounts.set(counts);
+                if (feed) {
+                    this.notifications.set(feed.items);
+                    this.unreadCount.set(feed.unread_count);
+                }
+            });
 
         this.router.events
             .pipe(

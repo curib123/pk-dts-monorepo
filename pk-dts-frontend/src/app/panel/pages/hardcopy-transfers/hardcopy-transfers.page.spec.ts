@@ -68,7 +68,13 @@ describe('HardcopyTransfersPage', () => {
         expect(text).not.toContain('Destination sequence ID');
     });
 
-    it('loads document titles, locations, and sequences for the transfer form', () => {
+    it('loads document titles, locations, and sequences only when the transfer form opens', () => {
+        expect(documents.listDocuments).not.toHaveBeenCalled();
+        expect(documents.listLocations).not.toHaveBeenCalled();
+        expect(documents.listSequences).not.toHaveBeenCalled();
+
+        fixture.componentInstance.toggleCreateForm();
+
         expect(documents.listDocuments).toHaveBeenCalledTimes(1);
         expect(documents.listLocations).toHaveBeenCalledTimes(1);
         expect(documents.listSequences).toHaveBeenCalledTimes(1);
@@ -76,6 +82,7 @@ describe('HardcopyTransfersPage', () => {
 
     it('derives the destination hierarchy and transfer location label from selections', () => {
         const page = fixture.componentInstance;
+        page.toggleCreateForm();
 
         page.selectDestinationLocation('location-1');
         page.selectTransferDestination('location-1');

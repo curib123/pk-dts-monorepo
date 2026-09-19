@@ -325,8 +325,8 @@ export class RolesPermissionsPage implements OnInit {
         this.loadData();
     }
 
-    loadData() {
-        this.isLoading.set(true);
+    loadData(showLoading = this.roles().length === 0 && this.permissions().length === 0) {
+        this.isLoading.set(showLoading);
         this.errorMessage.set('');
 
         forkJoin({

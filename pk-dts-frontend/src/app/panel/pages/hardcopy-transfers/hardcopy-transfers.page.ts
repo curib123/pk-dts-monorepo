@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { SearchableDropdownComponent, SearchableDropdownOption, SearchableDropdownValue } from '@/app/shared/components/searchable-dropdown/searchable-dropdown.component';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
@@ -29,7 +30,7 @@ type TransferAction = 'approve' | 'return' | 'reject' | 'complete';
                         <span>{{ reviewerMode ? 'Only workflow stages assigned to you are shown.' : 'Move approved hardcopy records through the controlled transfer workflow.' }}</span>
                     </div>
                 </div>
-                <button workspace-actions *ngIf="!reviewerMode" type="button" class="primary" (click)="formOpen = !formOpen"><i class="pi pi-plus"></i> New transfer request</button>
+                <button workspace-actions *ngIf="!reviewerMode" type="button" class="primary" (click)="toggleCreateForm()"><i class="pi pi-plus"></i> New transfer request</button>
             </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i>{{ error() }}</div>
@@ -86,6 +87,7 @@ export class HardcopyTransfersPage implements OnInit {
     locations = signal<LocationReference[]>([]);
     sequences = signal<SequenceReference[]>([]);
     referenceLoading = false;
+    private referenceLoaded = false;
     error = signal('');
     message = signal('');
     form: CreateHardcopyTransferPayload = { document_id: '', destination_location_id: '', reason: '' };
@@ -96,29 +98,41 @@ export class HardcopyTransfersPage implements OnInit {
         if (!this.reviewerMode && documentId) {
             this.form.document_id = documentId;
             this.formOpen = true;
+            this.loadReferenceData();
         }
-        if (!this.reviewerMode) this.loadReferenceData();
         this.load();
     }
 
-    loadReferenceData() {
+    toggleCreateForm() {
+        this.formOpen = !this.formOpen;
+        if (this.formOpen) this.loadReferenceData();
+    }
+
+    loadReferenceData(force = false) {
+        if (this.referenceLoading || (this.referenceLoaded && !force)) return;
+
         this.referenceLoading = true;
-        this.documentsService.listDocuments().subscribe({
-            next: documents => this.documents.set((documents ?? []).filter(document => document.document_type === 'HARDCOPY' && !!document.hardcopy && ['Approved', 'Completed'].includes(document.status || ''))),
-            error: error => this.error.set(this.errorText(error))
-        });
-        this.documentsService.listLocations().subscribe({
-            next: locations => { this.locations.set((locations ?? []).filter(location => location.is_active !== false)); this.referenceLoading = false; },
-            error: error => { this.referenceLoading = false; this.error.set(this.errorText(error)); }
-        });
-        this.documentsService.listSequences().subscribe({
-            next: sequences => this.sequences.set(sequences ?? []),
-            error: error => this.error.set(this.errorText(error))
+        forkJoin({
+            documents: this.documentsService.listDocuments(),
+            locations: this.documentsService.listLocations(),
+            sequences: this.documentsService.listSequences()
+        }).subscribe({
+            next: ({ documents, locations, sequences }) => {
+                this.documents.set((documents ?? []).filter(document => document.document_type === 'HARDCOPY' && !!document.hardcopy && ['Approved', 'Completed'].includes(document.status || '')));
+                this.locations.set((locations ?? []).filter(location => location.is_active !== false));
+                this.sequences.set(sequences ?? []);
+                this.referenceLoaded = true;
+                this.referenceLoading = false;
+            },
+            error: error => {
+                this.referenceLoading = false;
+                this.error.set(this.errorText(error));
+            }
         });
     }
 
-    load() {
-        this.loading = true;
+    load(showLoading = this.transfers().length === 0) {
+        this.loading = showLoading;
         this.error.set('');
         const request = this.reviewerMode ? this.service.listPending() : this.service.listMine();
         request.subscribe({ next: items => { this.transfers.set(items ?? []); this.loading = false; }, error: error => { this.error.set(this.errorText(error)); this.loading = false; } });
@@ -170,9 +184,9 @@ export class HardcopyTransfersPage implements OnInit {
     closeAction() { this.actionModal = false; this.pendingTransfer = null; this.pendingAction = null; this.remarks = ''; }
     resetForm() { this.form = { document_id: '', destination_location_id: '', reason: '' }; this.transferDestinationId = ''; }
     canSubmitForm() { return !!this.form.document_id.trim() && !!this.form.destination_location_id.trim() && !!this.form.reason.trim(); }
-    documentOptions(): SearchableDropdownOption[] { return this.documents().map(document => ({ label: document.document_title, value: document.document_id })); }
-    locationOptions(): SearchableDropdownOption[] { return this.locations().map(location => ({ label: [location.location_code, location.location_name].filter(Boolean).join(' · '), value: location.location_id })); }
-    sequenceOptions(): SearchableDropdownOption[] { return this.sequences().map(sequence => ({ label: sequence.sequence_code, value: sequence.sequence_id })); }
+    documentOptions = computed<SearchableDropdownOption[]>(() => this.documents().map(document => ({ label: document.document_title, value: document.document_id })));
+    locationOptions = computed<SearchableDropdownOption[]>(() => this.locations().map(location => ({ label: [location.location_code, location.location_name].filter(Boolean).join(' · '), value: location.location_id })));
+    sequenceOptions = computed<SearchableDropdownOption[]>(() => this.sequences().map(sequence => ({ label: sequence.sequence_code, value: sequence.sequence_id })));
     get transferDestinationValue() { return this.transferDestinationId; }
     private transferDestinationId = '';
     selectDocument(value: SearchableDropdownValue) { this.form.document_id = value === null ? '' : String(value); }

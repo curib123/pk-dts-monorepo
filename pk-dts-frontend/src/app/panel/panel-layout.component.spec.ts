@@ -47,8 +47,8 @@ describe('PanelLayoutComponent', () => {
                 expect(notifications.list).toHaveBeenCalledTimes(1);
                 fixture.destroy();
                 done();
-            }, 220);
-        }, 50);
+            }, 1_500);
+        }, 100);
     });
     it('shows aggregate notification counts on My Work and Tasks dropdowns', () => {
         const auth = {
