@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { AlertModalComponent } from '@/app/shared/components/alert-modal/alert-modal.component';
@@ -137,7 +137,7 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
             </article>
         </section>
 
-        <app-document-detail-dialog [(visible)]="detailVisible" [document]="detail()" [revisions]="revisions()" [canAccessFiles]="canDownload()" />
+        <app-document-detail-dialog [(visible)]="detailVisible" [document]="detail()" [loading]="detailLoading()" [revisions]="revisions()" [canAccessFiles]="canDownload()" />
         <app-alert-modal [(visible)]="noticeVisible" [severity]="noticeSeverity()" [title]="noticeTitle()" [message]="noticeMessage()" />
     `,
     styles: [
@@ -153,7 +153,7 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
         `
     ]
 })
-export class DocumentDisposalPage implements OnInit {
+export class DocumentDisposalPage implements OnInit, OnDestroy {
     private documentsService = inject(DocumentsService);
     private auth = inject(AuthService);
     private alerts = inject(AlertDialogService);
@@ -164,12 +164,16 @@ export class DocumentDisposalPage implements OnInit {
     documents = signal<DocumentSummary[]>([]);
     detail = signal<DocumentDetail | null>(null);
     revisions = signal<RevisionSummary[]>([]);
+    detailLoading = signal(false);
     detailVisible = false;
+    private detailRequest?: Subscription;
     noticeVisible = false;
     noticeSeverity = signal<NoticeSeverity>('info');
     noticeTitle = signal('Notice');
     noticeMessage = signal('');
     loading = signal(true);
+
+    ngOnDestroy() { this.detailRequest?.unsubscribe(); }
 
     searchTerm = '';
     disposedByFilter = '';
@@ -234,14 +238,30 @@ export class DocumentDisposalPage implements OnInit {
     }
 
     openDetail(document: DocumentSummary) {
-        this.documentsService.getDocument(document.document_id).subscribe({
+        this.detailRequest?.unsubscribe();
+        this.detail.set(document);
+        this.revisions.set(document.softcopy?.revisions ?? []);
+        this.detailVisible = true;
+        this.detailLoading.set(true);
+
+        this.detailRequest = this.documentsService.getDocument(document.document_id).pipe(
+            finalize(() => this.detailLoading.set(false))
+        ).subscribe({
             next: (detail) => {
                 if (!detail) {
+                    this.detailVisible = false;
+                    this.detail.set(null);
+                    this.revisions.set([]);
                     return;
                 }
                 this.detail.set(detail);
                 this.revisions.set(detail.softcopy?.revisions ?? []);
-                this.detailVisible = true;
+            },
+            error: () => {
+                this.noticeSeverity.set('error');
+                this.noticeTitle.set('Details unavailable');
+                this.noticeMessage.set('The document summary is available, but the full document details could not be loaded.');
+                this.alerts.error(this.noticeTitle(), this.noticeMessage());
             }
         });
     }
