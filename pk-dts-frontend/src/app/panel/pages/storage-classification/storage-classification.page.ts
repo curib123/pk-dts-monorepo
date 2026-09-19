@@ -19,6 +19,7 @@ import { RecordCardComponent, RecordGridComponent } from '@/app/shared/component
 import { ResourceViewDialogComponent, ResourceViewDialogData } from '../roles-permissions/components/resource-view-dialog/resource-view-dialog.component';
 import { StorageResourceFormDialogComponent } from './components/storage-resource-form-dialog/storage-resource-form-dialog.component';
 import { StorageClassificationService } from './storage-classification.service';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaDetail,
     AreaSummary,
@@ -55,8 +56,8 @@ interface ResourceOption {
 @Component({
     selector: 'app-storage-classification-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading storage classifications" [columns]="6" />
         <section class="storage-page space-y-6" [style.display]="isLoading() ? 'none' : null">
             <div class="surface-card overflow-hidden legacy-workspace-header">
@@ -217,7 +218,7 @@ interface ResourceOption {
         />
 
         <app-alert-modal [(visible)]="noticeVisible" [severity]="notice()?.severity ?? 'info'" [title]="notice()?.title ?? 'Notice'" [message]="notice()?.message ?? ''" [details]="notice()?.details ?? ''" />
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             .legacy-workspace-header { display: none; }
