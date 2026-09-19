@@ -174,6 +174,24 @@ textarea {
     padding: 0 .7rem;
 }
 
+.read-only-value {
+    min-height: 2.55rem;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--app-border, #e2e8f0);
+    border-radius: .65rem;
+    background: var(--app-surface-muted, #f8fafc);
+    padding: .55rem .7rem;
+    color: var(--app-heading, #101828);
+    font-size: .72rem;
+    font-weight: 750;
+}
+
+.field-hint {
+    color: var(--app-text-muted, #667085);
+    font-size: .6rem;
+}
+
 .create-panel textarea {
     min-height: 4.4rem;
     padding: .65rem .7rem;

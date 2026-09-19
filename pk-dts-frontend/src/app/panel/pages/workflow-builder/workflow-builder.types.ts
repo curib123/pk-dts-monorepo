@@ -62,8 +62,24 @@ export interface WorkflowVersionSummary {
     _count?: { documents: number };
 }
 
+export interface WorkflowAssignmentReferences {
+    users: Array<{
+        user_id: string;
+        firstname: string;
+        lastname: string;
+        username: string;
+        position_title?: string | null;
+        role_name: string;
+    }>;
+    roles: Array<{
+        role_id: string;
+        role_name: string;
+    }>;
+}
+
 export interface WorkflowVersion extends WorkflowVersionSummary {
     graph: WorkflowGraph;
+    assignment_references?: WorkflowAssignmentReferences;
 }
 
 export interface WorkflowDefinition {

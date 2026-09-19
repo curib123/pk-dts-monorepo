@@ -118,6 +118,81 @@ describe("WorkflowDefinitionsService", () => {
     });
   });
 
+  it("returns lightweight labels for only the approvers referenced by a workflow version", async () => {
+    const assignedGraph = {
+      schema_version: 2,
+      start_node_key: "person",
+      nodes: [
+        { key: "person", label: "Person approval", type: "APPROVAL", assignment: { type: "USER", user_id: "77" } },
+        { key: "role", label: "Role approval", type: "APPROVAL", assignment: { type: "ROLE", role_id: "8" } },
+        { key: "released", label: "Released", type: "END" },
+      ],
+      edges: [
+        { key: "person-approved", from: "person", to: "role", outcome: "APPROVE" },
+        { key: "role-approved", from: "role", to: "released", outcome: "APPROVE" },
+      ],
+    };
+    const prisma: any = {
+      workflowVersion: {
+        findFirst: jest.fn().mockResolvedValue({
+          workflow_version_id: 12n,
+          workflow_definition_id: 4n,
+          version_number: 3,
+          status: WorkflowVersionStatus.PUBLISHED,
+          graph: assignedGraph,
+        }),
+      },
+      user: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            user_id: 77n,
+            firstname: "Ada",
+            lastname: "Approver",
+            username: "ada.approver",
+            position_title: "Plant Manager",
+            role: { role_name: "Plant Manager" },
+          },
+        ]),
+      },
+      role: {
+        findMany: jest.fn().mockResolvedValue([
+          { role_id: 8n, role_name: "Documentation Officer" },
+        ]),
+      },
+    };
+    const service = new WorkflowDefinitionsService(prisma);
+
+    await expect(service.getVersion("4", "12")).resolves.toMatchObject({
+      assignment_references: {
+        users: [
+          {
+            user_id: "77",
+            firstname: "Ada",
+            lastname: "Approver",
+            role_name: "Plant Manager",
+          },
+        ],
+        roles: [{ role_id: "8", role_name: "Documentation Officer" }],
+      },
+    });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { user_id: { in: [77n] } },
+      select: {
+        user_id: true,
+        firstname: true,
+        lastname: true,
+        username: true,
+        position_title: true,
+        role: { select: { role_name: true } },
+      },
+    });
+    expect(prisma.role.findMany).toHaveBeenCalledWith({
+      where: { role_id: { in: [8n] } },
+      select: { role_id: true, role_name: true },
+    });
+  });
+
   it('looks up only the current published system default for the request action', async () => {
     const findFirst = jest.fn().mockResolvedValue({ workflow_version_id: 3n });
     const service = new WorkflowDefinitionsService({ workflowVersion: { findFirst } } as any);

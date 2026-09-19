@@ -8,7 +8,7 @@ import { RolePermissionService } from '../roles-permissions/role-permission.serv
 import { UserAccountSummary } from '../user-account/user-account.types';
 import { UserAccountService } from '../user-account/user-account.service';
 import { WorkflowBuilderService } from './workflow-builder.service';
-import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersionSummary } from './workflow-builder.types';
+import { EditableWorkflowAssignmentType, WorkflowAssignmentReferences, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersionSummary } from './workflow-builder.types';
 
 @Component({
     selector: 'app-workflow-builder-page',
@@ -29,6 +29,7 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     selectedDefinition?: WorkflowDefinition;
     selectedVersion?: WorkflowVersionSummary;
     graph: WorkflowGraph = this.blankGraph();
+    assignmentReferences: WorkflowAssignmentReferences = { users: [], roles: [] };
     loading = true;
     versionLoading = false;
     versionLoadError = '';
@@ -150,6 +151,7 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.unsupportedLegacyAssignment = false;
         this.versionLoadError = '';
         this.graph = this.blankGraph();
+        this.assignmentReferences = { users: [], roles: [] };
         this.dirty = false;
         this.clearFeedback();
 
@@ -362,6 +364,38 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     }
 
     userLabel(user: UserAccountSummary) { return `${user.firstname} ${user.lastname} · ${user.role.role_name}`; }
+    assignmentTypeLabel(node: WorkflowNode) {
+        return node.assignment?.type === 'USER'
+            ? 'Specific person'
+            : node.assignment?.type === 'ROLE'
+                ? 'Role'
+                : node.assignment?.type === 'REQUESTER'
+                    ? 'Requester'
+                    : node.assignment?.type === 'REQUESTER_LEADER'
+                        ? "Requester's leader"
+                        : 'Legacy assignment';
+    }
+    assignedUserLabel(node: WorkflowNode) {
+        const userId = node.assignment?.user_id;
+        if (!userId) return 'No person selected';
+        const loaded = this.users.find((user) => user.user_id === userId);
+        if (loaded) return this.userLabel(loaded);
+        const reference = this.assignmentReferences.users.find((user) => user.user_id === userId);
+        return reference
+            ? `${reference.firstname} ${reference.lastname} · ${reference.role_name}`
+            : `User #${userId}`;
+    }
+    assignedRoleLabel(node: WorkflowNode) {
+        const roleId = node.assignment?.role_id;
+        if (!roleId) return 'No role selected';
+        return this.roles.find((role) => role.role_id === roleId)?.role_name
+            || this.assignmentReferences.roles.find((role) => role.role_id === roleId)?.role_name
+            || `Role #${roleId}`;
+    }
+    hasLoadedUser(userId?: string) { return !!userId && this.users.some((user) => user.user_id === userId); }
+    hasLoadedRole(roleId?: string) { return !!roleId && this.roles.some((role) => role.role_id === roleId); }
+    prepareUserOptions() { if (this.editable) this.ensureUsersLoaded(); }
+    prepareRoleOptions() { if (this.editable) this.ensureRolesLoaded(); }
     versionLabel(version: WorkflowVersionSummary) { return `Version ${version.version_number} · ${version.status}${version._count?.documents ? ` · ${version._count.documents} request(s)` : ''}`; }
     trackDefinition(_index: number, definition: WorkflowDefinition) { return definition.workflow_definition_id; }
     trackVersion(_index: number, version: WorkflowVersionSummary) { return version.workflow_version_id; }
@@ -384,40 +418,33 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.usersError = '';
         this.rolesError = '';
 
-        this.versionRequest = this.workflowsApi.getVersion(definitionId, versionId).pipe(
-            finalize(() => {
-                if (this.selectedDefinition?.workflow_definition_id === definitionId
-                    && this.selectedVersion?.workflow_version_id === versionId) {
-                    this.versionLoading = false;
-                }
-            })
-        ).subscribe({
+        this.versionRequest = this.workflowsApi.getVersion(definitionId, versionId).subscribe({
             next: (version) => {
                 if (this.selectedDefinition?.workflow_definition_id !== definitionId
                     || this.selectedVersion?.workflow_version_id !== versionId) return;
 
+                this.assignmentReferences = version.assignment_references ?? { users: [], roles: [] };
                 this.graph = this.prepareSequentialGraph(version.graph);
                 this.normalizeLegacyAssignments();
                 this.ensureReferenceDataForGraph();
+                this.versionLoading = false;
             },
             error: (error) => {
                 if (this.selectedDefinition?.workflow_definition_id !== definitionId
                     || this.selectedVersion?.workflow_version_id !== versionId) return;
                 this.versionLoadError = this.errorText(error);
+                this.versionLoading = false;
             }
         });
     }
 
     private ensureReferenceDataForGraph(force = false) {
-        if (!this.canConfigure || this.legacyComplex) return;
-        const needsUsers = this.approvalNodes.some((node) => node.assignment?.type === 'USER');
-        const needsRoles = this.approvalNodes.some((node) =>
-            node.assignment?.type === 'ROLE'
-            || (node.assignment?.type === 'PERMISSION'
-                && ['PLANT_MANAGER', 'DOCUMENT_CONTROLLER_ADMIN', 'HARDCOPY_APPROVAL'].includes(node.stage || ''))
+        if (!this.editable || this.legacyComplex) return;
+        const needsRolesForLegacy = this.approvalNodes.some((node) =>
+            node.assignment?.type === 'PERMISSION'
+            && ['PLANT_MANAGER', 'DOCUMENT_CONTROLLER_ADMIN', 'HARDCOPY_APPROVAL'].includes(node.stage || '')
         );
-        if (needsUsers) this.ensureUsersLoaded(force);
-        if (needsRoles) this.ensureRolesLoaded(force);
+        if (needsRolesForLegacy) this.ensureRolesLoaded(force);
     }
 
     private ensureUsersLoaded(force = false) {
@@ -425,16 +452,16 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.usersRequest?.unsubscribe();
         this.usersLoading = true;
         this.usersError = '';
-        this.usersRequest = this.usersApi.listUsers(1, 1000).pipe(
-            finalize(() => this.usersLoading = false)
-        ).subscribe({
+        this.usersRequest = this.usersApi.listUsers(1, 1000).subscribe({
             next: (response) => {
                 this.users = response.items || [];
                 this.usersLoaded = true;
+                this.usersLoading = false;
             },
             error: (error) => {
                 this.usersLoaded = false;
                 this.usersError = this.errorText(error);
+                this.usersLoading = false;
             }
         });
     }
@@ -444,17 +471,17 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.rolesRequest?.unsubscribe();
         this.rolesLoading = true;
         this.rolesError = '';
-        this.rolesRequest = this.accessApi.listRoles().pipe(
-            finalize(() => this.rolesLoading = false)
-        ).subscribe({
+        this.rolesRequest = this.accessApi.listRoles().subscribe({
             next: (roles) => {
                 this.roles = roles;
                 this.rolesLoaded = true;
+                this.rolesLoading = false;
                 this.normalizeLegacyAssignments();
             },
             error: (error) => {
                 this.rolesLoaded = false;
                 this.rolesError = this.errorText(error);
+                this.rolesLoading = false;
             }
         });
     }

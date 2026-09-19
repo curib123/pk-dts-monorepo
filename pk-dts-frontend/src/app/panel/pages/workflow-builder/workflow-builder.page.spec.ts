@@ -130,7 +130,7 @@ describe('WorkflowBuilderPage', () => {
         expect(element.textContent).toContain('Approve → next step');
     });
 
-    it('loads only roles when the selected graph contains a role assignment', () => {
+    it('shows the saved role immediately and loads the full role list only when editing it', () => {
         const page = fixture.componentInstance;
         const roleGraph = {
             ...graph,
@@ -146,12 +146,65 @@ describe('WorkflowBuilderPage', () => {
             workflow_definition_id: '1',
             version_number: 1,
             status: 'DRAFT',
-            graph: roleGraph
+            graph: roleGraph,
+            assignment_references: {
+                users: [],
+                roles: [{ role_id: '4', role_name: 'Plant Manager' }]
+            }
         });
-        versionRequest.complete();
 
-        expect(roles.listRoles).toHaveBeenCalledTimes(1);
+        expect(page.versionLoading).toBeFalse();
+        expect(page.assignedRoleLabel(page.approvalNodes[0])).toBe('Plant Manager');
+        expect(roles.listRoles).not.toHaveBeenCalled();
         expect(users.listUsers).not.toHaveBeenCalled();
+
+        page.prepareRoleOptions();
+        expect(roles.listRoles).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the selected user in a published version without a directory lookup and clears loading on data receipt', () => {
+        const page = fixture.componentInstance;
+        const publishedGraph = {
+            ...graph,
+            nodes: [
+                { key: 'leader', label: 'Plant Manager approval', type: 'APPROVAL', stage: 'CUSTOM', assignment: { type: 'USER', user_id: '77' } },
+                { key: 'approved', label: 'Approved', type: 'END' }
+            ]
+        };
+        page.definitions[0].versions[0].status = 'PUBLISHED';
+
+        page.selectDefinition(page.definitions[0]);
+        expect(page.versionLoading).toBeTrue();
+
+        versionRequest.next({
+            workflow_version_id: '2',
+            workflow_definition_id: '1',
+            version_number: 1,
+            status: 'PUBLISHED',
+            graph: publishedGraph,
+            assignment_references: {
+                users: [{
+                    user_id: '77',
+                    firstname: 'Ada',
+                    lastname: 'Approver',
+                    username: 'ada.approver',
+                    position_title: 'Plant Manager',
+                    role_name: 'Plant Manager'
+                }],
+                roles: []
+            }
+        });
+
+        expect(page.versionLoading).toBeFalse();
+        expect(users.listUsers).not.toHaveBeenCalled();
+        expect(roles.listRoles).not.toHaveBeenCalled();
+        expect(page.assignedUserLabel(page.approvalNodes[0])).toBe('Ada Approver · Plant Manager');
+
+        fixture.detectChanges();
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelector('.editor-loading')).toBeNull();
+        expect(element.textContent).toContain('Ada Approver · Plant Manager');
+        expect(element.textContent).not.toContain('Loading people');
     });
 
     it('loads people only when an editor changes a step to Specific person', () => {
