@@ -44,42 +44,6 @@ interface DeleteTarget {
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading roles and permissions" [columns]="5" />
         <section class="role-permission-page space-y-6" [style.display]="isLoading() ? 'none' : null">
-            <div class="surface-card overflow-hidden legacy-workspace-header">
-                <div class="hero-strip"></div>
-                <div class="p-6 sm:p-7">
-                    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                        <div class="space-y-3">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Role and Permission</div>
-                            <div>
-                                <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">Access control workspace</h1>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Inspect the five system roles and manage their permission assignments.</p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3">
-                        </div>
-                    </div>
-
-                    <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                        <div class="stat-card">
-                            <div class="stat-label">Roles</div>
-                            <div class="stat-value">{{ roles().length }}</div>
-                            <div class="stat-hint">{{ totalUsers() }} user{{ totalUsers() === 1 ? '' : 's' }} mapped to these roles</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Permissions</div>
-                            <div class="stat-value">{{ permissions().length }}</div>
-                            <div class="stat-hint">{{ rolePermissions().length }} active role-permission link{{ rolePermissions().length === 1 ? '' : 's' }}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Coverage</div>
-                            <div class="stat-value">{{ coveragePercent() }}%</div>
-                            <div class="stat-hint">Roles with at least one permission assigned</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div *ngIf="errorMessage()" class="surface-alert">
                 <div class="flex items-start gap-3">
                     <i class="pi pi-exclamation-triangle mt-1 text-red-500"></i>
