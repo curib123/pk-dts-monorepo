@@ -115,6 +115,10 @@ export class DocumentAccessRequestsPage implements OnInit {
     pendingDecision: PendingDecision | null = null;
     cancelVisible = false;
     pendingCancellation: DocumentAccessRequest | null = null;
+    private catalogLoaded = false;
+    private locationsLoaded = false;
+    private mineLoaded = false;
+    private pendingLoaded = false;
     canUseCatalog = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.catalog'));
     canViewOwn = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.view-own'));
     canCancelOwn = computed(() => this.mode !== 'reviewer' && this.auth.hasPermission('document-access-requests.cancel-own'));
@@ -130,13 +134,7 @@ export class DocumentAccessRequestsPage implements OnInit {
     pageHeading() { return this.mode === 'reviewer' ? 'Access Request Review' : this.mode === 'requester' ? 'My Access Requests' : 'Document Access Requests'; }
     pageDescription() { return this.mode === 'reviewer' ? 'Review access requests and grant approved document assignments using only the actions authorized for your account.' : this.mode === 'requester' ? 'Find controlled documents and track only the access requests submitted by your account.' : 'Search approved document records, request assignment, and review pending approvals when authorized.'; }
     loadAll() {
-        this.loading.set(true);
-        let remaining = 0;
-        const done = () => { remaining -= 1; if (remaining <= 0) this.loading.set(false); };
-        if (this.canUseCatalog()) { remaining += 2; this.loadCatalog(done); this.loadLocations(done); }
-        if (this.canViewOwn()) { remaining += 1; this.loadMine(done); }
-        if (this.canReview()) { remaining += 1; this.loadPending(done); }
-        if (!remaining) this.loading.set(false);
+        this.loadTab(this.activeTab(), true);
     }
     selectTab(tab: ViewTab) {
         if (tab === 'pending' && !this.canReview()) return;
@@ -144,15 +142,36 @@ export class DocumentAccessRequestsPage implements OnInit {
         if (tab === 'mine' && !this.canViewOwn()) return;
         this.activeTab.set(tab);
         this.errorMessage.set('');
+        this.loadTab(tab);
+    }
+    private loadTab(tab: ViewTab, force = false) {
+        let remaining = 0;
+        const done = () => {
+            remaining -= 1;
+            if (remaining <= 0) this.loading.set(false);
+        };
+
+        if (tab === 'catalog' && this.canUseCatalog()) {
+            if (force || !this.catalogLoaded) { remaining += 1; this.loadCatalog(done); }
+            if (force || !this.locationsLoaded) { remaining += 1; this.loadLocations(done); }
+        } else if (tab === 'mine' && this.canViewOwn() && (force || !this.mineLoaded)) {
+            remaining += 1;
+            this.loadMine(done);
+        } else if (tab === 'pending' && this.canReview() && (force || !this.pendingLoaded)) {
+            remaining += 1;
+            this.loadPending(done);
+        }
+
+        this.loading.set(remaining > 0);
     }
     searchCatalog() { this.catalogPage.set(1); this.loadCatalog(); }
     setDocumentType(type: string) { this.documentType = type; if (type === 'SOFTCOPY') this.locationId = ''; this.searchCatalog(); }
     setLocation(value: SearchableDropdownValue) { this.locationId = value === null ? '' : String(value); if (this.locationId) this.documentType = 'HARDCOPY'; this.searchCatalog(); }
     changeCatalogPage(change: number) { this.catalogPage.update((page) => page + change); this.loadCatalog(); }
-    loadCatalog(done?: () => void) { this.api.catalog(this.search, this.documentType, this.locationId, this.catalogPage(), 12).subscribe({ next: (result) => { this.catalog.set(result.items ?? []); this.catalogPages.set(result.meta?.total_pages ?? 1); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
-    loadLocations(done?: () => void) { this.api.locations().subscribe({ next: (locations) => { this.locationOptions.set((locations ?? []).map((location) => ({ value: location.location_id, label: location.location_name }))); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
-    loadMine(done?: () => void) { this.api.mine().subscribe({ next: (result) => { this.myRequests.set(result.items ?? []); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
-    loadPending(done?: () => void) { this.api.pending().subscribe({ next: (result) => { this.pendingRequests.set(result.items ?? []); done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
+    loadCatalog(done?: () => void) { this.api.catalog(this.search, this.documentType, this.locationId, this.catalogPage(), 12).subscribe({ next: (result) => { this.catalog.set(result.items ?? []); this.catalogPages.set(result.meta?.total_pages ?? 1); this.catalogLoaded = true; done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
+    loadLocations(done?: () => void) { this.api.locations().subscribe({ next: (locations) => { this.locationOptions.set((locations ?? []).map((location) => ({ value: location.location_id, label: location.location_name }))); this.locationsLoaded = true; done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
+    loadMine(done?: () => void) { this.api.mine().subscribe({ next: (result) => { this.myRequests.set(result.items ?? []); this.mineLoaded = true; done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
+    loadPending(done?: () => void) { this.api.pending().subscribe({ next: (result) => { this.pendingRequests.set(result.items ?? []); this.pendingLoaded = true; done?.(); }, error: (error) => { this.errorMessage.set(this.message(error)); done?.(); } }); }
     hasRequestReason(document: AccessRequestDocument) { return !!this.requestReasons[document.document_id]?.trim(); }
     requestAccess(document: AccessRequestDocument) { const reason = this.requestReasons[document.document_id]?.trim() ?? ''; if (!reason) { this.errorMessage.set('A reason is required before requesting document access.'); return; } this.actingId.set(document.document_id); this.errorMessage.set(''); this.api.create(document.document_id, reason).subscribe({ next: (request) => { document.access_request = request; this.catalog.update((items) => [...items]); this.requestReasons[document.document_id] = ''; this.actingId.set(''); this.alerts.success('Access requested', `${document.document_title} was sent for approval.`); if (this.canViewOwn()) this.loadMine(); }, error: (error) => { this.actingId.set(''); this.errorMessage.set(this.message(error)); } }); }
     openCancellation(request: DocumentAccessRequest) { this.pendingCancellation = request; this.cancelVisible = true; }
