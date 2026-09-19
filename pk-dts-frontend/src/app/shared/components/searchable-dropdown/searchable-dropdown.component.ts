@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 
@@ -16,6 +16,7 @@ export const SEARCHABLE_DROPDOWN_THRESHOLD = 10;
     selector: 'app-searchable-dropdown',
     standalone: true,
     imports: [CommonModule, FormsModule, SelectModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="searchable-dropdown-shell" [class.searchable-dropdown-invalid]="invalid">
             <p-select
