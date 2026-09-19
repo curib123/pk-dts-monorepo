@@ -1118,9 +1118,19 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     font-size: 1.5rem;
                 }
 
+                .form-section-fields.three-columns,
+                .form-section-fields.two-columns,
                 .form-grid,
                 .status-result dl {
                     grid-template-columns: 1fr;
+                }
+
+                .form-field.full-row {
+                    grid-column: 1;
+                }
+
+                .form-section-heading {
+                    align-items: flex-start;
                 }
 
                 .wide {
@@ -1377,6 +1387,166 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 background: transparent;
             }
 
+            .registration-form {
+                display: grid;
+                gap: 1rem;
+                min-width: 0;
+            }
+
+            .form-section {
+                display: grid;
+                gap: .7rem;
+                min-width: 0;
+                padding-top: .85rem;
+                border-top: 1px solid #e8edf3;
+            }
+
+            .form-section:first-child {
+                padding-top: 0;
+                border-top: 0;
+            }
+
+            .form-section-heading {
+                display: flex;
+                align-items: center;
+                gap: .65rem;
+                min-width: 0;
+            }
+
+            .form-section-heading > i {
+                width: 1.9rem;
+                height: 1.9rem;
+                display: grid;
+                place-items: center;
+                flex: 0 0 auto;
+                border-radius: .5rem;
+                color: var(--registration-brand-deep);
+                background: var(--registration-brand-soft);
+                font-size: .82rem;
+            }
+
+            .form-section-copy {
+                display: grid;
+                gap: .08rem;
+                min-width: 0;
+            }
+
+            .form-section-copy strong {
+                display: block;
+                color: #26354a;
+                font-size: .8rem;
+                line-height: 1.25;
+            }
+
+            .form-section-copy small {
+                display: block;
+                color: #8793a5;
+                font-size: .66rem;
+                line-height: 1.3;
+            }
+
+            .form-section-fields {
+                display: grid;
+                gap: .7rem .85rem;
+                min-width: 0;
+            }
+
+            .form-section-fields.three-columns {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .form-section-fields.two-columns {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .form-field {
+                display: grid;
+                align-content: start;
+                gap: .32rem;
+                min-width: 0;
+            }
+
+            .form-field.full-row {
+                grid-column: 1 / -1;
+            }
+
+            .field-label {
+                display: flex !important;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: .35rem;
+                min-height: 1rem;
+                color: #334155 !important;
+                font-size: .72rem !important;
+                font-weight: 800 !important;
+                line-height: 1.3;
+            }
+
+            .optional-tag {
+                display: inline-flex;
+                align-items: center;
+                width: max-content;
+                border-radius: 999px;
+                background: #f1f5f9;
+                padding: .08rem .38rem;
+                color: #8490a1 !important;
+                font-size: .58rem !important;
+                font-weight: 750 !important;
+                line-height: 1.35;
+            }
+
+            .form-field .field-note,
+            .form-field .field-error {
+                display: block;
+                margin: 0;
+            }
+
+            .form-actions {
+                display: grid;
+                gap: .65rem;
+                padding-top: .1rem;
+            }
+
+            .form-actions .error {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+            }
+
+            .form-actions .primary {
+                width: 100%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: .5rem;
+            }
+
+            .register-topbar .mode-tabs {
+                gap: .45rem;
+            }
+
+            .register-topbar .mode-tabs button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: .45rem;
+                border: 1px solid transparent;
+                white-space: nowrap;
+            }
+
+            .register-topbar .mode-tabs button:not(.active) {
+                border-color: #e3e8ef;
+                background: #fff;
+            }
+
+            .registration-content > footer {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: .35rem;
+            }
+
             .form-grid {
                 display: grid;
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1611,6 +1781,24 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     padding: .38rem .6rem;
                 }
 
+                .registration-form {
+                    gap: .65rem;
+                }
+
+                .form-section {
+                    gap: .45rem;
+                    padding-top: .55rem;
+                }
+
+                .form-section-fields {
+                    gap: .5rem .7rem;
+                }
+
+                .form-section-heading > i {
+                    width: 1.65rem;
+                    height: 1.65rem;
+                }
+
                 .form-grid {
                     gap: .5rem .7rem;
                 }
@@ -1644,6 +1832,10 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             @media (max-width: 1100px) {
                 .registration-panel {
                     width: min(920px, calc(100vw - 2rem));
+                }
+
+                .form-section-fields.three-columns {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
 
                 .form-grid {
