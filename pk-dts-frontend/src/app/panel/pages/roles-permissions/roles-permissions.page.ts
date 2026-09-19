@@ -44,7 +44,7 @@ interface DeleteTarget {
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading roles and permissions" [columns]="5" />
         <section class="role-permission-page space-y-6" [style.display]="isLoading() ? 'none' : null">
-            <div class="surface-card overflow-hidden">
+            <div class="surface-card overflow-hidden legacy-workspace-header">
                 <div class="hero-strip"></div>
                 <div class="p-6 sm:p-7">
                     <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
