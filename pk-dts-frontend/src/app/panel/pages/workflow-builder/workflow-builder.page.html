@@ -166,7 +166,7 @@
 
                         <label class="step-label">
                             <span>Step name <em>Required</em></span>
-                            <input [(ngModel)]="node.label" (input)="markDirty()" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
+                            <input [value]="node.label" (input)="setNodeLabel(node, $any($event.target).value)" [disabled]="!editable" maxlength="150" placeholder="Example: Plant Manager approval" />
                             <small>This label appears in the request approval history.</small>
                         </label>
 
@@ -194,7 +194,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'USER'">
                                     <span>Person</span>
-                                    <select [(ngModel)]="node.assignment!.user_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [value]="node.assignment?.user_id || ''" (change)="setAssignmentUser(node, $any($event.target).value)" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a person</option>
                                         <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
                                     </select>
@@ -202,7 +202,7 @@
 
                                 <label *ngIf="node.assignment?.type === 'ROLE'">
                                     <span>Role</span>
-                                    <select [(ngModel)]="node.assignment!.role_id" (change)="markDirty()" [disabled]="!editable || referenceDataLoading">
+                                    <select [value]="node.assignment?.role_id || ''" (change)="setAssignmentRole(node, $any($event.target).value)" [disabled]="!editable || referenceDataLoading">
                                         <option value="">Select a role</option>
                                         <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
                                     </select>
