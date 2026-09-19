@@ -4,12 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '@/app/auth/auth.service';
 import { StorageClassificationService } from '../storage-classification/storage-classification.service';
 import { SoftcopyCategorySummary } from '../storage-classification/storage-classification.types';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceSearchComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-softcopy-folders-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule],
+    imports: [WorkspaceToolbarComponent, WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
     template: `<app-workspace-page>
         <section class="folders-page">
             <header class="folders-heading">
@@ -40,10 +40,10 @@ import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/wor
             </section>
 
             <section class="folder-card">
-                <div class="folder-toolbar">
-                    <label class="search"><i class="pi pi-search"></i><input [(ngModel)]="search" placeholder="Search folders" /><button *ngIf="search" type="button" (click)="search=''" aria-label="Clear search"><i class="pi pi-times"></i></button></label>
-                    <button type="button" class="refresh" (click)="load()" [disabled]="loading()"><i class="pi pi-refresh" [class.pi-spin]="loading()"></i> Refresh</button>
-                </div>
+                <app-workspace-toolbar>
+                    <app-workspace-search [(value)]="search" placeholder="Search folders" ariaLabel="Search folders" />
+                    <button workspace-actions type="button" class="refresh" (click)="load()" [disabled]="loading()"><i class="pi pi-refresh" [class.pi-spin]="loading()"></i> Refresh</button>
+                </app-workspace-toolbar>
 
                 <div *ngIf="loading()" class="loading"><i class="pi pi-spin pi-spinner"></i> Loading folders…</div>
 
