@@ -87,7 +87,7 @@ const PANEL_BACKGROUND_POLL_DELAY_MS = 250;
                         <button pButton type="button" class="topbar-menu" severity="secondary" text icon="pi pi-bars" (click)="toggleSidebar()"></button>
                         <div class="topbar-page-icon"><i class="pi pi-file"></i></div>
                         <div class="topbar-page-copy">
-                            <span class="topbar-eyebrow">Document workspace</span>
+                            <span class="topbar-eyebrow">{{ pageEyebrow() }}</span>
                             <div class="topbar-title">{{ pageTitle() }}</div>
                             <div class="topbar-subtitle">{{ pageSubtitle() }}</div>
                         </div>
@@ -151,6 +151,7 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     primaryNavItems: PanelNavItem[] = [PANEL_NAVIGATION.dashboard];
     navCategories: PanelNavCategory[] = PANEL_NAVIGATION.categories;
 
+    pageEyebrow = signal('Document workspace');
     pageTitle = signal('Dashboard');
     pageSubtitle = signal('Your document-tracking overview will live here.');
     logoutConfirmVisible = false;
@@ -280,6 +281,7 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
         const snapshot = this.getDeepestSnapshot();
         const data = snapshot?.data ?? {};
 
+        this.pageEyebrow.set((data['eyebrow'] as string) ?? 'Document workspace');
         this.pageTitle.set((data['title'] as string) ?? this.titleFromUrl(this.router.url));
         this.pageSubtitle.set((data['subtitle'] as string) ?? 'Manage this section from the panel.');
     }
