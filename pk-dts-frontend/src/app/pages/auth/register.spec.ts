@@ -18,7 +18,7 @@ describe('Register', () => {
         }).compileComponents();
     });
 
-    it('uses the login composition while rendering the registration form', () => {
+    it('renders the wide registration workspace without the separate staff-workspace label', () => {
         const fixture = TestBed.createComponent(Register);
         fixture.detectChanges();
 
@@ -28,6 +28,10 @@ describe('Register', () => {
         expect(element.querySelector('.login-panel')).not.toBeNull();
         expect(element.querySelector('.registration-intro')).toBeNull();
         expect(element.querySelector('.login-card')).not.toBeNull();
+        expect(element.querySelector('.register-topbar')).not.toBeNull();
+        expect(element.querySelector('.portal-label')).toBeNull();
+        expect(element.querySelector('.login-logo img')).not.toBeNull();
         expect(element.querySelector('form.form-grid')).not.toBeNull();
+        expect(element.querySelectorAll('form.form-grid label').length).toBe(9);
     });
 });
