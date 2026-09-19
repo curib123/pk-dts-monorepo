@@ -1278,6 +1278,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     softcopyCategories = signal<SoftcopyCategoryReference[]>([]);
 
     isLoading = signal(true);
+    referenceLoading = signal(false);
     isSaving = signal(false);
     errorMessage = signal('');
     referenceWarningMessage = signal('');
