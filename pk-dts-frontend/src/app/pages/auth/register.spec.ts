@@ -26,40 +26,43 @@ describe('Register', () => {
         }).compileComponents();
     });
 
-    it('renders the wide registration workspace without the separate staff-workspace label', () => {
+    it('renders a normal wide registration form with clear sections', () => {
         const fixture = TestBed.createComponent(Register);
         fixture.detectChanges();
 
         const element = fixture.nativeElement as HTMLElement;
+        const card = element.querySelector('.registration-card') as HTMLElement;
+        const tabs = element.querySelector('.registration-tabs') as HTMLElement;
+        const form = element.querySelector('form.registration-form') as HTMLElement;
 
-        expect(element.querySelector('.login-shell')).not.toBeNull();
-        expect(element.querySelector('.login-panel')).not.toBeNull();
-        expect(element.querySelector('.registration-intro')).toBeNull();
-        expect(element.querySelector('.login-card')).not.toBeNull();
-        const content = element.querySelector('.registration-content') as HTMLElement;
-        expect(content).not.toBeNull();
+        expect(element.querySelector('.registration-page')).not.toBeNull();
+        expect(card).not.toBeNull();
+        expect(tabs).not.toBeNull();
+        expect(form).not.toBeNull();
+        expect(card.firstElementChild).toBe(tabs);
+
+        expect(element.querySelector('.login-shell')).toBeNull();
+        expect(element.querySelector('.login-panel')).toBeNull();
+        expect(element.querySelector('.login-card')).toBeNull();
+        expect(element.querySelector('.registration-content')).toBeNull();
         expect(element.querySelector('.register-header')).toBeNull();
-        expect(element.querySelector('.register-heading')).toBeNull();
-        expect(element.querySelector('.portal-label')).toBeNull();
         expect(element.querySelector('.login-logo')).toBeNull();
-        expect(element.querySelector('.dts-brand-logo')).toBeNull();
+
         expect(element.textContent).not.toContain('Request an account');
         expect(element.textContent).not.toContain('Complete the form below for account review and access approval.');
-        expect(content.firstElementChild?.classList.contains('registration-tabs')).toBeTrue();
 
-        const form = element.querySelector('form.registration-form') as HTMLElement;
-        expect(form).not.toBeNull();
-        expect(form.firstElementChild?.querySelector('.form-section-copy strong')?.textContent?.trim()).toBe('Personal details');
-        expect(form.firstElementChild?.querySelector('.form-section-copy small')?.textContent?.trim()).toBe('Tell us who you are');
-
-        const sections = element.querySelectorAll('.form-section');
+        const sections = form.querySelectorAll('.form-section');
         expect(sections.length).toBe(3);
-        expect(element.querySelectorAll('.form-field').length).toBe(9);
-        expect(element.querySelectorAll('.form-section-heading').length).toBe(3);
-        expect(element.querySelectorAll('.form-section-copy strong').length).toBe(3);
-        expect(element.querySelectorAll('.form-section-copy small').length).toBe(3);
-        expect(element.querySelectorAll('.optional-tag').length).toBe(3);
-        expect(element.querySelector('.form-actions .primary')).not.toBeNull();
+        expect(sections[0].querySelector('h2')?.textContent?.trim()).toBe('Personal details');
+        expect(sections[0].querySelector('p')?.textContent?.trim()).toBe('Tell us who you are');
+        expect(sections[1].querySelector('h2')?.textContent?.trim()).toBe('Work and access');
+        expect(sections[2].querySelector('h2')?.textContent?.trim()).toBe('Secure your account');
+
+        expect(form.querySelectorAll('.field-grid-3').length).toBe(2);
+        expect(form.querySelectorAll('.field-grid-2').length).toBe(1);
+        expect(form.querySelectorAll('.form-field').length).toBe(9);
+        expect(form.querySelector('.full-row textarea')).not.toBeNull();
+        expect(form.querySelector('.form-actions .primary-button')).not.toBeNull();
     });
 
     it('rejects whitespace-only required names and overlong passwords before submitting', () => {
@@ -163,6 +166,6 @@ describe('Register', () => {
 
         expect(page.rolesLoadError()).toContain('could not be loaded');
         expect((element.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBeTrue();
-        expect(element.querySelector('.role-load-error button')).not.toBeNull();
+        expect(element.querySelector('.role-error button')).not.toBeNull();
     });
 });
