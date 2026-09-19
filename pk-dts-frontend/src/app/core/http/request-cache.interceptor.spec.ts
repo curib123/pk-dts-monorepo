@@ -1,4 +1,4 @@
-import { HttpRequest } from '@angular/common/http';
+import { HttpEvent, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { requestCacheInterceptor } from './request-cache.interceptor';
 
@@ -7,7 +7,7 @@ describe('requestCacheInterceptor', () => {
         let cancelled = false;
         const request = new HttpRequest('GET', '/api/v1/documents/99991');
         const next = () =>
-            new Observable(() => {
+            new Observable<HttpEvent<unknown>>(() => {
                 return () => {
                     cancelled = true;
                 };
