@@ -217,7 +217,7 @@
 }
 
 /* Remove duplicated route-level hero chrome; the panel topbar is the sole page header. */
-.workspace-page-shell :is(.legacy-workspace-header, .access-hero, .page-heading) {
+.workspace-page-shell .legacy-workspace-header {
     display: none !important;
 }
 
