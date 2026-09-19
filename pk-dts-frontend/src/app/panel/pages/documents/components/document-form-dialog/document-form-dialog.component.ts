@@ -37,7 +37,11 @@ import { PublishedWorkflowOption } from '../../../workflow-builder/workflow-buil
         >
             <div *ngIf="isHardcopy()" class="hardcopy-form-note">
                 <i class="pi pi-shield"></i>
-                <span><strong>Direct hardcopy approval</strong><small>This record uses only hardcopy details and goes directly to the configured Plant Manager, Document Controller Officer, or Admin approver. It does not use the Softcopy Noted By stage.</small></span>
+                <span>
+                    <strong>{{ mode === 'update' ? 'Approval required for hardcopy changes' : 'Direct hardcopy approval' }}</strong>
+                    <small *ngIf="mode === 'create'">This record uses only hardcopy details and goes directly to the configured Plant Manager, Document Controller Officer, or Admin approver. It does not use the Softcopy Noted By stage.</small>
+                    <small *ngIf="mode === 'update'">Saving these changes creates a separate edit request using the same published Hardcopy approval workflow. The approved/completed record stays unchanged until the final approver accepts the request.</small>
+                </span>
             </div>
             <div class="grid gap-4 pt-2 md:grid-cols-2">
                 <div class="field" *ngIf="!isHardcopy()">

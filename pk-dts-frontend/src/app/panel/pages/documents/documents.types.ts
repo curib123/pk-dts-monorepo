@@ -271,6 +271,8 @@ export interface DocumentSummary {
     } | null;
     workflow_version_id?: string | null;
     workflow_steps?: DocumentWorkflowStepSummary[];
+    source_document_id?: string | null;
+    source_document_updated_at?: string | null;
 }
 
 export interface DocumentDetail extends DocumentSummary {}

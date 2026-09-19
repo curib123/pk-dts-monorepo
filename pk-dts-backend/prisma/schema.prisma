@@ -327,6 +327,11 @@ model Document {
   approver_configuration    DocumentApproverConfiguration?
   transfer_requests         HardcopyTransferRequest[]
 
+  source_document_id         BigInt?
+  source_document            Document?   @relation("DocumentEditRequests", fields: [source_document_id], references: [document_id], onDelete: Cascade)
+  edit_requests              Document[]  @relation("DocumentEditRequests")
+  source_document_updated_at DateTime?
+
   hardcopy HardcopyDocument?
   softcopy SoftcopyDocument?
 
@@ -334,6 +339,7 @@ model Document {
   updated_at DateTime @updatedAt
 
   @@index([status, created_at])
+  @@index([source_document_id, status])
   @@map("documents")
 }
 
