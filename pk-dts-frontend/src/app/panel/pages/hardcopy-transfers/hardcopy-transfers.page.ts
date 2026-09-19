@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -184,9 +184,9 @@ export class HardcopyTransfersPage implements OnInit {
     closeAction() { this.actionModal = false; this.pendingTransfer = null; this.pendingAction = null; this.remarks = ''; }
     resetForm() { this.form = { document_id: '', destination_location_id: '', reason: '' }; this.transferDestinationId = ''; }
     canSubmitForm() { return !!this.form.document_id.trim() && !!this.form.destination_location_id.trim() && !!this.form.reason.trim(); }
-    documentOptions(): SearchableDropdownOption[] { return this.documents().map(document => ({ label: document.document_title, value: document.document_id })); }
-    locationOptions(): SearchableDropdownOption[] { return this.locations().map(location => ({ label: [location.location_code, location.location_name].filter(Boolean).join(' · '), value: location.location_id })); }
-    sequenceOptions(): SearchableDropdownOption[] { return this.sequences().map(sequence => ({ label: sequence.sequence_code, value: sequence.sequence_id })); }
+    documentOptions = computed<SearchableDropdownOption[]>(() => this.documents().map(document => ({ label: document.document_title, value: document.document_id })));
+    locationOptions = computed<SearchableDropdownOption[]>(() => this.locations().map(location => ({ label: [location.location_code, location.location_name].filter(Boolean).join(' · '), value: location.location_id })));
+    sequenceOptions = computed<SearchableDropdownOption[]>(() => this.sequences().map(sequence => ({ label: sequence.sequence_code, value: sequence.sequence_id })));
     get transferDestinationValue() { return this.transferDestinationId; }
     private transferDestinationId = '';
     selectDocument(value: SearchableDropdownValue) { this.form.document_id = value === null ? '' : String(value); }
