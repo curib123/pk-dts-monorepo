@@ -115,10 +115,12 @@ describe('WorkflowBuilderPage', () => {
             graph
         });
         versionRequest.complete();
-        fixture.detectChanges();
 
         expect(page.versionLoading).toBeFalse();
+        expect(page.referenceDataLoading).toBeFalse();
         expect(page.approvalNodes.length).toBe(1);
         expect(page.approvalNodes[0].label).toBe('Leader approval');
+        expect(page.users).toEqual([]);
+        expect(page.roles).toEqual([]);
     });
 });
