@@ -67,12 +67,12 @@ import {
                         <td>{{ item.updated_at || item.created_at | date:'medium' }}</td><td>{{ returnActor(item) }}</td><td>{{ returnReason(item) }}</td>
                         <td>
                             <div class="row-actions">
-                                <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
+                                <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" (onClick)="openRequestDetails(item)" />
                                 <ng-container *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
-                                    <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openEditDialog(item)" />
-                                    <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openRevisionDialog(item)" />
-                                    <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving() || viewLoading()" (onClick)="openSubmitConfirmation(item)" />
-                                    <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openDeleteConfirmation(item)" />
+                                    <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openEditDialog(item)" />
+                                    <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openRevisionDialog(item)" />
+                                    <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving()" (onClick)="openSubmitConfirmation(item)" />
+                                    <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openDeleteConfirmation(item)" />
                                 </ng-container>
                             </div>
                         </td>
@@ -90,12 +90,12 @@ import {
                             <div class="wide"><span>Return reason</span><strong>{{ returnReason(item) }}</strong></div>
                         </div>
                         <div record-actions>
-                            <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoading() && viewingDocumentId === item.document_id" [disabled]="viewLoading() && viewingDocumentId !== item.document_id" (onClick)="openRequestDetails(item)" />
+                            <p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" (onClick)="openRequestDetails(item)" />
                             <ng-container *ngIf="(item.status === 'Draft' || item.status === 'ForRevision' || item.status === 'ReturnedForCorrection') && (canEditRequest() || canSubmitRequest())">
-                                <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openEditDialog(item)" />
-                                <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openRevisionDialog(item)" />
-                                <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving() || viewLoading()" (onClick)="openSubmitConfirmation(item)" />
-                                <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving() || viewLoading()" (onClick)="openDeleteConfirmation(item)" />
+                                <p-button *ngIf="canEditRequest()" label="Edit" icon="pi pi-pencil" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openEditDialog(item)" />
+                                <p-button *ngIf="canUploadRequestedRevision(item)" label="Upload revision" icon="pi pi-upload" size="small" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openRevisionDialog(item)" />
+                                <p-button *ngIf="canSubmitRequest()" [label]="item.status === 'Draft' ? 'Submit' : 'Resubmit'" size="small" [disabled]="submitting || saving()" (onClick)="openSubmitConfirmation(item)" />
+                                <p-button *ngIf="canDeleteDraftRequest(item)" label="Remove draft" icon="pi pi-trash" size="small" severity="danger" [outlined]="true" [disabled]="submitting || saving()" (onClick)="openDeleteConfirmation(item)" />
                             </ng-container>
                         </div>
                     </app-record-card>
