@@ -115,6 +115,18 @@ export class DocumentsService {
         );
     }
 
+    requestHardcopyEdit(id: string, payload: DocumentFormValue) {
+        return this.http
+            .post<ApiResponse<DocumentDetail>>(
+                `${DOCUMENTS_API}/${id}/edit-request`,
+                this.cleanDocumentPayload({ ...payload, action: 'SUBMIT', action_requested: 'REVISE' }, '', true)
+            )
+            .pipe(
+                map((response) => this.unwrap(response)),
+                tap(() => this.invalidateListCache())
+            );
+    }
+
     updateDocument(id: string, payload: DocumentFormValue) {
         return this.http.patch<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}`, this.cleanDocumentPayload(payload, '', true)).pipe(
             map((response) => this.unwrap(response)),
