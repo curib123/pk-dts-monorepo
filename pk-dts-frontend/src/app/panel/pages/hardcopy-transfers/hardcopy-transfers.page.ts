@@ -11,20 +11,26 @@ import { DocumentsService } from '../documents/documents.service';
 import { DocumentSummary, LocationReference, SequenceReference } from '../documents/documents.types';
 import { HardcopyTransfersService } from './hardcopy-transfers.service';
 import { CreateHardcopyTransferPayload, HardcopyTransfer, TransferWorkflowStep } from './hardcopy-transfers.types';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type TransferAction = 'approve' | 'return' | 'reject' | 'complete';
 
 @Component({
     selector: 'app-hardcopy-transfers-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, DialogModule, SearchableDropdownComponent],
+    imports: [WorkspacePageComponent, WorkspaceToolbarComponent, CommonModule, FormsModule, ButtonModule, DialogModule, SearchableDropdownComponent],
     template: `<app-workspace-page>
         <section class="transfer-page">
-            <header class="page-heading">
-                <div><span class="eyebrow">HARDcopy CONTROL</span><h1>{{ reviewerMode ? 'Hardcopy Transfer Review' : 'Hardcopy Transfer Requests' }}</h1><p>{{ reviewerMode ? 'Review only the transfer stage assigned to your account.' : 'Request and confirm the physical movement of approved hardcopy documents.' }}</p></div>
-                <button *ngIf="!reviewerMode" type="button" class="primary" (click)="formOpen = !formOpen"><i class="pi pi-plus"></i> New transfer request</button>
-            </header>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-arrows-h"></i></span>
+                    <div>
+                        <strong>{{ reviewerMode ? 'Assigned review queue' : 'Physical transfer requests' }}</strong>
+                        <span>{{ reviewerMode ? 'Only workflow stages assigned to you are shown.' : 'Move approved hardcopy records through the controlled transfer workflow.' }}</span>
+                    </div>
+                </div>
+                <button workspace-actions *ngIf="!reviewerMode" type="button" class="primary" (click)="formOpen = !formOpen"><i class="pi pi-plus"></i> New transfer request</button>
+            </app-workspace-toolbar>
 
             <div *ngIf="error()" class="feedback error"><i class="pi pi-exclamation-triangle"></i>{{ error() }}</div>
             <div *ngIf="message()" class="feedback success"><i class="pi pi-check-circle"></i>{{ message() }}</div>
