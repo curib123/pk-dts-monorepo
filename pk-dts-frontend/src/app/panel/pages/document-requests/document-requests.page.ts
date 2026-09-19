@@ -175,6 +175,7 @@ export class DocumentRequestsPage implements OnInit, OnDestroy {
     errorMessage = signal('');
     viewingDocumentId = '';
     detailDialogVisible = false;
+    private referencesLoaded = false;
     private detailRequest?: Subscription;
     createDialogVisible = false;
     submitConfirmationVisible = false;
@@ -198,8 +199,8 @@ export class DocumentRequestsPage implements OnInit, OnDestroy {
     ngOnInit() { this.viewMode = this.systemSettings.defaultDataView(); this.rows = this.systemSettings.defaultRowsPerPage(); this.load(); }
     ngOnDestroy() { this.detailRequest?.unsubscribe(); }
 
-    load() {
-        this.loading.set(true);
+    load(showLoading = this.requests().length === 0) {
+        this.loading.set(showLoading);
         this.errorMessage.set('');
         this.documents.listMyRequestsPage(this.page, this.rows).pipe(
             finalize(() => this.loading.set(false))
@@ -221,7 +222,7 @@ export class DocumentRequestsPage implements OnInit, OnDestroy {
         if (this.loading()) return;
         this.page = (event.page ?? 0) + 1;
         this.rows = event.rows ?? this.rows;
-        this.load();
+        this.load(true);
     }
 
     openRequestDetails(item: DocumentSummary) {
@@ -537,7 +538,9 @@ export class DocumentRequestsPage implements OnInit, OnDestroy {
     requestUpdatedAt(item: DocumentSummary) { return (item as DocumentSummary & { updated_at?: string }).updated_at || item.created_at; }
     private dateInputValue(value?: string | null) { return value ? value.slice(0, 10) : ''; }
 
-    private loadReferences() {
+    private loadReferences(force = false) {
+        if (this.referenceLoading() || (this.referencesLoaded && !force)) return;
+
         this.referenceLoading.set(true);
         forkJoin({
             areas: this.documents.listAreas().pipe(catchError(() => of([] as AreaReference[]))),
@@ -555,6 +558,7 @@ export class DocumentRequestsPage implements OnInit, OnDestroy {
             this.locations.set(locations);
             this.sequences.set(sequences);
             this.softcopyCategories.set(softcopyCategories.filter((category) => category.is_active !== false));
+            this.referencesLoaded = true;
         });
     }
 
