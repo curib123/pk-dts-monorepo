@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-workspace-page',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-page-shell" [class.workspace-page-shell--compact]="compact">
             <ng-content></ng-content>
@@ -20,6 +21,7 @@ export class WorkspacePageComponent {
     selector: 'app-workspace-toolbar',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-toolbar-shell" [class.workspace-toolbar-shell--stacked]="stacked">
             <div class="workspace-toolbar-main"><ng-content select=":not([workspace-actions])"></ng-content></div>
@@ -35,6 +37,7 @@ export class WorkspaceToolbarComponent {
     selector: 'app-workspace-tabs',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <nav class="workspace-tabs-shell" [attr.aria-label]="ariaLabel">
             <ng-content></ng-content>
@@ -49,6 +52,7 @@ export class WorkspaceTabsComponent {
     selector: 'app-workspace-section',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="workspace-section-shell" [class.workspace-section-shell--flush]="flush">
             <header *ngIf="title || description || eyebrow" class="workspace-section-heading">
@@ -82,7 +86,7 @@ export class WorkspaceSectionComponent {
                 <input
                     type="search"
                     [ngModel]="value"
-                    (ngModelChange)="valueChange.emit($event)"
+                    (ngModelChange)="handleValueChange($event)"
                     (keyup.enter)="search.emit(value)"
                     [placeholder]="placeholder"
                     [disabled]="disabled"
@@ -107,7 +111,13 @@ export class WorkspaceSearchComponent {
     @Output() valueChange = new EventEmitter<string>();
     @Output() search = new EventEmitter<string>();
 
+    handleValueChange(value: string) {
+        this.value = value;
+        this.valueChange.emit(value);
+    }
+
     clear() {
+        this.value = '';
         this.valueChange.emit('');
         this.search.emit('');
     }
