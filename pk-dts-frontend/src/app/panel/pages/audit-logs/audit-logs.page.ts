@@ -189,7 +189,7 @@ interface AuditListResponse {
             </section>
 
             <footer class="pagination" *ngIf="page() > 1 || hasNext()">
-                <span>Page {{ page }}</span>
+                <span>Page {{ page() }}</span>
                 <div>
                     <button type="button" [disabled]="page() === 1 || loading()" (click)="move(-1)">
                         <i class="pi pi-angle-left"></i> Previous
