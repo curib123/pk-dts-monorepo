@@ -2,11 +2,8 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ChartData, ChartOptions } from 'chart.js';
-import { ChartModule } from 'primeng/chart';
 import { AuthService } from '@/app/auth/auth.service';
 import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer/loading-shimmer.component';
-import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
 import { DashboardService } from './dashboard.service';
 import { DashboardRecentDocumentItem, DashboardSummary } from './dashboard.types';
 
@@ -15,7 +12,7 @@ interface QuickAction { label: string; route: string; icon: string; permissions:
 @Component({
     selector: 'app-dashboard-page',
     standalone: true,
-    imports: [CommonModule, RouterLink, ChartModule, LoadingShimmerComponent],
+    imports: [CommonModule, RouterLink, LoadingShimmerComponent],
     template: `
         <app-loading-shimmer *ngIf="loading()" label="Loading dashboard" [metrics]="3" [columns]="3" />
         <main class="dashboard" *ngIf="!loading()">
@@ -51,7 +48,7 @@ interface QuickAction { label: string; route: string; icon: string; permissions:
                     <header><div><span class="kicker">Overview</span><h2>Document library</h2></div><small>Updated {{ shortDate(summary()?.generated_at) }}</small></header>
                     <div class="overview-body">
                         <div class="chart-wrap">
-                            <p-chart type="doughnut" [data]="statusChartData()" [options]="doughnutOptions()" />
+                            <div class="status-ring" [style.background]="statusRingBackground()" aria-hidden="true"></div>
                             <div class="chart-center"><strong>{{ approvalRate() }}%</strong><span>approved</span></div>
                         </div>
                         <div class="breakdown">
@@ -81,21 +78,28 @@ interface QuickAction { label: string; route: string; icon: string; permissions:
         .summary{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:.8rem}.summary article{display:grid;align-content:center;min-height:6.6rem;border:1px solid #e5e7eb;border-radius:1rem;background:#fff;padding:1rem 1.1rem;box-shadow:0 7px 22px rgba(15,23,42,.045)}.summary .summary-primary{grid-template-columns:auto 1fr;align-items:center;gap:.85rem;background:var(--dts-accent-deep,var(--brand-primary-deep));color:#fff}.summary-icon{display:grid;place-items:center;width:3rem;height:3rem;border-radius:.9rem;background:rgba(255,255,255,.14);font-size:1.2rem}.summary small{color:#64748b;font-size:.7rem;font-weight:750}.summary-primary small{color:rgba(255,255,255,.72)}.summary strong{display:block;margin:.22rem 0;color:#0f172a;font-size:1.75rem;letter-spacing:-.04em}.summary-primary strong{color:#fff;font-size:2rem}.summary article>span:last-child{display:flex;align-items:center;gap:.3rem;color:#94a3b8;font-size:.65rem}.summary .positive{color:#15803d!important}
         .shortcuts{display:flex;flex-wrap:wrap;gap:.5rem}.shortcuts a{display:flex;align-items:center;gap:.45rem;border:1px solid #e5e7eb;border-radius:999px;background:#fff;padding:.5rem .75rem;color:#475569;font-size:.7rem;font-weight:800;text-decoration:none;transition:.16s ease}.shortcuts a i{color:var(--dts-accent-deep,var(--brand-primary-deep))}.shortcuts a:hover{border-color:var(--dts-accent);background:var(--dts-accent-soft);color:var(--dts-accent-deep);transform:translateY(-1px)}
         .content-grid{display:grid;grid-template-columns:minmax(19rem,.85fr) minmax(0,1.35fr);gap:1rem}.panel{border:1px solid #e5e7eb;border-radius:1.05rem;background:#fff;padding:1.05rem;box-shadow:0 8px 24px rgba(15,23,42,.04)}.panel>header{display:flex;align-items:center;justify-content:space-between;gap:1rem}.kicker{color:var(--dts-accent-deep,var(--brand-primary-deep));font-size:.62rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.panel h2{margin:.15rem 0 0;color:#111827;font-size:1rem}.panel header>small{color:#94a3b8;font-size:.65rem}.panel header>a{color:var(--dts-accent-deep,var(--brand-primary-deep));font-size:.7rem;font-weight:850;text-decoration:none}
-        .overview-body{display:grid;grid-template-columns:11rem 1fr;align-items:center;gap:1rem;margin-top:1rem}.chart-wrap{position:relative;height:10.5rem}.chart-wrap ::ng-deep .p-chart{display:block;height:100%}.chart-wrap ::ng-deep canvas{max-height:100%}.chart-center{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}.chart-center strong{color:#0f172a;font-size:1.35rem}.chart-center span{color:#94a3b8;font-size:.58rem}.breakdown{display:grid;gap:.8rem}.breakdown>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.25rem .5rem}.breakdown span{display:flex;align-items:center;gap:.4rem;color:#64748b;font-size:.7rem}.breakdown span i{width:.5rem;height:.5rem;border-radius:50%;background:#f59e0b}.breakdown span .softcopy{background:#2563eb}.breakdown span .disposed{background:var(--brand-primary)}.breakdown strong{color:#172033;font-size:.8rem}.breakdown>div>div{grid-column:1/-1;height:.28rem;overflow:hidden;border-radius:99px;background:#f1f5f9}.breakdown>div>div i{display:block;height:100%;border-radius:inherit;background:#f59e0b}.breakdown>div:nth-child(2)>div i{background:#2563eb}
+        .overview-body{display:grid;grid-template-columns:11rem 1fr;align-items:center;gap:1rem;margin-top:1rem}.chart-wrap{position:relative;display:grid;place-items:center;height:10.5rem}.status-ring{position:absolute;width:min(9.5rem,92%);aspect-ratio:1;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(148,163,184,.12)}.status-ring::after{content:'';position:absolute;inset:24%;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(148,163,184,.08)}.chart-center{position:absolute;inset:0;z-index:1;display:grid;place-content:center;text-align:center;pointer-events:none}.chart-center strong{color:#0f172a;font-size:1.35rem}.chart-center span{color:#94a3b8;font-size:.58rem}.breakdown{display:grid;gap:.8rem}.breakdown>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.25rem .5rem}.breakdown span{display:flex;align-items:center;gap:.4rem;color:#64748b;font-size:.7rem}.breakdown span i{width:.5rem;height:.5rem;border-radius:50%;background:#f59e0b}.breakdown span .softcopy{background:#2563eb}.breakdown span .disposed{background:var(--brand-primary)}.breakdown strong{color:#172033;font-size:.8rem}.breakdown>div>div{grid-column:1/-1;height:.28rem;overflow:hidden;border-radius:99px;background:#f1f5f9}.breakdown>div>div i{display:block;height:100%;border-radius:inherit;background:#f59e0b}.breakdown>div:nth-child(2)>div i{background:#2563eb}
         .document-list{display:grid;margin-top:.65rem}.document-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.7rem;border-top:1px solid #f1f5f9;border-radius:.65rem;padding:.65rem .4rem;color:inherit;text-decoration:none}.document-row:hover{background:#f8fafc}.doc-icon{display:grid;place-items:center;width:2.15rem;height:2.15rem;border-radius:.65rem;background:#fef3c7;color:#92400e}.doc-icon.softcopy{background:#dbeafe;color:#1d4ed8}.doc-copy{min-width:0}.doc-copy strong,.doc-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.doc-copy strong{color:#172033;font-size:.75rem}.doc-copy small{margin-top:.15rem;color:#94a3b8;font-size:.65rem}.doc-meta{display:grid;justify-items:end;gap:.18rem}.doc-meta em{border-radius:999px;background:#f1f5f9;padding:.22rem .4rem;color:#475569;font-size:.58rem;font-style:normal;font-weight:800}.doc-meta time{color:#94a3b8;font-size:.6rem}.empty{display:grid;place-items:center;gap:.4rem;padding:2.5rem;color:#94a3b8;font-size:.72rem}.empty i{font-size:1.4rem}
         :host-context(.app-dark) .dashboard{color:#e5e7eb}:host-context(.app-dark) .welcome h1,:host-context(.app-dark) .summary strong,:host-context(.app-dark) .panel h2,:host-context(.app-dark) .chart-center strong,:host-context(.app-dark) .breakdown strong,:host-context(.app-dark) .doc-copy strong{color:#f5f5f5}:host-context(.app-dark) .summary article,:host-context(.app-dark) .panel,:host-context(.app-dark) .shortcuts a{border-color:#353535;background:#202020;box-shadow:none}:host-context(.app-dark) .summary .summary-primary{background:color-mix(in srgb,var(--dts-accent-deep) 48%,#101010)}:host-context(.app-dark) .summary small,:host-context(.app-dark) .breakdown span,:host-context(.app-dark) .welcome>div:first-child>span{color:#a3a3a3}:host-context(.app-dark) .shortcuts a{color:#d4d4d4}:host-context(.app-dark) .shortcuts a:hover,:host-context(.app-dark) .document-row:hover{background:#292929}:host-context(.app-dark) .document-row{border-color:#303030}:host-context(.app-dark) .doc-meta em,:host-context(.app-dark) .breakdown>div>div{background:#2f2f2f;color:#a3a3a3}:host-context(.app-dark) .error{background:#331818;color:var(--brand-border)}
-        :host-context(.app-dark) .welcome{background:linear-gradient(120deg,#202020,color-mix(in srgb,var(--dts-accent-deep) 16%,#202020))}
+        :host-context(.app-dark) .welcome{background:linear-gradient(120deg,#202020,color-mix(in srgb,var(--dts-accent-deep) 16%,#202020))}:host-context(.app-dark) .status-ring::after{background:#202020}
         @media(max-width:1000px){.content-grid{grid-template-columns:1fr}.summary{grid-template-columns:1.2fr 1fr 1fr}}@media(max-width:680px){.welcome{align-items:flex-start}.welcome-icon{width:3rem;height:3rem}.welcome p{max-width:25rem}.summary{grid-template-columns:1fr 1fr}.summary-primary{grid-column:1/-1}.overview-body{grid-template-columns:1fr}.chart-wrap{height:11rem}.breakdown{grid-template-columns:repeat(3,1fr)}.breakdown>div>div{display:none}}@media(max-width:430px){.welcome{padding:1rem}.welcome-icon{display:none}.summary{grid-template-columns:1fr}.summary-primary{grid-column:auto}.breakdown{grid-template-columns:1fr}.document-row{grid-template-columns:auto minmax(0,1fr)}.doc-meta{grid-column:2;justify-items:start}}
     `]
 })
 export class DashboardPage implements OnInit {
-    private auth=inject(AuthService); private dashboardService=inject(DashboardService); private systemSettings=inject(SystemSettingsService);
+    private auth=inject(AuthService); private dashboardService=inject(DashboardService);
     summary=signal<DashboardSummary|null>(null); loading=signal(true); errorMessage=signal('');
     counters=computed(()=>this.summary()?.counters??null); recentDocuments=computed(()=>this.summary()?.recent_documents?.slice(0,5)??[]);
     canViewDocuments=computed(()=>this.auth.hasAnyPermission('documents.view','document-requests.view'));
     quickActions=computed(()=>this.actions.filter(action=>this.auth.hasAnyPermission(...action.permissions)));
-    statusChartData=computed<ChartData<'doughnut'>>(()=>({labels:['Approved','In workflow','Disposed'],datasets:[{data:[this.counters()?.approved_documents??0,this.otherDocumentCount(),this.counters()?.disposed_documents??0],backgroundColor:['#16a34a','#f59e0b','var(--brand-primary)'],borderWidth:0,hoverOffset:3}]}));
-    doughnutOptions=computed<ChartOptions<'doughnut'>>(()=>({responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{displayColors:false,backgroundColor:this.systemSettings.settings().colorMode==='dark'?'#262626':'#111827'}}}));
+    statusRingBackground(){
+        const counters=this.counters();
+        const total=Math.max(0,counters?.documents??0);
+        if(!total)return 'conic-gradient(#e5e7eb 0 100%)';
+        const approved=Math.max(0,Math.min(100,((counters?.approved_documents??0)/total)*100));
+        const workflow=Math.max(0,Math.min(100-approved,(this.otherDocumentCount()/total)*100));
+        const workflowEnd=approved+workflow;
+        return `conic-gradient(#16a34a 0 ${approved}%, #f59e0b ${approved}% ${workflowEnd}%, var(--brand-primary) ${workflowEnd}% 100%)`;
+    }
     private actions:QuickAction[]=[
         {label:'Documents',route:'/panel/documents',icon:'pi pi-file',permissions:['documents.view']},
         {label:'My requests',route:'/panel/document-requests',icon:'pi pi-send',permissions:['document-requests.view-own']},
