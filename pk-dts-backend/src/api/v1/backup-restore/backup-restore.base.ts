@@ -62,6 +62,11 @@ interface BackupPackage {
 
 @Injectable()
 export class BackupRestoreService {
+  private readonly backupListCache = new Map<
+    string,
+    { size: number; mtimeMs: number; item: BackupListItem }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -70,38 +75,47 @@ export class BackupRestoreService {
   async listBackups(): Promise<BackupListItem[]> {
     const backupRoot = await this.ensureBackupRoot();
     const files = await this.listBackupFileNames(backupRoot);
+    const activeFiles = new Set(files);
+
+    for (const cachedFile of this.backupListCache.keys()) {
+      if (!activeFiles.has(cachedFile)) {
+        this.backupListCache.delete(cachedFile);
+      }
+    }
 
     const items = await Promise.all(
       files.map(async (fileName) => {
         const filePath = join(backupRoot, fileName);
         const fileStat = await stat(filePath);
+        const cached = this.backupListCache.get(fileName);
+
+        if (
+          cached &&
+          cached.size === fileStat.size &&
+          cached.mtimeMs === fileStat.mtimeMs
+        ) {
+          return cached.item;
+        }
+
         const backupPackage = await this.readBackupPackage(filePath);
         const snapshot = backupPackage.snapshot;
-        const recordCount =
-          snapshot.summary.permissions +
-          snapshot.summary.roles +
-          snapshot.summary.role_permissions +
-          snapshot.summary.areas +
-          snapshot.summary.specifics +
-          snapshot.summary.locations +
-          snapshot.summary.sequences +
-          snapshot.summary.system_sequence_states +
-          snapshot.summary.asset_numbers +
-          snapshot.summary.users +
-          snapshot.summary.documents +
-          snapshot.summary.hardcopies +
-          snapshot.summary.softcopies +
-          snapshot.summary.revisions;
-
-        return {
+        const item = {
           backup_id: this.backupIdFromFileName(fileName),
           file_name: fileName,
           created_at: snapshot.created_at,
           created_by: snapshot.created_by,
           size_bytes: fileStat.size,
-          record_count: recordCount,
+          record_count: this.snapshotRecordCount(snapshot),
           schema_version: snapshot.schema_version,
         } satisfies BackupListItem;
+
+        this.backupListCache.set(fileName, {
+          size: fileStat.size,
+          mtimeMs: fileStat.mtimeMs,
+          item,
+        });
+
+        return item;
       }),
     );
 
