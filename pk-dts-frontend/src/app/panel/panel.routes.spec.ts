@@ -17,4 +17,13 @@ describe('panel routes', () => {
 
         expect(approvalRoute?.data?.['allowAssignedWorkflowTask']).toBeTrue();
     });
+    it('labels backup and audit pages as system administration workspaces', () => {
+        for (const path of ['backup-restore', 'audit-logs']) {
+            const route = panelRoutes[0].children?.find((item) => item.path === path);
+
+            expect(route?.data?.['eyebrow']).toBe('System administration');
+            expect(route?.data?.['icon']).toMatch(/^pi pi-/);
+        }
+    });
+
 });

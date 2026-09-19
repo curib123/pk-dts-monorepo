@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { AlertModalComponent } from '@/app/shared/components/alert-modal/alert-modal.component';
 import { ConfirmationDialogComponent } from '@/app/shared/components/confirmation-dialog/confirmation-dialog.component';
-import { LoadingShimmerComponent } from '@/app/shared/components/loading-shimmer/loading-shimmer.component';
 import { TableShellComponent } from '@/app/shared/components/table-shell/table-shell.component';
 import { DataViewMode, DataViewSwitchComponent } from '@/app/shared/components/data-view-switch/data-view-switch.component';
 import { RecordCardComponent, RecordGridComponent } from '@/app/shared/components/record-grid/record-grid.component';
@@ -27,19 +26,18 @@ interface NoticeState {
 @Component({
     selector: 'app-backup-restore-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent],
     template: `
-        <app-loading-shimmer *ngIf="loading()" label="Loading backups and activity" [columns]="5" />
-        <section class="backup-page space-y-6" [style.display]="loading() ? 'none' : null">
+        <section class="backup-page">
             <div class="backup-toolbar">
                 <nav class="backup-tabs" aria-label="Backup and recovery sections">
-                    <button type="button" [class.active]="activeTab() === 'backups'" (click)="activeTab.set('backups')"><i class="pi pi-database"></i> Backups <span>{{ backups().length }}</span></button>
-                    <button *ngIf="canRestoreBackup()" type="button" [class.active]="activeTab() === 'restore'" (click)="activeTab.set('restore')"><i class="pi pi-refresh"></i> Restore</button>
-                    <button *ngIf="canViewLogs()" type="button" [class.active]="activeTab() === 'activity'" (click)="activeTab.set('activity')"><i class="pi pi-history"></i> Activity</button>
-                    <button *ngIf="canReset()" type="button" class="danger-tab" [class.active]="activeTab() === 'reset'" (click)="activeTab.set('reset')"><i class="pi pi-exclamation-triangle"></i> Reset</button>
+                    <button type="button" [class.active]="activeTab() === 'backups'" (click)="selectTab('backups')"><i class="pi pi-database"></i> Backups <span>{{ backups().length }}</span></button>
+                    <button *ngIf="canRestoreBackup()" type="button" [class.active]="activeTab() === 'restore'" (click)="selectTab('restore')"><i class="pi pi-refresh"></i> Restore</button>
+                    <button *ngIf="canViewLogs()" type="button" [class.active]="activeTab() === 'activity'" (click)="selectTab('activity')"><i class="pi pi-history"></i> Activity</button>
+                    <button *ngIf="canReset()" type="button" class="danger-tab" [class.active]="activeTab() === 'reset'" (click)="selectTab('reset')"><i class="pi pi-exclamation-triangle"></i> Reset</button>
                 </nav>
                 <div class="backup-actions">
-                    <p-button title="Refresh" severity="secondary" icon="pi pi-refresh" [rounded]="true" [outlined]="true" (onClick)="loadData()" />
+                    <p-button title="Refresh" severity="secondary" icon="pi pi-refresh" [rounded]="true" [outlined]="true" (onClick)="refreshActiveTab()" />
                     <p-button *ngIf="canCreateBackup()" label="Back Up Now" icon="pi pi-plus" [loading]="saving()" (onClick)="createBackup()" />
                 </div>
             </div>
@@ -108,9 +106,14 @@ interface NoticeState {
                     <div class="text-sm text-slate-500">{{ backups().length ? 'Select an action for each backup below.' : 'No backups have been created yet.' }}</div>
                 </div>
 
-                <app-data-view-switch [(mode)]="backupViewMode" title="Backup results" />
+                <div *ngIf="loading()" class="inline-loading" role="status">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <div><strong>Loading backups</strong><span>Reading available backup metadata…</span></div>
+                </div>
 
-                <app-table-shell *ngIf="backupViewMode === 'list'" class="mt-5" minWidth="62rem">
+                <app-data-view-switch *ngIf="!loading()" [(mode)]="backupViewMode" title="Backup results" />
+
+                <app-table-shell *ngIf="!loading() && backupViewMode === 'list'" class="mt-5" minWidth="62rem">
                         <thead>
                             <tr>
                                 <th class="px-4 py-3 font-bold">Backup</th>
@@ -149,7 +152,7 @@ interface NoticeState {
                         </tbody>
                 </app-table-shell>
 
-                <app-record-grid *ngIf="backupViewMode === 'grid'" [empty]="!backups().length && !loading()" emptyTitle="No backups available" emptyMessage="Create the first snapshot to start the recovery history." emptyIcon="pi pi-database">
+                <app-record-grid *ngIf="!loading() && backupViewMode === 'grid'" [empty]="!backups().length && !loading()" emptyTitle="No backups available" emptyMessage="Create the first snapshot to start the recovery history." emptyIcon="pi pi-database">
                     <app-record-card *ngFor="let backup of backups(); trackBy: trackBackup" icon="pi pi-database" eyebrow="System backup" [title]="backup.file_name" [subtitle]="'Created by ' + (backup.created_by || 'system')">
                         <div record-badges><span>Schema v{{ backup.schema_version }}</span></div>
                         <div record-details>
@@ -173,9 +176,15 @@ interface NoticeState {
                     </div>
                 </div>
 
-                <app-data-view-switch [(mode)]="logViewMode" title="Activity log results" />
+                <div *ngIf="logsLoading()" class="inline-loading" role="status">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <div><strong>Loading activity</strong><span>Fetching backup actions only when this tab is opened…</span></div>
+                </div>
+                <div *ngIf="logsError() && !logsLoading()" class="surface-alert compact-alert">{{ logsError() }}</div>
 
-                <app-table-shell *ngIf="logViewMode === 'list'" class="mt-5" minWidth="54rem">
+                <app-data-view-switch *ngIf="!logsLoading()" [(mode)]="logViewMode" title="Activity log results" />
+
+                <app-table-shell *ngIf="!logsLoading() && logViewMode === 'list'" class="mt-5" minWidth="54rem">
                         <thead>
                             <tr>
                                 <th class="px-4 py-3 font-bold">Time</th>
@@ -203,7 +212,7 @@ interface NoticeState {
                         </tbody>
                 </app-table-shell>
 
-                <app-record-grid *ngIf="logViewMode === 'grid'" [empty]="!logs().length && !loading()" emptyTitle="No backup activity" emptyMessage="No backup activity has been recorded yet." emptyIcon="pi pi-history">
+                <app-record-grid *ngIf="!logsLoading() && logViewMode === 'grid'" [empty]="!logs().length && !loading()" emptyTitle="No backup activity" emptyMessage="No backup activity has been recorded yet." emptyIcon="pi pi-history">
                     <app-record-card *ngFor="let log of logs(); trackBy: trackLog" icon="pi pi-history" eyebrow="Backup activity" [title]="log.file_name" [subtitle]="formatDate(log.timestamp)">
                         <div record-badges><span>{{ log.action }}</span></div>
                         <div record-details>
@@ -238,6 +247,8 @@ interface NoticeState {
             }
 
             .backup-page {
+                display: grid;
+                gap: 1rem;
                 color: #0f172a;
             }
 
@@ -247,10 +258,10 @@ interface NoticeState {
                 justify-content: space-between;
                 gap: 1rem;
                 border: 1px solid #e2e8f0;
-                border-radius: 1.15rem;
+                border-radius: 0.9rem;
                 background: #fff;
                 padding: 0.45rem;
-                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+                box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
             }
             .backup-tabs,
             .backup-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
@@ -281,17 +292,33 @@ interface NoticeState {
 
             .surface-card {
                 border: 1px solid rgba(148, 163, 184, 0.18);
-                border-radius: 1.75rem;
-                background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
-                box-shadow:
-                    0 24px 64px rgba(15, 23, 42, 0.08),
-                    0 2px 8px rgba(15, 23, 42, 0.04);
+                border-radius: 1rem;
+                background: #fff;
+                box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
             }
 
             .hero-strip {
                 height: 0.5rem;
                 background: linear-gradient(90deg, var(--brand-primary-deep) 0%, #0f172a 50%, var(--brand-primary) 100%);
             }
+
+            .inline-loading {
+                min-height: 6rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+                border: 1px dashed #cbd5e1;
+                border-radius: 0.9rem;
+                background: #f8fafc;
+                color: #475569;
+                text-align: left;
+            }
+            .inline-loading > i { color: var(--brand-primary-deep); font-size: 1.1rem; }
+            .inline-loading div { display: grid; gap: 0.15rem; }
+            .inline-loading strong { color: #0f172a; font-size: 0.82rem; }
+            .inline-loading span { color: #64748b; font-size: 0.72rem; }
+            .compact-alert { padding: 0.75rem 0.9rem; font-size: 0.78rem; }
 
             .surface-alert {
                 border: 1px solid rgba(252, 165, 165, 0.6);
@@ -435,8 +462,11 @@ export class BackupRestorePage implements OnInit {
     backups = signal<BackupListItem[]>([]);
     logs = signal<BackupLogItem[]>([]);
     loading = signal(true);
+    logsLoading = signal(false);
+    logsLoaded = signal(false);
     saving = signal(false);
     errorMessage = signal('');
+    logsError = signal('');
     notice = signal<NoticeState | null>(null);
     noticeVisible = false;
     confirmVisible = false;
@@ -538,15 +568,46 @@ export class BackupRestorePage implements OnInit {
                 this.loading.set(false);
             }
         });
+    }
 
-        if (this.canViewLogs()) {
-            this.backupRestoreService.listLogs().subscribe({
-                next: (logs) => this.logs.set(logs ?? []),
-                error: () => this.logs.set([])
-            });
-        } else {
-            this.logs.set([]);
+    selectTab(tab: 'backups' | 'restore' | 'activity' | 'reset') {
+        this.activeTab.set(tab);
+        if (tab === 'activity' && this.canViewLogs() && !this.logsLoaded() && !this.logsLoading()) {
+            this.loadLogs();
         }
+    }
+
+    refreshActiveTab() {
+        if (this.activeTab() === 'activity' && this.canViewLogs()) {
+            this.loadLogs(true);
+            return;
+        }
+        this.loadData();
+    }
+
+    private loadLogs(force = false) {
+        if (!this.canViewLogs() || (this.logsLoaded() && !force)) {
+            return;
+        }
+
+        this.logsLoading.set(true);
+        this.logsError.set('');
+        this.backupRestoreService.listLogs().subscribe({
+            next: (logs) => {
+                this.logs.set(logs ?? []);
+                this.logsLoaded.set(true);
+                this.logsLoading.set(false);
+            },
+            error: (error: unknown) => {
+                this.logs.set([]);
+                this.logsError.set(this.extractErrorMessage(error));
+                this.logsLoading.set(false);
+            }
+        });
+    }
+
+    private invalidateLogs() {
+        this.logsLoaded.set(false);
     }
 
     createBackup() {
@@ -555,6 +616,7 @@ export class BackupRestorePage implements OnInit {
             next: () => {
                 this.saving.set(false);
                 this.showNotice('success', 'Backup created', 'The new snapshot is ready and added to the list.');
+                this.invalidateLogs();
                 this.loadData();
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to create backup')
@@ -649,6 +711,7 @@ export class BackupRestorePage implements OnInit {
                     this.restoreFile = null;
                     this.restoreFileName = '';
                 }
+                this.invalidateLogs();
                 this.loadData();
             },
             error: (error: unknown) =>

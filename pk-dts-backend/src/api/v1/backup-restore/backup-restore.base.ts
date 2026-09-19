@@ -31,6 +31,7 @@ import {
 import { FactoryResetScope } from "./dto/factory-reset.dto";
 
 const BACKUP_LOG_FILE = "backup-activity.jsonl";
+const BACKUP_LIST_INDEX_FILE = ".backup-list-index.json";
 const BACKUP_FILE_PREFIX = "backup-";
 const LEGACY_BACKUP_FILE_EXTENSION = ".json";
 const BACKUP_FILE_EXTENSION = ".zip";
@@ -62,6 +63,12 @@ interface BackupPackage {
 
 @Injectable()
 export class BackupRestoreService {
+  private readonly backupListCache = new Map<
+    string,
+    { size: number; mtimeMs: number; item: BackupListItem }
+  >();
+  private backupListIndexLoaded = false;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -69,41 +76,59 @@ export class BackupRestoreService {
 
   async listBackups(): Promise<BackupListItem[]> {
     const backupRoot = await this.ensureBackupRoot();
+    await this.hydrateBackupListCache(backupRoot);
+
     const files = await this.listBackupFileNames(backupRoot);
+    const activeFiles = new Set(files);
+    let cacheChanged = false;
+
+    for (const cachedFile of this.backupListCache.keys()) {
+      if (!activeFiles.has(cachedFile)) {
+        this.backupListCache.delete(cachedFile);
+        cacheChanged = true;
+      }
+    }
 
     const items = await Promise.all(
       files.map(async (fileName) => {
         const filePath = join(backupRoot, fileName);
         const fileStat = await stat(filePath);
+        const cached = this.backupListCache.get(fileName);
+
+        if (
+          cached &&
+          cached.size === fileStat.size &&
+          cached.mtimeMs === fileStat.mtimeMs
+        ) {
+          return cached.item;
+        }
+
         const backupPackage = await this.readBackupPackage(filePath);
         const snapshot = backupPackage.snapshot;
-        const recordCount =
-          snapshot.summary.permissions +
-          snapshot.summary.roles +
-          snapshot.summary.role_permissions +
-          snapshot.summary.areas +
-          snapshot.summary.specifics +
-          snapshot.summary.locations +
-          snapshot.summary.sequences +
-          snapshot.summary.system_sequence_states +
-          snapshot.summary.asset_numbers +
-          snapshot.summary.users +
-          snapshot.summary.documents +
-          snapshot.summary.hardcopies +
-          snapshot.summary.softcopies +
-          snapshot.summary.revisions;
-
-        return {
+        const item = {
           backup_id: this.backupIdFromFileName(fileName),
           file_name: fileName,
           created_at: snapshot.created_at,
           created_by: snapshot.created_by,
           size_bytes: fileStat.size,
-          record_count: recordCount,
+          record_count: this.snapshotRecordCount(snapshot),
           schema_version: snapshot.schema_version,
         } satisfies BackupListItem;
+
+        this.backupListCache.set(fileName, {
+          size: fileStat.size,
+          mtimeMs: fileStat.mtimeMs,
+          item,
+        });
+        cacheChanged = true;
+
+        return item;
       }),
     );
+
+    if (cacheChanged) {
+      await this.persistBackupListCache(backupRoot).catch(() => undefined);
+    }
 
     return items.sort(
       (left, right) =>
@@ -1024,6 +1049,47 @@ export class BackupRestoreService {
     const backupRoot = this.getBackupRoot();
     await mkdir(backupRoot, { recursive: true });
     return backupRoot;
+  }
+
+  private async hydrateBackupListCache(backupRoot: string) {
+    if (this.backupListIndexLoaded) {
+      return;
+    }
+
+    this.backupListIndexLoaded = true;
+    const indexPath = join(backupRoot, BACKUP_LIST_INDEX_FILE);
+
+    try {
+      const raw = await readFile(indexPath, "utf-8");
+      const entries = JSON.parse(raw) as Record<
+        string,
+        { size: number; mtimeMs: number; item: BackupListItem }
+      >;
+
+      for (const [fileName, entry] of Object.entries(entries ?? {})) {
+        if (
+          entry &&
+          Number.isFinite(entry.size) &&
+          Number.isFinite(entry.mtimeMs) &&
+          entry.item?.file_name === fileName
+        ) {
+          this.backupListCache.set(fileName, entry);
+        }
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        this.backupListCache.clear();
+      }
+    }
+  }
+
+  private async persistBackupListCache(backupRoot: string) {
+    const index = Object.fromEntries(this.backupListCache.entries());
+    await writeFile(
+      join(backupRoot, BACKUP_LIST_INDEX_FILE),
+      JSON.stringify(index),
+      "utf-8",
+    );
   }
 
   private async listBackupFileNames(backupRoot: string) {

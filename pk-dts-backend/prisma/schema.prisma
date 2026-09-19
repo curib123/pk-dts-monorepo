@@ -91,6 +91,7 @@ model AuditLog {
   user_agent       String?  @db.VarChar(500)
   created_at       DateTime @default(now())
 
+  @@index([created_at])
   @@index([user_id, created_at])
   @@index([module, created_at])
   @@index([entity_id, created_at])
