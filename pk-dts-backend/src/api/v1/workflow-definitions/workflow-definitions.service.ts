@@ -16,12 +16,31 @@ const WORKFLOW_INCLUDE = {
   },
 };
 
-type WorkflowDefinitionWithVersions = Prisma.WorkflowDefinitionGetPayload<{ include: typeof WORKFLOW_INCLUDE }>;
+const WORKFLOW_LIST_SELECT = {
+  workflow_definition_id: true,
+  workflow_key: true,
+  name: true,
+  description: true,
+  document_type: true,
+  is_active: true,
+  versions: {
+    orderBy: { version_number: "desc" as const },
+    select: {
+      workflow_version_id: true,
+      workflow_definition_id: true,
+      version_number: true,
+      status: true,
+      published_at: true,
+    },
+  },
+} satisfies Prisma.WorkflowDefinitionSelect;
+
+type WorkflowDefinitionListItem = Prisma.WorkflowDefinitionGetPayload<{ select: typeof WORKFLOW_LIST_SELECT }>;
 const WORKFLOW_LIST_CACHE_TTL_MS = 15_000;
 
 @Injectable()
 export class WorkflowDefinitionsService {
-  private readonly listCache = new Map<string, { expiresAt: number; value: WorkflowDefinitionWithVersions[] }>();
+  private readonly listCache = new Map<string, { expiresAt: number; value: WorkflowDefinitionListItem[] }>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -32,11 +51,24 @@ export class WorkflowDefinitionsService {
 
     const value = await this.prisma.workflowDefinition.findMany({
       where: includeInactive ? undefined : { is_active: true },
-      include: WORKFLOW_INCLUDE,
+      select: WORKFLOW_LIST_SELECT,
       orderBy: [{ document_type: "asc" }, { name: "asc" }],
     });
     this.listCache.set(cacheKey, { expiresAt: Date.now() + WORKFLOW_LIST_CACHE_TTL_MS, value });
     return value;
+  }
+
+  async getVersion(definitionIdValue: string, versionIdValue: string) {
+    const definitionId = toBigIntId(definitionIdValue, "workflow_definition_id");
+    const versionId = toBigIntId(versionIdValue, "workflow_version_id");
+    const version = await this.prisma.workflowVersion.findFirst({
+      where: {
+        workflow_version_id: versionId,
+        workflow_definition_id: definitionId,
+      },
+    });
+    if (!version) throw new NotFoundException("Workflow version was not found.");
+    return version;
   }
 
   async publishedDefault(documentType: string, action?: string) {
