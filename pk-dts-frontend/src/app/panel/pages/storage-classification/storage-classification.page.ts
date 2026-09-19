@@ -837,7 +837,7 @@ export class StorageClassificationPage implements OnInit {
     }
 
     private loadActiveResource() {
-        this.isLoading.set(true);
+        this.isLoading.set(this.totalRecords() === 0 && this.currentItems().length === 0);
         this.errorMessage.set('');
 
         this.buildListRequest(1, 1000).pipe(
