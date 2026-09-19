@@ -15,14 +15,15 @@ import { DocumentDetail, DocumentSummary, RevisionSummary } from '../documents/d
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertDialogService } from '@/app/shared/services/alert-dialog.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
+import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
 @Component({
     selector: 'app-document-disposal-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, AlertModalComponent, DocumentDetailDialogComponent, LoadingShimmerComponent],
-    template: `
+    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, AlertModalComponent, DocumentDetailDialogComponent, LoadingShimmerComponent],
+    template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="loading()" label="Loading disposed documents" [columns]="7" />
         <section class="space-y-6" [style.display]="loading() ? 'none' : null">
             <article class="surface-card p-5 sm:p-6">
@@ -140,7 +141,7 @@ type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
         <app-document-detail-dialog [(visible)]="detailVisible" [document]="detail()" [loading]="detailLoading()" [revisions]="revisions()" [canAccessFiles]="canDownload()" />
         <app-alert-modal [(visible)]="noticeVisible" [severity]="noticeSeverity()" [title]="noticeTitle()" [message]="noticeMessage()" />
-    `,
+    </app-workspace-page>`,
     styles: [
         `
             .surface-card { border: 1px solid rgba(148,163,184,.18); border-radius: 1.75rem; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.96)); box-shadow: 0 24px 64px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.04); }
