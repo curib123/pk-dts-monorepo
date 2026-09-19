@@ -18,19 +18,11 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
             <div class="login-panel registration-panel">
                 <section class="login-card registration-card">
-                    <header class="register-header">
-                        <nav class="mode-tabs" aria-label="Registration options">
+                    <div class="registration-content">
+                        <nav class="mode-tabs registration-tabs" aria-label="Registration options">
                             <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')"><i class="pi pi-user-plus"></i><span>New request</span></button>
                             <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')"><i class="pi pi-clock"></i><span>Check status</span></button>
                         </nav>
-
-                        <div class="register-heading">
-                            <h1>{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</h1>
-                            <p>{{ mode() === 'register' ? 'Complete the form below for account review and access approval.' : 'Enter the username used when you registered to track the latest decision.' }}</p>
-                        </div>
-                    </header>
-
-                    <div class="registration-content">
 
                 <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="registration-form">
                     <section class="form-section">
@@ -1298,35 +1290,9 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 scrollbar-gutter: stable;
             }
 
-            .register-header {
-                display: grid;
-                gap: .9rem;
-                margin-bottom: 1rem;
-                padding-bottom: .9rem;
-                border-bottom: 1px solid #e8edf3;
-            }
-
-            .register-heading {
-                display: grid;
-                gap: .2rem;
-                min-width: 0;
-            }
-
-            .register-heading h1 {
-                margin: 0;
-                color: #0f172a;
-                font-size: clamp(1.35rem, 2vw, 1.7rem);
-                font-weight: 850;
-                line-height: 1.15;
-                letter-spacing: -.025em;
-            }
-
-            .register-heading p {
-                max-width: 52rem;
-                margin: 0;
-                color: #64748b;
-                font-size: .78rem;
-                line-height: 1.45;
+            .registration-tabs {
+                width: min(420px, 100%);
+                margin: 0 0 .9rem;
             }
 
             .mode-tabs {
@@ -1493,13 +1459,13 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 gap: .5rem;
             }
 
-            .register-header .mode-tabs {
-                width: min(420px, 100%);
-                justify-self: start;
+            .registration-tabs {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: .45rem;
             }
 
-            .register-header .mode-tabs button {
+            .registration-tabs button {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
@@ -1508,7 +1474,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 white-space: nowrap;
             }
 
-            .register-header .mode-tabs button:not(.active) {
+            .registration-tabs button:not(.active) {
                 border-color: #e3e8ef;
                 background: #fff;
             }
@@ -1732,18 +1698,8 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     border-radius: .9rem;
                 }
 
-                .register-header {
-                    gap: .55rem;
-                    margin-bottom: .65rem;
-                    padding-bottom: .6rem;
-                }
-
-                .register-heading h1 {
-                    font-size: 1.25rem;
-                }
-
-                .register-heading p {
-                    font-size: .7rem;
+                .registration-tabs {
+                    margin-bottom: .55rem;
                 }
 
                 .mode-tabs button {
@@ -1834,12 +1790,9 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     border-radius: .9rem;
                 }
 
-                .register-header {
-                    gap: .75rem;
-                }
-
-                .register-header .mode-tabs {
+                .registration-tabs {
                     width: 100%;
+                    margin-bottom: .75rem;
                 }
 
                 .form-grid,
@@ -1870,12 +1823,8 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     padding: .85rem .8rem;
                 }
 
-                .register-heading h1 {
-                    font-size: 1.18rem;
-                }
-
-                .register-heading p {
-                    font-size: .7rem;
+                .registration-tabs {
+                    margin-bottom: .65rem;
                 }
 
                 .mode-tabs button {

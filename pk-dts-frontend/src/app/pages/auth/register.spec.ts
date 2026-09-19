@@ -36,15 +36,21 @@ describe('Register', () => {
         expect(element.querySelector('.login-panel')).not.toBeNull();
         expect(element.querySelector('.registration-intro')).toBeNull();
         expect(element.querySelector('.login-card')).not.toBeNull();
-        const header = element.querySelector('.register-header') as HTMLElement;
-        expect(header).not.toBeNull();
+        const content = element.querySelector('.registration-content') as HTMLElement;
+        expect(content).not.toBeNull();
+        expect(element.querySelector('.register-header')).toBeNull();
+        expect(element.querySelector('.register-heading')).toBeNull();
         expect(element.querySelector('.portal-label')).toBeNull();
         expect(element.querySelector('.login-logo')).toBeNull();
         expect(element.querySelector('.dts-brand-logo')).toBeNull();
-        expect(header.firstElementChild?.classList.contains('mode-tabs')).toBeTrue();
-        expect(header.querySelector('.register-heading h1')?.textContent?.trim()).toBe('Request an account');
-        expect(header.querySelector('.register-heading p')?.textContent?.trim()).toBe('Complete the form below for account review and access approval.');
-        expect(element.querySelector('form.registration-form')).not.toBeNull();
+        expect(element.textContent).not.toContain('Request an account');
+        expect(element.textContent).not.toContain('Complete the form below for account review and access approval.');
+        expect(content.firstElementChild?.classList.contains('registration-tabs')).toBeTrue();
+
+        const form = element.querySelector('form.registration-form') as HTMLElement;
+        expect(form).not.toBeNull();
+        expect(form.firstElementChild?.querySelector('.form-section-copy strong')?.textContent?.trim()).toBe('Personal details');
+        expect(form.firstElementChild?.querySelector('.form-section-copy small')?.textContent?.trim()).toBe('Tell us who you are');
 
         const sections = element.querySelectorAll('.form-section');
         expect(sections.length).toBe(3);
