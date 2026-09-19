@@ -1677,6 +1677,35 @@ describe('DocumentsService', () => {
       workflow_steps: expect.any(Object),
       softcopy: expect.any(Object),
     }));
+    expect(
+      prisma.document.findFirst.mock.calls[0][0].include.workflow_steps.include.assignment_history.select,
+    ).toEqual({
+      assignment_history_id: true,
+      previous_user_name: true,
+      new_user_name: true,
+      new_position_title: true,
+      reason: true,
+      changed_at: true,
+    });
+  });
+
+  it('allows view-own users to load requests they created even without an assignment row', async () => {
+    const requestOwner = {
+      ...regularUser,
+      user_id: '7',
+      role: {
+        ...regularUser.role,
+        permissions: ['document-requests.view-own'],
+      },
+    };
+    prisma.document.findFirst.mockResolvedValue({ document_id: 12n });
+
+    await service.findOne('12', requestOwner);
+
+    const where = prisma.document.findFirst.mock.calls[0][0].where;
+    expect(where.document_id).toBe(12n);
+    expect(where.OR[0].assignments.some.user_id).toBe(7n);
+    expect(where.OR[1].requested_by_user_id).toBe(7n);
   });
 
   it('invalidates a controlled artifact when its revision becomes historical', () => {

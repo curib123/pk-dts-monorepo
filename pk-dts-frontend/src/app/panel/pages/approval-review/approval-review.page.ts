@@ -1,6 +1,6 @@
 import { DocumentDetailDialogComponent } from "../documents/components/document-detail-dialog/document-detail-dialog.component";
 import { DocumentDetail } from "../documents/documents.types";
-import { Subscription } from "rxjs";
+import { Subscription, finalize } from "rxjs";
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,14 +21,14 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
 @Component({
     selector: 'app-approval-review-page', standalone: true, imports: [DocumentDetailDialogComponent, CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ConfirmationDialogComponent, LoadingShimmerComponent],
     template: `<app-loading-shimmer *ngIf="loading" label="Loading approval requests" [columns]="6" />
-    <app-document-detail-dialog *ngIf="viewDocumentDetail" [(visible)]="viewVisible" [document]="viewDocumentDetail" [revisions]="viewDocumentDetail.softcopy?.revisions || []" [canAccessFiles]="true" />
+    <app-document-detail-dialog *ngIf="viewDocumentDetail" [(visible)]="viewVisible" [document]="viewDocumentDetail" [loading]="!!viewLoadingId" [revisions]="viewDocumentDetail.softcopy?.revisions || []" [canAccessFiles]="true" />
     <section class="review-page" [style.display]="loading ? 'none' : null">
     <div class="feedback error" *ngIf="errorMessage()">{{errorMessage()}}</div>
     <nav class="workflow-tabs" aria-label="Approval type"><button type="button" [class.active]="activeTab === 'documents'" (click)="activeTab='documents'"><i class="pi pi-file-check"></i> Document Approvals <span>{{requests().length}}</span></button><button *ngIf="canReviewDisposals()" type="button" [class.active]="activeTab === 'disposals'" (click)="activeTab='disposals'"><i class="pi pi-trash"></i> Disposal Approvals <span>{{disposalRequests().length}}</span></button></nav>
     <ng-container *ngIf="activeTab === 'documents'">
     <app-data-view-switch [(mode)]="viewMode" title="Document approval results" />
     <p-table *ngIf="viewMode === 'list'" [value]="requests()" [loading]="loading" responsiveLayout="scroll"><ng-template pTemplate="header"><tr><th>Document</th><th>Approval stage</th><th>Created by</th><th>Requester</th><th>Submitted</th><th>Decision</th></tr></ng-template>
-    <ng-template pTemplate="body" let-item><tr><td><strong>{{item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number')}}</strong><small>{{item.document_title}}</small></td><td><span class="stage-pill">{{stageLabel(item)}}</span></td><td>{{name(item.creator)}}</td><td>{{item.requested_by_name || name(item.requester)}}</td><td>{{item.updated_at || item.created_at | date:'medium'}}</td><td class="actions"><p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoadingId === item.document_id" (onClick)="viewDocument(item)" /><p-button *ngIf="item.status === 'Approved' && canComplete()" label="Complete / Release" icon="pi pi-send" size="small" severity="success" [disabled]="acting" (onClick)="openDecision(item,'complete')"/><ng-container *ngIf="item.status !== 'Approved'"><p-button *ngIf="canApprove(item)" label="Approve" size="small" [disabled]="acting" (onClick)="openDecision(item,'approve')"/><p-button *ngIf="canRequestRevision(item)" label="Return for revision" size="small" [outlined]="true" [disabled]="acting" (onClick)="openDecision(item,'request-revision')"/><p-button *ngIf="canReject(item)" label="Reject" size="small" severity="danger" [disabled]="acting" (onClick)="openDecision(item,'reject')"/></ng-container></td></tr></ng-template>
+    <ng-template pTemplate="body" let-item><tr><td><strong>{{item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number')}}</strong><small>{{item.document_title}}</small></td><td><span class="stage-pill">{{stageLabel(item)}}</span></td><td>{{name(item.creator)}}</td><td>{{item.requested_by_name || name(item.requester)}}</td><td>{{item.updated_at || item.created_at | date:'medium'}}</td><td class="actions"><p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" (onClick)="viewDocument(item)" /><p-button *ngIf="item.status === 'Approved' && canComplete()" label="Complete / Release" icon="pi pi-send" size="small" severity="success" [disabled]="acting" (onClick)="openDecision(item,'complete')"/><ng-container *ngIf="item.status !== 'Approved'"><p-button *ngIf="canApprove(item)" label="Approve" size="small" [disabled]="acting" (onClick)="openDecision(item,'approve')"/><p-button *ngIf="canRequestRevision(item)" label="Return for revision" size="small" [outlined]="true" [disabled]="acting" (onClick)="openDecision(item,'request-revision')"/><p-button *ngIf="canReject(item)" label="Reject" size="small" severity="danger" [disabled]="acting" (onClick)="openDecision(item,'reject')"/></ng-container></td></tr></ng-template>
     <ng-template pTemplate="emptymessage"><tr><td colspan="6">No requests are awaiting approval.</td></tr></ng-template></p-table>
     <app-record-grid *ngIf="viewMode === 'grid'" [empty]="!requests().length && !loading" emptyTitle="No pending approvals" emptyMessage="No requests are awaiting approval.">
         <app-record-card *ngFor="let item of requests()" icon="pi pi-verified" eyebrow="Approval request" [title]="item.document_type === 'HARDCOPY' ? item.document_title : (item.document_number || 'No document number')" [subtitle]="item.document_title">
@@ -38,7 +38,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
                 <div class="wide"><span>Submitted</span><strong>{{requestUpdatedAt(item) | date:'medium'}}</strong></div>
                 <div class="wide"><span>Stage</span><strong>{{stageLabel(item)}}</strong></div>
             </div>
-            <div record-actions><p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" [loading]="viewLoadingId === item.document_id" (onClick)="viewDocument(item)" />
+            <div record-actions><p-button label="View" icon="pi pi-eye" size="small" [outlined]="true" (onClick)="viewDocument(item)" />
                 <p-button *ngIf="item.status === 'Approved' && canComplete()" label="Complete / Release" icon="pi pi-send" size="small" severity="success" [disabled]="acting" (onClick)="openDecision(item,'complete')"/>
                 <ng-container *ngIf="item.status !== 'Approved'"><p-button *ngIf="canApprove(item)" label="Approve" size="small" [disabled]="acting" (onClick)="openDecision(item,'approve')"/>
                 <p-button *ngIf="canRequestRevision(item)" label="Return for revision" size="small" [outlined]="true" [disabled]="acting" (onClick)="openDecision(item,'request-revision')"/>
@@ -70,13 +70,23 @@ export class ApprovalReviewPage implements OnInit, OnDestroy {
     private viewRequest?: Subscription;
     ngOnDestroy() { this.viewRequest?.unsubscribe(); }
     viewDocument(item: DocumentSummary) {
-        if (this.viewLoadingId === item.document_id) return;
         this.viewRequest?.unsubscribe();
+        this.viewDocumentDetail = item;
+        this.viewVisible = true;
         this.viewLoadingId = item.document_id;
         this.errorMessage.set('');
-        this.viewRequest = this.documents.getApprovalDocument(item.document_id).subscribe({
-            next: detail => { this.viewDocumentDetail = detail; this.viewVisible = true; this.viewLoadingId = ''; },
-            error: error => { this.viewLoadingId = ''; const message = error?.error?.message; this.errorMessage.set(Array.isArray(message) ? message.join(' ') : message || 'Unable to load this approval document.'); }
+        this.viewRequest = this.documents.getApprovalDocument(item.document_id).pipe(
+            finalize(() => {
+                if (this.viewLoadingId === item.document_id) this.viewLoadingId = '';
+            })
+        ).subscribe({
+            next: detail => {
+                if (this.viewLoadingId === item.document_id) this.viewDocumentDetail = detail;
+            },
+            error: error => {
+                const message = error?.error?.message;
+                this.errorMessage.set(Array.isArray(message) ? message.join(' ') : message || 'The approval summary is available, but the full document details could not be loaded.');
+            }
         });
     }
     canApprove=(item: DocumentSummary)=>this.canActOnStep(item); canRequestRevision=(item: DocumentSummary)=>item.workflow_version_id ? this.canActOnStep(item) : this.isAssignedWorkflowStep(item) || this.auth.hasPermission('document-requests.request-revision'); canReject=(item: DocumentSummary)=>item.workflow_version_id ? this.canActOnStep(item) : this.auth.hasPermission('document-requests.reject'); canComplete=()=>this.auth.hasPermission('document-requests.complete');

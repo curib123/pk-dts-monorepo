@@ -1,6 +1,6 @@
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, filter, forkJoin, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, filter, forkJoin, map, of, shareReplay, switchMap, tap, throwError, timeout } from 'rxjs';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
 import {
     ApiResponseEnvelope,
@@ -37,6 +37,7 @@ const SEQUENCES_API = `${BACKEND_API_BASE_URL}/sequences`;
 const SOFTCOPY_CATEGORIES_API = `${BACKEND_API_BASE_URL}/softcopy-categories`;
 const LIST_LIMIT = 1000;
 const LIST_CACHE_TTL_MS = 15_000;
+const DOCUMENT_DETAIL_TIMEOUT_MS = 30_000;
 
 type ApiResponse<T> = ApiResponseEnvelope<T> | T;
 
@@ -68,11 +69,17 @@ export class DocumentsService {
     }
 
     getApprovalDocument(id: string) {
-        return this.http.get<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}/approval-view`).pipe(map((response) => this.unwrap(response)));
+        return this.http.get<ApiResponse<DocumentDetail>>(`${DOCUMENTS_API}/${id}/approval-view`).pipe(
+            timeout(DOCUMENT_DETAIL_TIMEOUT_MS),
+            map((response) => this.unwrap(response))
+        );
     }
 
     getDocument(id: string) {
-        return this.http.get<ApiResponse<DocumentDetail | null>>(`${DOCUMENTS_API}/${id}`).pipe(map((response) => this.unwrap(response)));
+        return this.http.get<ApiResponse<DocumentDetail | null>>(`${DOCUMENTS_API}/${id}`).pipe(
+            timeout(DOCUMENT_DETAIL_TIMEOUT_MS),
+            map((response) => this.unwrap(response))
+        );
     }
 
     listRevisions(id: string) {

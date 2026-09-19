@@ -34,6 +34,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
             (onHide)="handleHide()"
         >
             <ng-container *ngIf="document">
+                <div *ngIf="loading" class="detail-loading-banner" role="status" aria-live="polite"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i><span>Loading full document details…</span></div>
                 <div class="document-detail-shell" [class.document-detail-softcopy]="document.document_type === 'SOFTCOPY'">
                 <div class="document-hero" [class.hardcopy]="document.document_type === 'HARDCOPY'">
                     <div class="hero-icon"><i [class]="document.document_type === 'SOFTCOPY' ? 'pi pi-file' : 'pi pi-box'"></i></div>
@@ -235,7 +236,7 @@ type PreviewKind = 'idle' | 'loading' | 'image' | 'pdf' | 'office' | 'unsupporte
             </ng-template>
         </p-dialog>
     `,
-    styles: [':host { display: block; }']
+    styles: [':host { display: block; } .detail-loading-banner{display:flex;align-items:center;gap:.65rem;margin:0 0 .85rem;padding:.7rem .9rem;border:1px solid #e2e8f0;border-radius:.75rem;background:#f8fafc;color:#475569;font-size:.85rem;font-weight:700}']
 })
 export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     private readonly systemSettings = inject(SystemSettingsService);
@@ -247,6 +248,7 @@ export class DocumentDetailDialogComponent implements OnChanges, OnDestroy {
     @Input() visible = false;
     @Output() visibleChange = new EventEmitter<boolean>();
     @Input() document: DocumentDetail | null = null;
+    @Input() loading = false;
     @Input() revisions: RevisionSummary[] = [];
     @Input() users: DocumentUserSummary[] = [];
     @Input() canConfigureWorkflow = false;

@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, Subscription, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import * as XLSX from 'xlsx';
 import { AuthService } from '@/app/auth/auth.service';
 import { AlertModalComponent } from '@/app/shared/components/alert-modal/alert-modal.component';
@@ -562,7 +562,7 @@ interface DocumentFolderNode {
             (save)="saveDocument($event)"
         />
 
-        <app-document-detail-dialog [(visible)]="detailDialogVisible" [document]="selectedDocumentDetail()" [revisions]="selectedRevisions()" [users]="users()" [canConfigureWorkflow]="canConfigureWorkflow()" [canAccessFiles]="canDownloadDocuments()" [canDeleteAttachments]="canAttachScans() || canDeleteDocuments()" (attachmentDelete)="deleteAttachment($event)" />
+        <app-document-detail-dialog [(visible)]="detailDialogVisible" [document]="selectedDocumentDetail()" [loading]="detailLoading()" [revisions]="selectedRevisions()" [users]="users()" [canConfigureWorkflow]="canConfigureWorkflow()" [canAccessFiles]="canDownloadDocuments()" [canDeleteAttachments]="canAttachScans() || canDeleteDocuments()" (attachmentDelete)="deleteAttachment($event)" />
 
         <p-dialog [(visible)]="attachmentDialogVisible" [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '38rem', maxWidth: '94vw' }" styleClass="attachment-modal" header="Attach scanned documents">
             <div class="attachment-upload-dialog">
@@ -1275,6 +1275,8 @@ export class DocumentsPage implements OnInit, OnDestroy {
     notice = signal<NoticeState | null>(null);
     selectedDocumentDetail = signal<DocumentDetail | null>(null);
     selectedRevisions = signal<RevisionSummary[]>([]);
+    detailLoading = signal(false);
+    private detailRequest?: Subscription;
 
     documentDialogVisible = false;
     detailDialogVisible = false;
@@ -1826,6 +1828,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.detailRequest?.unsubscribe();
         if (this.assistantSearchTimer) {
             clearTimeout(this.assistantSearchTimer);
             this.assistantSearchTimer = null;
@@ -2376,25 +2379,46 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     openDetailDialog(document: DocumentSummary) {
+        this.selectedDocumentDetail.set(document);
+        this.selectedRevisions.set(document.softcopy?.revisions ?? []);
+        this.detailDialogVisible = true;
+        this.pendingDocumentId = document.document_id;
         this.openDetailDialogById(document.document_id, document.document_type);
     }
 
     private openDetailDialogById(documentId: string, documentType?: string) {
-        this.documentsService.getDocument(documentId).pipe(
-            map(detail => ({ detail, revisions: detail?.softcopy?.revisions || [] }))
+        this.detailRequest?.unsubscribe();
+
+        const listedDocument = this.documents().find((document) => document.document_id === documentId);
+        const currentDocument = this.selectedDocumentDetail();
+        if (listedDocument && currentDocument?.document_id !== documentId) {
+            this.selectedDocumentDetail.set(listedDocument);
+            this.selectedRevisions.set(listedDocument.softcopy?.revisions ?? []);
+        }
+        if (listedDocument || currentDocument?.document_id === documentId) {
+            this.detailDialogVisible = true;
+        }
+
+        this.pendingDocumentId = documentId;
+        this.detailLoading.set(true);
+        this.detailRequest = this.documentsService.getDocument(documentId).pipe(
+            map(detail => ({ detail, revisions: detail?.softcopy?.revisions || [] })),
+            finalize(() => {
+                if (this.pendingDocumentId === documentId) this.detailLoading.set(false);
+            })
         ).subscribe({
             next: ({ detail, revisions }) => {
                 if (!detail) {
                     this.showNotice('warning', 'Document not found', 'The selected document could not be loaded.');
+                    if (!listedDocument) this.detailDialogVisible = false;
                     return;
                 }
 
                 this.selectedDocumentDetail.set(detail);
                 this.selectedRevisions.set(revisions ?? []);
                 this.detailDialogVisible = true;
-                this.pendingDocumentId = documentId;
             },
-            error: (error: unknown) => this.handleActionError(error, 'Unable to load document details')
+            error: (error: unknown) => this.handleActionError(error, 'Unable to load full document details')
         });
     }
 
