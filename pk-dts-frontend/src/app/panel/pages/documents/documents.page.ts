@@ -1873,7 +1873,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     loadData(refreshReferences = true) {
         const requestId = ++this.dataLoadRequest;
-        this.isLoading.set(true);
+        this.isLoading.set(this.documents().length === 0);
         this.errorMessage.set('');
         if (refreshReferences) this.referenceWarningMessage.set('');
 
