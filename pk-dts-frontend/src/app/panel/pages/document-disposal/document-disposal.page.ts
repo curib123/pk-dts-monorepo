@@ -300,12 +300,13 @@ export class DocumentDisposalPage implements OnInit, OnDestroy {
     restore(document: DocumentSummary) {
         this.documentsService.restoreDocument(document.document_id).subscribe({
             next: () => {
+                this.documents.update((items) => items.filter((item) => item.document_id !== document.document_id));
                 this.noticeSeverity.set('success');
                 this.noticeTitle.set('Document restored');
                 this.noticeMessage.set(`${document.document_number || document.document_title} was restored successfully.`);
                 this.noticeVisible = false;
                 this.alerts.success(this.noticeTitle(), this.noticeMessage());
-                this.loadData();
+                this.resetPagination();
             },
             error: () => {
                 this.noticeSeverity.set('error');
