@@ -2362,7 +2362,15 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
 
         this.isSaving.set(true);
-        const request = this.editingDocumentId ? this.documentsService.updateDocument(this.editingDocumentId, form) : this.documentsService.createDocument(form, currentUserId);
+        const hardcopyEditRequest =
+            !!this.editingDocumentId &&
+            this.documentFormMode === 'update' &&
+            form.document_type === 'HARDCOPY';
+        const request = hardcopyEditRequest
+            ? this.documentsService.requestHardcopyEdit(this.editingDocumentId, form)
+            : this.editingDocumentId
+              ? this.documentsService.updateDocument(this.editingDocumentId, form)
+              : this.documentsService.createDocument(form, currentUserId);
 
         request.subscribe({
             next: () => {
@@ -2370,7 +2378,13 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.documentDialogVisible = false;
                 this.documentForm = this.emptyDocumentForm();
                 const documentLabel = form.document_number.trim() || form.document_title.trim();
-                this.showNotice('success', 'Document saved', `The document "${documentLabel}" was saved successfully.`);
+                this.showNotice(
+                    'success',
+                    hardcopyEditRequest ? 'Edit request submitted' : 'Document saved',
+                    hardcopyEditRequest
+                        ? `The proposed changes to "${documentLabel}" were sent through the Hardcopy approval workflow. The controlled record will change only after final approval.`
+                        : `The document "${documentLabel}" was saved successfully.`
+                );
                 this.loadData();
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to save document')
