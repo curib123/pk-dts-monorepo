@@ -1,14 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, finalize } from 'rxjs';
+import { Subscription, forkJoin, finalize } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { Role } from '../roles-permissions/role-permission.types';
 import { RolePermissionService } from '../roles-permissions/role-permission.service';
 import { UserAccountSummary } from '../user-account/user-account.types';
 import { UserAccountService } from '../user-account/user-account.service';
 import { WorkflowBuilderService } from './workflow-builder.service';
-import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersion } from './workflow-builder.types';
+import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowVersionSummary } from './workflow-builder.types';
 
 @Component({
     selector: 'app-workflow-builder-page',
@@ -17,7 +17,7 @@ import { EditableWorkflowAssignmentType, WorkflowDefinition, WorkflowEdge, Workf
     templateUrl: './workflow-builder.page.html',
     styleUrl: './workflow-builder.page.scss'
 })
-export class WorkflowBuilderPage implements OnInit {
+export class WorkflowBuilderPage implements OnInit, OnDestroy {
     private workflowsApi = inject(WorkflowBuilderService);
     private usersApi = inject(UserAccountService);
     private accessApi = inject(RolePermissionService);
@@ -27,9 +27,11 @@ export class WorkflowBuilderPage implements OnInit {
     users: UserAccountSummary[] = [];
     roles: Role[] = [];
     selectedDefinition?: WorkflowDefinition;
-    selectedVersion?: WorkflowVersion;
+    selectedVersion?: WorkflowVersionSummary;
     graph: WorkflowGraph = this.blankGraph();
     loading = true;
+    versionLoading = false;
+    versionLoadError = '';
     referenceDataLoading = false;
     referenceDataError = '';
     saving = false;
@@ -44,8 +46,18 @@ export class WorkflowBuilderPage implements OnInit {
 
     private referenceDataLoaded = false;
     private loadSequence = 0;
+    private listRequest?: Subscription;
+    private versionRequest?: Subscription;
+    private versionReadyTimer: ReturnType<typeof setTimeout> | null = null;
+    private referenceDataTimer: ReturnType<typeof setTimeout> | null = null;
 
     ngOnInit() { this.load(); }
+    ngOnDestroy() {
+        this.listRequest?.unsubscribe();
+        this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
+        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
+    }
 
     get canConfigure() { return this.auth.hasPermission('document-workflow.configure'); }
     get canPublish() { return this.auth.hasPermission('document-workflow.publish'); }
@@ -60,10 +72,22 @@ export class WorkflowBuilderPage implements OnInit {
 
     load(selectDefinitionId?: string, selectVersionId?: string) {
         const sequence = ++this.loadSequence;
+        this.listRequest?.unsubscribe();
+        this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) {
+            clearTimeout(this.versionReadyTimer);
+            this.versionReadyTimer = null;
+        }
+        if (this.referenceDataTimer) {
+            clearTimeout(this.referenceDataTimer);
+            this.referenceDataTimer = null;
+        }
+        this.versionLoading = false;
+        this.versionLoadError = '';
         this.loading = true;
         this.error = '';
-        this.loadReferenceData();
-        this.workflowsApi.list(true).pipe(finalize(() => {
+
+        this.listRequest = this.workflowsApi.list(true).pipe(finalize(() => {
             if (sequence === this.loadSequence) this.loading = false;
         })).subscribe({
             next: (definitions) => {
@@ -92,19 +116,39 @@ export class WorkflowBuilderPage implements OnInit {
         this.selectVersion(version);
     }
 
-    selectVersion(version?: WorkflowVersion) {
+    selectVersion(version?: WorkflowVersionSummary) {
         if (this.dirty && !confirm('Discard unsaved workflow changes?')) return;
+        this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) {
+            clearTimeout(this.versionReadyTimer);
+            this.versionReadyTimer = null;
+        }
+        if (this.referenceDataTimer) {
+            clearTimeout(this.referenceDataTimer);
+            this.referenceDataTimer = null;
+        }
         this.selectedVersion = version;
         this.legacyComplex = false;
         this.unsupportedLegacyAssignment = false;
-        this.graph = version ? this.prepareSequentialGraph(version.graph) : this.blankGraph();
-        if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
+        this.versionLoadError = '';
+        this.graph = this.blankGraph();
         this.dirty = false;
         this.clearFeedback();
+
+        if (!version || !this.selectedDefinition) {
+            this.versionLoading = false;
+            return;
+        }
+
+        this.loadSelectedVersion();
     }
 
     selectVersionById(versionId: string) {
         this.selectVersion(this.selectedDefinition?.versions.find((version) => version.workflow_version_id === versionId));
+    }
+
+    retrySelectedVersion() {
+        this.loadSelectedVersion();
     }
 
     createDefinition() {
@@ -248,13 +292,63 @@ export class WorkflowBuilderPage implements OnInit {
     }
 
     userLabel(user: UserAccountSummary) { return `${user.firstname} ${user.lastname} · ${user.role.role_name}`; }
-    versionLabel(version: WorkflowVersion) { return `Version ${version.version_number} · ${version.status}${version._count?.documents ? ` · ${version._count.documents} request(s)` : ''}`; }
+    versionLabel(version: WorkflowVersionSummary) { return `Version ${version.version_number} · ${version.status}${version._count?.documents ? ` · ${version._count.documents} request(s)` : ''}`; }
     trackDefinition(_index: number, definition: WorkflowDefinition) { return definition.workflow_definition_id; }
-    trackVersion(_index: number, version: WorkflowVersion) { return version.workflow_version_id; }
+    trackVersion(_index: number, version: WorkflowVersionSummary) { return version.workflow_version_id; }
     trackNode(_index: number, node: WorkflowNode) { return node.key; }
     trackUser(_index: number, user: UserAccountSummary) { return user.user_id; }
     trackRole(_index: number, role: Role) { return role.role_id; }
     markDirty() { if (this.editable) { this.dirty = true; this.clearFeedback(); } }
+
+    private loadSelectedVersion() {
+        const definitionId = this.selectedDefinition?.workflow_definition_id;
+        const versionId = this.selectedVersion?.workflow_version_id;
+        if (!definitionId || !versionId) {
+            this.versionLoading = false;
+            return;
+        }
+
+        this.versionRequest?.unsubscribe();
+        this.versionLoading = true;
+        this.versionLoadError = '';
+
+        this.versionRequest = this.workflowsApi.getVersion(definitionId, versionId).pipe(
+            finalize(() => {
+                if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
+                this.versionReadyTimer = setTimeout(() => {
+                    this.versionReadyTimer = null;
+                    if (this.selectedDefinition?.workflow_definition_id !== definitionId
+                        || this.selectedVersion?.workflow_version_id !== versionId) return;
+
+                    this.versionLoading = false;
+
+                    if (!this.versionLoadError && this.canConfigure) {
+                        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
+                        this.referenceDataTimer = setTimeout(() => {
+                            this.referenceDataTimer = null;
+                            if (this.selectedDefinition?.workflow_definition_id === definitionId
+                                && this.selectedVersion?.workflow_version_id === versionId) {
+                                this.loadReferenceData();
+                            }
+                        }, 0);
+                    }
+                }, 0);
+            })
+        ).subscribe({
+            next: (version) => {
+                if (this.selectedDefinition?.workflow_definition_id !== definitionId
+                    || this.selectedVersion?.workflow_version_id !== versionId) return;
+
+                this.graph = this.prepareSequentialGraph(version.graph);
+                if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
+            },
+            error: (error) => {
+                if (this.selectedDefinition?.workflow_definition_id !== definitionId
+                    || this.selectedVersion?.workflow_version_id !== versionId) return;
+                this.versionLoadError = this.errorText(error);
+            }
+        });
+    }
 
     private loadReferenceData() {
         if (this.referenceDataLoaded || this.referenceDataLoading) return;

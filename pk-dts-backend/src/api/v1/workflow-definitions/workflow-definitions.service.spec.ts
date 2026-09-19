@@ -75,7 +75,7 @@ describe("WorkflowDefinitionsService", () => {
     expect(tx.workflowVersion.updateMany).not.toHaveBeenCalled();
   });
 
-  it("caches repeated workflow-list reads and avoids expensive document counts", async () => {
+  it("caches repeated workflow-list reads and excludes full version graphs", async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const service = new WorkflowDefinitionsService({ workflowDefinition: { findMany } } as any);
 
@@ -83,7 +83,39 @@ describe("WorkflowDefinitionsService", () => {
     await service.list(true);
 
     expect(findMany).toHaveBeenCalledTimes(1);
-    expect(findMany.mock.calls[0][0].include.versions).not.toHaveProperty("include");
+    const query = findMany.mock.calls[0][0];
+    expect(query.select.versions.select).toEqual({
+      workflow_version_id: true,
+      workflow_definition_id: true,
+      version_number: true,
+      status: true,
+      published_at: true,
+    });
+    expect(query.select.versions.select).not.toHaveProperty("graph");
+  });
+
+  it("loads one workflow version graph on demand", async () => {
+    const findFirst = jest.fn().mockResolvedValue({
+      workflow_version_id: 12n,
+      workflow_definition_id: 4n,
+      version_number: 3,
+      status: WorkflowVersionStatus.DRAFT,
+      graph,
+    });
+    const service = new WorkflowDefinitionsService({ workflowVersion: { findFirst } } as any);
+
+    await expect(service.getVersion("4", "12")).resolves.toMatchObject({
+      workflow_version_id: 12n,
+      workflow_definition_id: 4n,
+      graph,
+    });
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        workflow_version_id: 12n,
+        workflow_definition_id: 4n,
+      },
+    });
   });
 
   it('looks up only the current published system default for the request action', async () => {

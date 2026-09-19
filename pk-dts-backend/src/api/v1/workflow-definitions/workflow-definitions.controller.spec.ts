@@ -1,4 +1,3 @@
-import { BadRequestException } from "@nestjs/common";
 import { WorkflowDefinitionsController } from "./workflow-definitions.controller";
 
 const actor = {
@@ -20,9 +19,6 @@ const sequentialGraph = {
 describe("WorkflowDefinitionsController", () => {
   it("publishes a sequential draft", async () => {
     const service = {
-      list: jest.fn().mockResolvedValue([
-        { workflow_definition_id: 1n, versions: [{ workflow_version_id: 2n, graph: sequentialGraph }] },
-      ]),
       publish: jest.fn().mockResolvedValue({ workflow_version_id: 2n }),
     } as any;
     const controller = new WorkflowDefinitionsController(service);
@@ -31,27 +27,21 @@ describe("WorkflowDefinitionsController", () => {
     expect(service.publish).toHaveBeenCalledWith("1", "2", actor);
   });
 
-  it("rejects publishing a legacy branching draft", async () => {
-    const branching = {
-      ...sequentialGraph,
-      nodes: [
-        ...sequentialGraph.nodes,
-        { key: "other", label: "Other approval", type: "APPROVAL", assignment: { type: "REQUESTER_LEADER" } },
-      ],
-      edges: [
-        ...sequentialGraph.edges,
-        { key: "leader-reject", from: "leader", to: "other", outcome: "REJECT" },
-      ],
-    };
+  it("loads one workflow version through the detail endpoint", async () => {
     const service = {
-      list: jest.fn().mockResolvedValue([
-        { workflow_definition_id: 1n, versions: [{ workflow_version_id: 2n, graph: branching }] },
-      ]),
-      publish: jest.fn(),
+      getVersion: jest.fn().mockResolvedValue({
+        workflow_version_id: 2n,
+        workflow_definition_id: 1n,
+        graph: sequentialGraph,
+      }),
     } as any;
     const controller = new WorkflowDefinitionsController(service);
 
-    await expect(controller.publish("1", "2", actor)).rejects.toBeInstanceOf(BadRequestException);
-    expect(service.publish).not.toHaveBeenCalled();
+    await expect(controller.getVersion("1", "2")).resolves.toMatchObject({
+      workflow_version_id: 2n,
+      workflow_definition_id: 1n,
+      graph: sequentialGraph,
+    });
+    expect(service.getVersion).toHaveBeenCalledWith("1", "2");
   });
 });

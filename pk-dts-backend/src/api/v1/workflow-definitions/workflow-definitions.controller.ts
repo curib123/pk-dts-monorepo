@@ -16,6 +16,12 @@ export class WorkflowDefinitionsController {
   @RequirePermissions("document-workflow.view", "document-workflow.configure")
   list(@Query("include_inactive") includeInactive?: string) { return this.service.list(includeInactive === "true"); }
 
+  @Get(":id/versions/:versionId")
+  @RequirePermissions("document-workflow.view", "document-workflow.configure")
+  getVersion(@Param("id") id: string, @Param("versionId") versionId: string) {
+    return this.service.getVersion(id, versionId);
+  }
+
   @Get("published-default")
   @RequirePermissions("document-requests.create", "document-workflow.view", "document-workflow.configure")
   publishedDefault(@Query("document_type") documentType: string, @Query("action_requested") action?: string) {
@@ -49,11 +55,7 @@ export class WorkflowDefinitionsController {
 
   @Post(":id/versions/:versionId/publish")
   @RequirePermissions("document-workflow.publish")
-  async publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) {
-    const definitions = await this.service.list(true);
-    const definition = definitions.find((item) => String(item.workflow_definition_id) === id);
-    const version = definition?.versions.find((item) => String(item.workflow_version_id) === versionId);
-    if (version) assertSequentialWorkflowGraph(version.graph);
+  publish(@Param("id") id: string, @Param("versionId") versionId: string, @CurrentUser() user: AuthenticatedUser) {
     return this.service.publish(id, versionId, user);
   }
 

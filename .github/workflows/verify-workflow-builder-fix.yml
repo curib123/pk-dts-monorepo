@@ -1,0 +1,39 @@
+name: Verify workflow builder loading fix
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pk-dts-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pk-dts-frontend/package-lock.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - run: npm test -- --watch=false --browsers=ChromeHeadless
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pk-dts-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pk-dts-backend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
