@@ -3,23 +3,23 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DEFAULT_SYSTEM_SETTINGS, SystemSettings, SystemSettingsService } from '@/app/shared/services/system-settings.service';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 @Component({
     selector: 'app-system-settings-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule],
+    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule],
     template: `<app-workspace-page>
         <section class="settings-page">
             <div *ngIf="saved" class="saved-message"><i class="pi pi-check-circle"></i> Settings saved and applied.</div>
             <div *ngIf="saveError()" class="saved-message error"><i class="pi pi-exclamation-circle"></i> {{ saveError() }}</div>
 
             <div class="settings-toolbar">
-                <nav class="section-nav" aria-label="Settings sections">
+                <app-workspace-tabs ariaLabel="System settings sections">
                     <button type="button" [class.active]="activeTab() === 'branding'" (click)="activeTab.set('branding')"><i class="pi pi-palette"></i> Branding</button>
                     <button type="button" [class.active]="activeTab() === 'login'" (click)="activeTab.set('login')"><i class="pi pi-image"></i> Login page</button>
                     <button type="button" [class.active]="activeTab() === 'infrastructure'" (click)="activeTab.set('infrastructure')"><i class="pi pi-server"></i> Connections</button>
-                </nav>
+                </app-workspace-tabs>
                 <div class="top-actions" aria-label="System settings actions">
                     <p-button styleClass="settings-reset" label="Defaults" icon="pi pi-refresh" severity="secondary" [outlined]="true" [disabled]="saving()" (onClick)="restoreDefaults()" />
                     <p-button styleClass="settings-save" label="Save changes" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
