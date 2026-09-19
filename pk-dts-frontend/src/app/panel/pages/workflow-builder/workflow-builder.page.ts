@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, finalize } from 'rxjs';
+import { Subscription, catchError, finalize, forkJoin, map, of } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { Role } from '../roles-permissions/role-permission.types';
 import { RolePermissionService } from '../roles-permissions/role-permission.service';
@@ -48,15 +48,11 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     private loadSequence = 0;
     private listRequest?: Subscription;
     private versionRequest?: Subscription;
-    private versionReadyTimer: ReturnType<typeof setTimeout> | null = null;
-    private referenceDataTimer: ReturnType<typeof setTimeout> | null = null;
 
     ngOnInit() { this.load(); }
     ngOnDestroy() {
         this.listRequest?.unsubscribe();
         this.versionRequest?.unsubscribe();
-        if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
-        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
     }
 
     get canConfigure() { return this.auth.hasPermission('document-workflow.configure'); }
@@ -74,14 +70,6 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         const sequence = ++this.loadSequence;
         this.listRequest?.unsubscribe();
         this.versionRequest?.unsubscribe();
-        if (this.versionReadyTimer) {
-            clearTimeout(this.versionReadyTimer);
-            this.versionReadyTimer = null;
-        }
-        if (this.referenceDataTimer) {
-            clearTimeout(this.referenceDataTimer);
-            this.referenceDataTimer = null;
-        }
         this.versionLoading = false;
         this.versionLoadError = '';
         this.loading = true;
@@ -119,14 +107,6 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     selectVersion(version?: WorkflowVersionSummary) {
         if (this.dirty && !confirm('Discard unsaved workflow changes?')) return;
         this.versionRequest?.unsubscribe();
-        if (this.versionReadyTimer) {
-            clearTimeout(this.versionReadyTimer);
-            this.versionReadyTimer = null;
-        }
-        if (this.referenceDataTimer) {
-            clearTimeout(this.referenceDataTimer);
-            this.referenceDataTimer = null;
-        }
         this.selectedVersion = version;
         this.legacyComplex = false;
         this.unsupportedLegacyAssignment = false;
@@ -311,33 +291,55 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         this.versionRequest?.unsubscribe();
         this.versionLoading = true;
         this.versionLoadError = '';
+        this.referenceDataError = '';
 
-        this.versionRequest = this.workflowsApi.getVersion(definitionId, versionId).pipe(
+        const shouldLoadReferenceData = this.canConfigure && !this.referenceDataLoaded;
+        if (shouldLoadReferenceData) this.referenceDataLoading = true;
+
+        let referenceDataFailed = false;
+        const usersRequest = shouldLoadReferenceData
+            ? this.usersApi.listUsers(1, 1000).pipe(
+                map((response) => response.items || []),
+                catchError((error) => {
+                    referenceDataFailed = true;
+                    this.referenceDataError = this.errorText(error);
+                    return of([] as UserAccountSummary[]);
+                })
+            )
+            : of(this.users);
+
+        const rolesRequest = shouldLoadReferenceData
+            ? this.accessApi.listRoles().pipe(
+                catchError((error) => {
+                    referenceDataFailed = true;
+                    this.referenceDataError = this.errorText(error);
+                    return of([] as Role[]);
+                })
+            )
+            : of(this.roles);
+
+        this.versionRequest = forkJoin({
+            version: this.workflowsApi.getVersion(definitionId, versionId),
+            users: usersRequest,
+            roles: rolesRequest
+        }).pipe(
             finalize(() => {
-                if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
-                this.versionReadyTimer = setTimeout(() => {
-                    this.versionReadyTimer = null;
-                    if (this.selectedDefinition?.workflow_definition_id !== definitionId
-                        || this.selectedVersion?.workflow_version_id !== versionId) return;
-
+                if (this.selectedDefinition?.workflow_definition_id === definitionId
+                    && this.selectedVersion?.workflow_version_id === versionId) {
                     this.versionLoading = false;
-
-                    if (!this.versionLoadError && this.canConfigure) {
-                        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
-                        this.referenceDataTimer = setTimeout(() => {
-                            this.referenceDataTimer = null;
-                            if (this.selectedDefinition?.workflow_definition_id === definitionId
-                                && this.selectedVersion?.workflow_version_id === versionId) {
-                                this.loadReferenceData();
-                            }
-                        }, 0);
-                    }
-                }, 0);
+                    if (shouldLoadReferenceData) this.referenceDataLoading = false;
+                }
             })
         ).subscribe({
-            next: (version) => {
+            next: ({ version, users, roles }) => {
                 if (this.selectedDefinition?.workflow_definition_id !== definitionId
                     || this.selectedVersion?.workflow_version_id !== versionId) return;
+
+                if (shouldLoadReferenceData) {
+                    this.users = users;
+                    this.roles = roles;
+                    this.referenceDataLoaded = !referenceDataFailed;
+                }
 
                 this.graph = this.prepareSequentialGraph(version.graph);
                 if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
