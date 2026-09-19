@@ -39,8 +39,16 @@ describe('Register', () => {
         expect(element.querySelector('.register-topbar')).not.toBeNull();
         expect(element.querySelector('.portal-label')).toBeNull();
         expect(element.querySelector('.login-logo img')).not.toBeNull();
-        expect(element.querySelector('form.form-grid')).not.toBeNull();
-        expect(element.querySelectorAll('form.form-grid label').length).toBe(9);
+        expect(element.querySelector('form.registration-form')).not.toBeNull();
+
+        const sections = element.querySelectorAll('.form-section');
+        expect(sections.length).toBe(3);
+        expect(element.querySelectorAll('.form-field').length).toBe(9);
+        expect(element.querySelectorAll('.form-section-heading').length).toBe(3);
+        expect(element.querySelectorAll('.form-section-copy strong').length).toBe(3);
+        expect(element.querySelectorAll('.form-section-copy small').length).toBe(3);
+        expect(element.querySelectorAll('.optional-tag').length).toBe(3);
+        expect(element.querySelector('.form-actions .primary')).not.toBeNull();
     });
 
     it('rejects whitespace-only required names and overlong passwords before submitting', () => {
