@@ -258,6 +258,18 @@ export class DocumentsController {
     return this.documentsService.changeDirectory(id, dto, user!);
   }
 
+  @Post(":id/edit-request")
+  @RequirePermissions("documents.edit", "documents.manage-own")
+  @ApiOperation({ summary: "Submit changes to an approved or completed Hardcopy through the approval workflow" })
+  @ApiCreatedResponse({ description: "Hardcopy edit request submitted successfully." })
+  requestHardcopyEdit(
+    @Param("id") id: string,
+    @Body() dto: UpdateDocumentDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.documentsService.createHardcopyEditRequest(id, dto, user!);
+  }
+
   @Patch(":id")
   @RequirePermissions("documents.edit", "documents.manage-own", "document-requests.edit")
   @ApiOperation({ summary: "Update document" })
