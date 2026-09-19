@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 
 export type DataViewMode = 'list' | 'grid';
 
@@ -7,6 +7,7 @@ export type DataViewMode = 'list' | 'grid';
     selector: 'app-data-view-switch',
     standalone: true,
     imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="view-toolbar">
             <div>
