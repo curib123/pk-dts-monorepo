@@ -88,6 +88,9 @@ export class SoftcopyFoldersPage implements OnInit {
     editingId = signal('');
     pendingDelete = signal<SoftcopyCategorySummary | null>(null);
     search = '';
+    private filteredSource: SoftcopyCategorySummary[] | null = null;
+    private filteredQuery = '';
+    private filteredResult: SoftcopyCategorySummary[] = [];
     folderName = '';
     parentId = '';
 
