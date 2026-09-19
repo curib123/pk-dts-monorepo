@@ -20,7 +20,7 @@ import { UserFormDialogComponent } from './components/user-form-dialog/user-form
 import { UserDocumentAssignmentDialogComponent } from './components/user-document-assignment-dialog/user-document-assignment-dialog.component';
 import { UserAccountService } from './user-account.service';
 import { PaginatedMeta, RegistrationRequestSummary, UserAccountDetail, UserAccountFormValue, UserAccountSummary, UserDocumentAssignmentOption, UserRoleSummary } from './user-account.types';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 type NoticeSeverity = 'success' | 'error' | 'warning' | 'info';
 
@@ -34,7 +34,7 @@ interface NoticeState {
 @Component({
     selector: 'app-user-account-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, TooltipModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, UserFormDialogComponent, UserDocumentAssignmentDialogComponent],
+    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, TooltipModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, UserFormDialogComponent, UserDocumentAssignmentDialogComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading user accounts" [columns]="6" />
         <section class="user-account-page space-y-6" [style.display]="isLoading() ? 'none' : null">
@@ -85,10 +85,10 @@ interface NoticeState {
                 </div>
             </div>
 
-            <nav class="account-tabs" aria-label="User account sections">
+            <app-workspace-tabs ariaLabel="User account sections">
                 <button type="button" [class.active]="activeTab() === 'accounts'" (click)="activeTab.set('accounts')"><i class="pi pi-users"></i> Accounts</button>
                 <button *ngIf="canApproveRegistrations()" type="button" [class.active]="activeTab() === 'registrations'" (click)="activeTab.set('registrations')"><i class="pi pi-user-plus"></i> Registration requests <span>{{ pendingRegistrations().length }}</span></button>
-            </nav>
+            </app-workspace-tabs>
 
             <article *ngIf="activeTab() === 'accounts' && currentUser()" class="session-card">
                 <div class="session-head">
