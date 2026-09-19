@@ -35,7 +35,8 @@ describe('AuditLogsPage', () => {
 
         expect(element.querySelector('h1')).toBeNull();
         expect(element.querySelector('.audit-hero')).toBeNull();
-        expect(element.querySelector('.workspace-toolbar')).not.toBeNull();
+        expect(element.querySelector('.workspace-toolbar')).toBeNull();
+        expect(element.querySelector('.workspace-toolbar-shell')).not.toBeNull();
         expect(element.querySelector('.activity-panel')).not.toBeNull();
     });
 
