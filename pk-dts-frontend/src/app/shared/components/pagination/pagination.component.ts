@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { PaginatorModule } from 'primeng/paginator';
 import type { PaginatorState } from 'primeng/types/paginator';
 
@@ -7,6 +7,7 @@ import type { PaginatorState } from 'primeng/types/paginator';
     selector: 'app-pagination',
     standalone: true,
     imports: [CommonModule, PaginatorModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="pagination-shell">
             <p-paginator
