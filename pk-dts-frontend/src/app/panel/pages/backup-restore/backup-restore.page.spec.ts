@@ -63,7 +63,8 @@ describe('BackupRestorePage', () => {
         fixture.detectChanges();
         const element = fixture.nativeElement as HTMLElement;
 
-        expect(element.querySelector('.backup-toolbar')).not.toBeNull();
+        expect(element.querySelector('.workspace-toolbar-shell')).not.toBeNull();
+        expect(element.querySelector('.backup-toolbar')).toBeNull();
         expect(element.querySelector('app-loading-shimmer')).toBeNull();
     });
 });
