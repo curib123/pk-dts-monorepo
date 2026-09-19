@@ -52,7 +52,7 @@ interface AuditListResponse {
             </app-workspace-toolbar>
 
             <section class="filter-panel" aria-label="Audit log filters">
-                <app-workspace-search [value]="search" (valueChange)="search = $event" (search)="apply()" label="Search" placeholder="Description, path, reason, or user" />
+                <app-workspace-search class="audit-search" [value]="search" (valueChange)="search = $event" (search)="apply()" label="Search" placeholder="Description, path, reason, or user" />
 
                 <label>
                     <span>Module</span>
@@ -203,6 +203,8 @@ interface AuditListResponse {
             :host { display: block; }
 
             .audit-page {
+                min-width: 0;
+                max-width: 100%;
                 display: grid;
                 gap: 1rem;
                 color: var(--app-text, #172033);
@@ -268,22 +270,25 @@ interface AuditListResponse {
             }
 
             .filter-panel {
-                display: grid;
-                grid-template-columns: minmax(15rem, 1.7fr) repeat(2, minmax(9rem, .8fr)) minmax(10rem, 1fr) minmax(8rem, .7fr) minmax(9rem, .7fr) minmax(9rem, .7fr) auto;
-                align-items: end;
+                min-width: 0;
+                max-width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: flex-end;
                 gap: .7rem;
                 padding: 1rem;
             }
 
-            .filter-panel label { min-width: 0; display: grid; gap: .35rem; }
-            .search-field > div { position: relative; }
-            .search-field > div > i {
-                position: absolute;
-                left: .75rem;
-                top: 50%;
-                color: #98a2b3;
-                transform: translateY(-50%);
-                pointer-events: none;
+            .audit-search {
+                min-width: min(100%, 18rem);
+                flex: 999 1 26rem;
+            }
+
+            .filter-panel label {
+                min-width: 0;
+                flex: 1 1 9rem;
+                display: grid;
+                gap: .35rem;
             }
             .filter-panel input,
             .filter-panel select {
@@ -297,14 +302,20 @@ interface AuditListResponse {
                 color: var(--app-text, #172033);
                 outline: 0;
             }
-            .search-field input { padding-left: 2.2rem; }
             .filter-panel input:focus,
             .filter-panel select:focus {
                 border-color: var(--brand-primary);
                 box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 11%, transparent);
             }
 
-            .filter-actions { display: flex; gap: .4rem; }
+            .filter-actions {
+                min-width: 0;
+                flex: 0 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: .4rem;
+            }
             .clear-button, .quiet-button {
                 border: 1px solid var(--app-border, #e2e8f0);
                 background: var(--app-surface-muted, #f8fafc);
@@ -325,7 +336,11 @@ interface AuditListResponse {
             .error-panel span { font-size: .75rem; }
             .error-panel button { background: #991b1b; color: #fff; }
 
-            .activity-panel, .timeline-panel { overflow: hidden; }
+            .activity-panel, .timeline-panel {
+                min-width: 0;
+                max-width: 100%;
+                overflow: hidden;
+            }
             .panel-heading {
                 display: flex;
                 align-items: center;
@@ -369,12 +384,15 @@ interface AuditListResponse {
             .actor span {
                 width: max-content;
                 max-width: 100%;
+                overflow: hidden;
                 padding: .1rem .38rem;
                 border-radius: 999px;
                 background: #f2f4f7;
                 color: #475467;
                 font-size: .58rem;
                 font-weight: 750;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             .actor small { color: #667085; font-size: .64rem; }
 
@@ -407,7 +425,7 @@ interface AuditListResponse {
                 color: #667085;
                 font-size: .64rem;
             }
-            .trace span { display: inline-flex; align-items: center; gap: .25rem; }
+            .trace span { min-width: 0; display: inline-flex; align-items: center; gap: .25rem; overflow-wrap: anywhere; }
             .timeline-link {
                 border: 0;
                 background: transparent;
@@ -417,7 +435,7 @@ interface AuditListResponse {
                 font-weight: 800;
                 cursor: pointer;
             }
-            .reason { display: block; margin-top: .38rem; color: #92400e; font-size: .67rem; }
+            .reason { display: block; margin-top: .38rem; color: #92400e; font-size: .67rem; overflow-wrap: anywhere; }
 
             .skeleton-list { display: grid; }
             .skeleton-row {
@@ -507,17 +525,15 @@ interface AuditListResponse {
             button:disabled { cursor: not-allowed; opacity: .5; }
 
             @media (max-width: 1180px) {
-                .filter-panel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-                .search-field { grid-column: span 2; }
-                .filter-actions { justify-content: flex-end; }
+                .audit-search { flex-basis: 100%; min-width: 0; }
+                .filter-actions { margin-left: auto; }
             }
 
             @media (max-width: 760px) {
                 .workspace-toolbar { align-items: stretch; flex-direction: column; }
                 .refresh-button { width: 100%; }
-                .filter-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                .search-field { grid-column: 1 / -1; }
-                .filter-actions { grid-column: 1 / -1; }
+                .filter-panel label { flex: 1 1 calc(50% - .35rem); }
+                .filter-actions { flex: 1 1 100%; margin-left: 0; }
                 .filter-actions > button { flex: 1; }
 
                 .log-entry,
@@ -534,9 +550,10 @@ interface AuditListResponse {
             }
 
             @media (max-width: 480px) {
-                .filter-panel { grid-template-columns: 1fr; }
-                .search-field, .filter-actions { grid-column: auto; }
+                .filter-panel label { flex-basis: 100%; }
                 .panel-heading { align-items: flex-start; }
+                .error-panel { grid-template-columns: 1fr; align-items: stretch; }
+                .error-panel button { width: 100%; }
             }
 
             @media (prefers-reduced-motion: reduce) {
