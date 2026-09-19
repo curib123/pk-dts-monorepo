@@ -135,6 +135,150 @@ describe('DocumentsService', () => {
     service = new DocumentsService(prisma as PrismaService);
   });
 
+  it('creates an approved Hardcopy edit as a submitted REVISE request linked to the source', async () => {
+    const sourceUpdatedAt = new Date('2026-09-19T01:00:00.000Z');
+    prisma.document.findUnique.mockResolvedValue({
+      document_id: 42n,
+      document_title: 'ORIGINAL TITLE',
+      document_type: DocumentType.HARDCOPY,
+      status: DocumentStatus.Approved,
+      created_by: 7n,
+      updated_at: sourceUpdatedAt,
+      assignments: [],
+      hardcopy: {
+        area_id: 1n,
+        location_id: 2n,
+        specific_id: 3n,
+        asset_id: 4n,
+        sequence_id: 5n,
+        retention_enabled: false,
+        retention_start_date: null,
+        retention_end_date: null,
+      },
+    });
+    prisma.document.findFirst.mockResolvedValue(null);
+    const createRequest = jest
+      .spyOn(service, 'createRequest')
+      .mockResolvedValue({ document_id: 99n } as any);
+
+    await service.createHardcopyEditRequest(
+      '42',
+      {
+        document_title: 'UPDATED TITLE',
+        area_id: '11',
+        location_id: '12',
+      } as any,
+      regularUser,
+    );
+
+    expect(createRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        document_title: 'UPDATED TITLE',
+        document_type: DocumentType.HARDCOPY,
+        action: 'SUBMIT',
+        action_requested: 'REVISE',
+        area_id: '11',
+        location_id: '12',
+        specific_id: '3',
+        asset_id: '4',
+        sequence_id: '5',
+      }),
+      '7',
+      undefined,
+      regularUser,
+      expect.objectContaining({
+        sourceDocumentId: 42n,
+        sourceDocumentUpdatedAt: sourceUpdatedAt,
+        creationSource: 'EDIT_REQUEST',
+        actionRequested: 'REVISE',
+      }),
+    );
+  });
+
+  it('applies an approved Hardcopy edit request to the controlled source record', async () => {
+    const snapshotTime = new Date('2026-09-19T01:00:00.000Z');
+    prisma.document.findUnique
+      .mockResolvedValueOnce({
+        document_id: 99n,
+        document_title: 'UPDATED TITLE',
+        hardcopy: {
+          asset_id: 14n,
+          area_id: 11n,
+          specific_id: 13n,
+          location_id: 12n,
+          sequence_id: 15n,
+          retention_enabled: true,
+          retention_start_date: new Date('2026-01-01T00:00:00.000Z'),
+          retention_end_date: new Date('2031-01-01T00:00:00.000Z'),
+        },
+      })
+      .mockResolvedValueOnce({
+        document_id: 42n,
+        document_type: DocumentType.HARDCOPY,
+        status: DocumentStatus.Completed,
+        updated_at: snapshotTime,
+        hardcopy: {
+          asset_id: 4n,
+          area_id: 1n,
+          specific_id: 3n,
+          location_id: 2n,
+          sequence_id: 5n,
+        },
+      });
+
+    await (service as any).applyApprovedHardcopyEditRequest(
+      prisma,
+      99n,
+      42n,
+      snapshotTime,
+      7n,
+      'Approved corrected storage details',
+    );
+
+    expect(prisma.document.update).toHaveBeenCalledWith({
+      where: { document_id: 42n },
+      data: { document_title: 'UPDATED TITLE' },
+    });
+    expect(prisma.hardcopyDocument.update).toHaveBeenCalledWith({
+      where: { document_id: 42n },
+      data: {
+        asset_id: 14n,
+        area_id: 11n,
+        specific_id: 13n,
+        location_id: 12n,
+        sequence_id: 15n,
+        retention_enabled: true,
+        retention_start_date: new Date('2026-01-01T00:00:00.000Z'),
+        retention_end_date: new Date('2031-01-01T00:00:00.000Z'),
+      },
+    });
+    expect(prisma.documentStatusHistory.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        document_id: 42n,
+        previous_status: DocumentStatus.Completed,
+        new_status: DocumentStatus.Completed,
+        action: 'edit-approved',
+        performed_by: 7n,
+      }),
+    });
+  });
+
+  it('does not return approved edit-request shadow records in the controlled document list', async () => {
+    prisma.document.findMany.mockResolvedValue([]);
+    prisma.document.count.mockResolvedValue(0);
+
+    await service.findAll({ page: 1, limit: 10 } as any, [DocumentStatus.Approved], adminUser);
+
+    expect(prisma.document.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: [DocumentStatus.Approved] },
+          source_document_id: null,
+        }),
+      }),
+    );
+  });
+
   it('enforces exactly one Hardcopy Approval workflow stage', () => {
     const parseWorkflowPlan = (service as any).parseWorkflowPlan.bind(service);
 
