@@ -2249,7 +2249,6 @@ export class DocumentsPage implements OnInit, OnDestroy {
                 this.attachmentTarget = null;
                 this.attachmentFiles = [];
                 this.showNotice('success', 'Scans attached', `Supporting evidence was added to ${target.document_title}.`);
-                this.loadData(false);
             },
             error: (error: unknown) => {
                 this.attachmentSaving.set(false);
@@ -2260,15 +2259,37 @@ export class DocumentsPage implements OnInit, OnDestroy {
 
     saveAssignments(userIds: string[]) {
         if (!this.assignmentDocument) return;
+        const documentId = this.assignmentDocument.document_id;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const selectedUsers = this.users().filter((user) => userIds.includes(user.user_id));
+        const optimisticAssignments = selectedUsers.map((user) => ({ user, assigned_at: new Date().toISOString() }));
+        const shouldDisappear =
+            (this.selectedAssignmentStatus === 'assigned' && optimisticAssignments.length === 0)
+            || (this.selectedAssignmentStatus === 'unassigned' && optimisticAssignments.length > 0);
+
+        this.documents.update((items) =>
+            shouldDisappear
+                ? items.filter((document) => document.document_id !== documentId)
+                : items.map((document) => document.document_id === documentId ? { ...document, assignments: optimisticAssignments } : document)
+        );
+        if (shouldDisappear && this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+
         this.assignmentSaving.set(true);
-        this.documentsService.assignDocumentUsers(this.assignmentDocument.document_id, userIds).subscribe({
-            next: () => {
+        this.documentsService.assignDocumentUsers(documentId, userIds).subscribe({
+            next: (updated) => {
                 this.assignmentSaving.set(false);
                 this.assignmentDialogVisible = false;
+                if (!shouldDisappear) {
+                    this.documents.update((items) => items.map((document) => document.document_id === documentId ? { ...document, ...updated } : document));
+                } else if (this.viewMode !== 'folder') {
+                    this.loadData(false);
+                }
                 this.showNotice('success', 'Access updated', 'The assigned users were updated successfully.');
-                this.loadData(false);
             },
             error: (error: unknown) => {
+                this.documents.set(previousDocuments);
+                this.totalRecords.set(previousTotal);
                 this.assignmentSaving.set(false);
                 this.handleActionError(error, 'Unable to update document access');
             }
@@ -2291,32 +2312,47 @@ export class DocumentsPage implements OnInit, OnDestroy {
         }
 
         this.isSaving.set(true);
+        const targetDocument = this.statusTargetDocument;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const directDisposal = event.action === 'dispose' && this.auth.hasPermission('documents.dispose');
+        if (directDisposal) {
+            this.documents.update((items) => items.filter((document) => document.document_id !== targetDocument.document_id));
+            if (this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+        }
+
         const request: Observable<unknown> =
             event.action === 'dispose'
-                  ? (this.auth.hasPermission('documents.dispose') ? this.documentsService.disposeDocument(this.statusTargetDocument.document_id, {
+                  ? (directDisposal ? this.documentsService.disposeDocument(targetDocument.document_id, {
                       disposal_action: event.disposal_action,
                       disposal_action_other: event.disposal_action_other,
                       disposal_remarks: event.disposal_remarks,
                       disposed_by_user_id: event.disposed_by_user_id
-                  }) : this.documentsService.requestDocumentDisposal(this.statusTargetDocument.document_id, {
+                  }) : this.documentsService.requestDocumentDisposal(targetDocument.document_id, {
                       disposal_action: event.disposal_action,
                       disposal_action_other: event.disposal_action_other,
                       disposal_remarks: event.disposal_remarks,
                       disposed_by_user_id: event.disposed_by_user_id
                   }))
-                : this.documentsService.restoreDocument(this.statusTargetDocument.document_id);
+                : this.documentsService.restoreDocument(targetDocument.document_id);
 
         request.subscribe({
             next: () => {
-                const requested = event.action === 'dispose' && !this.auth.hasPermission('documents.dispose');
+                const requested = event.action === 'dispose' && !directDisposal;
                 const nextStatusLabel = event.action === 'dispose' ? (requested ? 'submitted for disposal approval' : 'disposed') : 'restored';
                 this.isSaving.set(false);
                 this.statusDialogVisible = false;
                 this.statusTargetDocument = null;
                 this.showNotice('success', requested ? 'Disposal request submitted' : 'Document state updated', `The document was ${nextStatusLabel} successfully.`);
-                this.loadData(false);
+                if (directDisposal && this.viewMode !== 'folder') this.loadData(false);
             },
-            error: (error: unknown) => this.handleActionError(error, 'Unable to change document state')
+            error: (error: unknown) => {
+                if (directDisposal) {
+                    this.documents.set(previousDocuments);
+                    this.totalRecords.set(previousTotal);
+                }
+                this.handleActionError(error, 'Unable to change document state');
+            }
         });
     }
 
@@ -2648,20 +2684,32 @@ export class DocumentsPage implements OnInit, OnDestroy {
     }
 
     confirmDelete() {
-        if (!this.deletingDocument) {
-            return;
-        }
+        if (!this.deletingDocument) return;
 
+        const target = this.deletingDocument;
+        const previousDocuments = this.documents();
+        const previousTotal = this.totalRecords();
+        const deletedNumber = target.document_number || target.document_title || 'Document';
+
+        this.documents.update((items) => items.filter((document) => document.document_id !== target.document_id));
+        if (this.viewMode !== 'folder') this.totalRecords.update((total) => Math.max(0, total - 1));
+        this.deleteConfirmVisible = false;
         this.isSaving.set(true);
-        this.documentsService.deleteDocument(this.deletingDocument.document_id).subscribe({
+
+        this.documentsService.deleteDocument(target.document_id).subscribe({
             next: () => {
-                const deletedNumber = this.deletingDocument?.document_number || 'Document';
                 this.isSaving.set(false);
                 this.deletingDocument = null;
                 this.showNotice('success', 'Document deleted', `${deletedNumber} was removed successfully.`);
-                this.loadData(false);
+                if (this.viewMode !== 'folder') this.loadData(false);
             },
-            error: (error: unknown) => this.handleActionError(error, 'Unable to delete document')
+            error: (error: unknown) => {
+                this.documents.set(previousDocuments);
+                this.totalRecords.set(previousTotal);
+                this.deletingDocument = target;
+                this.deleteConfirmVisible = true;
+                this.handleActionError(error, 'Unable to delete document');
+            }
         });
     }
 
@@ -2685,7 +2733,7 @@ export class DocumentsPage implements OnInit, OnDestroy {
         const document = this.selectedDocumentDetail();
         if (!document || !confirm('Delete this attached scan document?')) return;
         this.documentsService.deleteAttachment(document.document_id, attachmentId).subscribe({
-            next: (updated) => { this.selectedDocumentDetail.set(updated); this.loadData(false); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
+            next: (updated) => { this.selectedDocumentDetail.set(updated); this.showNotice('success', 'Attachment deleted', 'The supporting file was deleted.'); },
             error: (error: unknown) => this.handleActionError(error, 'Unable to delete attachment')
         });
     }
