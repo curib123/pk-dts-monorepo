@@ -513,8 +513,8 @@ export class UserAccountPage implements OnInit {
         });
     }
 
-    loadUsers() {
-        this.isLoading.set(true);
+    loadUsers(showLoading = this.users().length === 0) {
+        this.isLoading.set(showLoading);
         this.errorMessage.set('');
 
         this.userAccountService.listUsers(this.currentPage(), this.rows).subscribe({
@@ -534,7 +534,7 @@ export class UserAccountPage implements OnInit {
     onPageChange(event: PaginatorState) {
         this.first = event.first ?? 0;
         this.rows = event.rows ?? this.rows;
-        this.loadUsers();
+        this.loadUsers(true);
     }
 
     openUserDialog(user?: UserAccountSummary) {
