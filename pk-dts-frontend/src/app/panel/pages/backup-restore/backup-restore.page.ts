@@ -617,7 +617,6 @@ export class BackupRestorePage implements OnInit {
                 this.saving.set(false);
                 this.showNotice('success', 'Backup created', 'The new snapshot is ready and added to the list.');
                 this.invalidateLogs();
-                this.invalidateLogs();
                 this.loadData();
             },
             error: (error: unknown) => this.handleActionError(error, 'Unable to create backup')
@@ -712,6 +711,7 @@ export class BackupRestorePage implements OnInit {
                     this.restoreFile = null;
                     this.restoreFileName = '';
                 }
+                this.invalidateLogs();
                 this.loadData();
             },
             error: (error: unknown) =>
