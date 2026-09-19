@@ -105,13 +105,19 @@ describe('WorkflowBuilderPage', () => {
             graph
         });
         versionRequest.complete();
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
         await new Promise<void>((resolve) => setTimeout(resolve, 0));
         fixture.detectChanges();
 
         expect(page.versionLoading).toBeFalse();
         expect(page.approvalNodes.length).toBe(1);
         expect(page.approvalNodes[0].label).toBe('Leader approval');
+        expect(users.listUsers).not.toHaveBeenCalled();
+        expect(roles.listRoles).not.toHaveBeenCalled();
+
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        fixture.detectChanges();
+
         expect(users.listUsers).toHaveBeenCalledTimes(1);
         expect(roles.listRoles).toHaveBeenCalledTimes(1);
     });
