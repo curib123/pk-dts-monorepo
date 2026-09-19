@@ -79,6 +79,13 @@ type ConfiguredWorkflowUser = {
   };
 };
 
+type CreateRequestContext = {
+  sourceDocumentId?: bigint;
+  sourceDocumentUpdatedAt?: Date;
+  creationSource?: string;
+  actionRequested?: DocumentActionRequested;
+};
+
 type WorkflowPlanStepInput = {
   stage: DocumentWorkflowStage;
   node_key?: string;
@@ -983,6 +990,7 @@ export class DocumentsService {
     const { page, limit, skip, take } = getPagination(query);
     const where: Prisma.DocumentWhereInput = {
       status: { in: statuses },
+      source_document_id: null,
       ...this.documentAccessWhere(user),
     };
     const [items, total] = await this.prisma.$transaction([
@@ -1300,6 +1308,7 @@ export class DocumentsService {
     actorUserId: string,
     file?: Express.Multer.File,
     actor?: AuthenticatedUser,
+    context?: CreateRequestContext,
   ) {
     const directCreate = dto.direct_create === true || dto.direct_create === "true";
     if (dto.document_type === DocumentType.SOFTCOPY && !dto.document_number?.trim()) {
@@ -1402,9 +1411,17 @@ export class DocumentsService {
             ? dto.requested_by_name!.trim()
             : null,
           request_date: new Date(),
-          creation_source: directCreate ? "DIRECT" : "DCR",
+          creation_source: context?.creationSource ?? (directCreate ? "DIRECT" : "DCR"),
           creation_reason: directCreate ? dto.direct_creation_reason!.trim() : null,
           direct_created_at: directCreate ? new Date() : null,
+          ...(context?.sourceDocumentId
+            ? {
+                source_document_id: context.sourceDocumentId,
+                source_document_updated_at: context.sourceDocumentUpdatedAt ?? null,
+                action_requested:
+                  context.actionRequested ?? DocumentActionRequested.REVISE,
+              }
+            : {}),
           workflow_version_id: selectedWorkflow?.workflow_version_id ?? null,
           workflow_snapshot: selectedWorkflow?.graph as Prisma.InputJsonValue | undefined,
           workflow_current_node_key: directCreate ? null : workflowPlan[0]?.node_key ?? null,
@@ -1606,6 +1623,120 @@ export class DocumentsService {
     } catch (error) {
       this.rethrowDocumentNumberConflict(error);
     }
+  }
+
+  async createHardcopyEditRequest(
+    id: string,
+    dto: UpdateDocumentDto,
+    actor: AuthenticatedUser,
+  ) {
+    const sourceDocumentId = toBigIntId(id, "document_id");
+    const actorId = toBigIntId(actor.user_id, "current_user_id");
+    const source = await this.prisma.document.findUnique({
+      where: { document_id: sourceDocumentId },
+      include: {
+        assignments: { select: { user_id: true } },
+        hardcopy: true,
+      },
+    });
+
+    if (!source) {
+      throw new NotFoundException("The Hardcopy document was not found.");
+    }
+    if (source.document_type !== DocumentType.HARDCOPY || !source.hardcopy) {
+      throw new BadRequestException(
+        "Only an existing Hardcopy document can use the edit approval workflow.",
+      );
+    }
+    if (
+      !new Set<DocumentStatus>([
+        DocumentStatus.Approved,
+        DocumentStatus.Completed,
+      ]).has(source.status)
+    ) {
+      throw new ConflictException(
+        "Only approved or completed Hardcopy documents can be changed through an edit request.",
+      );
+    }
+
+    if (!hasPermission(actor, "documents.edit")) {
+      const ownsDocument =
+        source.created_by === actorId ||
+        source.assignments.some((assignment) => assignment.user_id === actorId);
+      if (!ownsDocument) {
+        throw new ForbiddenException(
+          "Staff can only request changes to Hardcopy documents they created or that are assigned to them.",
+        );
+      }
+    }
+
+    const existingEditRequest = await this.prisma.document.findFirst({
+      where: {
+        source_document_id: sourceDocumentId,
+        status: {
+          notIn: [
+            DocumentStatus.Approved,
+            DocumentStatus.Completed,
+            DocumentStatus.Rejected,
+            DocumentStatus.Cancelled,
+            DocumentStatus.Disposed,
+          ],
+        },
+      },
+      select: { document_id: true },
+    });
+    if (existingEditRequest) {
+      throw new ConflictException(
+        "This Hardcopy document already has a pending edit request.",
+      );
+    }
+
+    const proposed: CreateDocumentDto = {
+      document_title: dto.document_title?.trim() || source.document_title,
+      document_type: DocumentType.HARDCOPY,
+      action: "SUBMIT",
+      action_requested: DocumentActionRequested.REVISE,
+      requester_type: "CURRENT_USER",
+      area_id: dto.area_id ?? source.hardcopy.area_id.toString(),
+      location_id: dto.location_id ?? source.hardcopy.location_id.toString(),
+      specific_id:
+        dto.specific_id !== undefined
+          ? dto.specific_id || undefined
+          : source.hardcopy.specific_id?.toString(),
+      asset_id:
+        dto.asset_id !== undefined
+          ? dto.asset_id || undefined
+          : source.hardcopy.asset_id?.toString(),
+      sequence_id:
+        dto.sequence_id !== undefined
+          ? dto.sequence_id || undefined
+          : source.hardcopy.sequence_id?.toString(),
+      retention_enabled:
+        dto.retention_enabled !== undefined
+          ? dto.retention_enabled
+          : source.hardcopy.retention_enabled,
+      retention_start_date:
+        dto.retention_start_date !== undefined
+          ? dto.retention_start_date
+          : source.hardcopy.retention_start_date?.toISOString(),
+      retention_end_date:
+        dto.retention_end_date !== undefined
+          ? dto.retention_end_date
+          : source.hardcopy.retention_end_date?.toISOString(),
+    };
+
+    return this.createRequest(
+      proposed,
+      actor.user_id,
+      undefined,
+      actor,
+      {
+        sourceDocumentId,
+        sourceDocumentUpdatedAt: source.updated_at,
+        creationSource: "EDIT_REQUEST",
+        actionRequested: DocumentActionRequested.REVISE,
+      },
+    );
   }
 
   async analyzeUpload(file?: Express.Multer.File) {
@@ -3020,6 +3151,24 @@ export class DocumentsService {
         },
       });
       if (result.count !== 1) throw new ConflictException("Request status changed; refresh and try again.");
+
+      if (
+        action === "approve" &&
+        nextStatus === DocumentStatus.Approved &&
+        current.document_type === DocumentType.HARDCOPY &&
+        current.action_requested === DocumentActionRequested.REVISE &&
+        current.source_document_id
+      ) {
+        await this.applyApprovedHardcopyEditRequest(
+          tx,
+          current.document_id,
+          current.source_document_id,
+          current.source_document_updated_at,
+          actorId,
+          remarks,
+        );
+      }
+
       await tx.documentStatusHistory.create({
         data: {
           document_id: documentId,
@@ -3060,6 +3209,80 @@ export class DocumentsService {
     }
 
     return transitionedDocument;
+  }
+
+  private async applyApprovedHardcopyEditRequest(
+    tx: Prisma.TransactionClient,
+    requestDocumentId: bigint,
+    sourceDocumentId: bigint,
+    sourceUpdatedAt: Date | null,
+    approverId: bigint,
+    remarks?: string,
+  ) {
+    const [request, source] = await Promise.all([
+      tx.document.findUnique({
+        where: { document_id: requestDocumentId },
+        include: { hardcopy: true },
+      }),
+      tx.document.findUnique({
+        where: { document_id: sourceDocumentId },
+        include: { hardcopy: true },
+      }),
+    ]);
+
+    if (!request?.hardcopy || !source?.hardcopy) {
+      throw new ConflictException(
+        "The Hardcopy edit request or its controlled source is incomplete.",
+      );
+    }
+    if (
+      !new Set<DocumentStatus>([
+        DocumentStatus.Approved,
+        DocumentStatus.Completed,
+      ]).has(source.status)
+    ) {
+      throw new ConflictException(
+        "The controlled Hardcopy changed state while this edit request was pending. Review the source record and submit a new edit request.",
+      );
+    }
+    if (
+      sourceUpdatedAt &&
+      source.updated_at.getTime() !== sourceUpdatedAt.getTime()
+    ) {
+      throw new ConflictException(
+        "The controlled Hardcopy changed while this edit request was pending. Review the latest record and submit a new edit request.",
+      );
+    }
+
+    await tx.document.update({
+      where: { document_id: sourceDocumentId },
+      data: { document_title: request.document_title },
+    });
+    await tx.hardcopyDocument.update({
+      where: { document_id: sourceDocumentId },
+      data: {
+        asset_id: request.hardcopy.asset_id,
+        area_id: request.hardcopy.area_id,
+        specific_id: request.hardcopy.specific_id,
+        location_id: request.hardcopy.location_id,
+        sequence_id: request.hardcopy.sequence_id,
+        retention_enabled: request.hardcopy.retention_enabled,
+        retention_start_date: request.hardcopy.retention_start_date,
+        retention_end_date: request.hardcopy.retention_end_date,
+      },
+    });
+    await tx.documentStatusHistory.create({
+      data: {
+        document_id: sourceDocumentId,
+        previous_status: source.status,
+        new_status: source.status,
+        action: "edit-approved",
+        performed_by: approverId,
+        remarks:
+          remarks?.trim() ||
+          `Approved Hardcopy edit request #${requestDocumentId.toString()}.`,
+      },
+    });
   }
 
   private async approvePendingSoftcopyAttachments(
