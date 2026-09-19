@@ -68,7 +68,62 @@ export class WorkflowDefinitionsService {
       },
     });
     if (!version) throw new NotFoundException("Workflow version was not found.");
-    return version;
+
+    const graph = version.graph as unknown as WorkflowGraph;
+    const userIds = Array.from(
+      new Set(
+        (graph.nodes ?? [])
+          .filter((node) => node.assignment?.type === "USER" && /^\d+$/.test(node.assignment.user_id ?? ""))
+          .map((node) => BigInt(node.assignment!.user_id!)),
+      ),
+    );
+    const roleIds = Array.from(
+      new Set(
+        (graph.nodes ?? [])
+          .filter((node) => node.assignment?.type === "ROLE" && /^\d+$/.test(node.assignment.role_id ?? ""))
+          .map((node) => BigInt(node.assignment!.role_id!)),
+      ),
+    );
+
+    const [users, roles] = await Promise.all([
+      userIds.length
+        ? this.prisma.user.findMany({
+            where: { user_id: { in: userIds } },
+            select: {
+              user_id: true,
+              firstname: true,
+              lastname: true,
+              username: true,
+              position_title: true,
+              role: { select: { role_name: true } },
+            },
+          })
+        : Promise.resolve([]),
+      roleIds.length
+        ? this.prisma.role.findMany({
+            where: { role_id: { in: roleIds } },
+            select: { role_id: true, role_name: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    return {
+      ...version,
+      assignment_references: {
+        users: users.map((user) => ({
+          user_id: user.user_id.toString(),
+          firstname: user.firstname,
+          lastname: user.lastname,
+          username: user.username,
+          position_title: user.position_title,
+          role_name: user.role.role_name,
+        })),
+        roles: roles.map((role) => ({
+          role_id: role.role_id.toString(),
+          role_name: role.role_name,
+        })),
+      },
+    };
   }
 
   async publishedDefault(documentType: string, action?: string) {
