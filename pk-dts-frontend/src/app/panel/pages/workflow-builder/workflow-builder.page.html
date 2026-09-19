@@ -199,28 +199,63 @@
 
                                     <label>
                                         <span>Approver</span>
-                                        <select [value]="node.assignment?.type" (change)="setAssignmentType(node, $any($event.target).value)" [disabled]="!editable">
+                                        <select *ngIf="editable; else readOnlyApprover" [value]="node.assignment?.type" (change)="setAssignmentType(node, $any($event.target).value)">
                                             <option value="REQUESTER_LEADER">Requester's leader</option>
                                             <option value="USER">Specific person</option>
                                             <option value="ROLE">Role</option>
                                             <option value="REQUESTER">Requester</option>
                                         </select>
+                                        <ng-template #readOnlyApprover>
+                                            <div class="read-only-value">{{ assignmentTypeLabel(node) }}</div>
+                                        </ng-template>
                                     </label>
 
                                     <label *ngIf="node.assignment?.type === 'USER'">
                                         <span>Person</span>
-                                        <select [value]="node.assignment?.user_id || ''" (change)="setAssignmentUser(node, $any($event.target).value)" [disabled]="!editable || usersLoading">
-                                            <option value="">{{ usersLoading ? 'Loading people…' : 'Select person' }}</option>
-                                            <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
-                                        </select>
+                                        <ng-container *ngIf="editable; else readOnlyPerson">
+                                            <select
+                                                [value]="node.assignment?.user_id || ''"
+                                                (focus)="prepareUserOptions()"
+                                                (click)="prepareUserOptions()"
+                                                (change)="setAssignmentUser(node, $any($event.target).value)"
+                                                [disabled]="usersLoading"
+                                            >
+                                                <option value="">{{ usersLoading ? 'Loading people…' : 'Select person' }}</option>
+                                                <option
+                                                    *ngIf="node.assignment?.user_id && !hasLoadedUser(node.assignment?.user_id)"
+                                                    [value]="node.assignment?.user_id"
+                                                >{{ assignedUserLabel(node) }}</option>
+                                                <option *ngFor="let user of users; trackBy: trackUser" [value]="user.user_id">{{ userLabel(user) }}</option>
+                                            </select>
+                                            <small *ngIf="usersLoading" class="field-hint">Loading available people…</small>
+                                        </ng-container>
+                                        <ng-template #readOnlyPerson>
+                                            <div class="read-only-value">{{ assignedUserLabel(node) }}</div>
+                                        </ng-template>
                                     </label>
 
                                     <label *ngIf="node.assignment?.type === 'ROLE'">
                                         <span>Role</span>
-                                        <select [value]="node.assignment?.role_id || ''" (change)="setAssignmentRole(node, $any($event.target).value)" [disabled]="!editable || rolesLoading">
-                                            <option value="">{{ rolesLoading ? 'Loading roles…' : 'Select role' }}</option>
-                                            <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
-                                        </select>
+                                        <ng-container *ngIf="editable; else readOnlyRole">
+                                            <select
+                                                [value]="node.assignment?.role_id || ''"
+                                                (focus)="prepareRoleOptions()"
+                                                (click)="prepareRoleOptions()"
+                                                (change)="setAssignmentRole(node, $any($event.target).value)"
+                                                [disabled]="rolesLoading"
+                                            >
+                                                <option value="">{{ rolesLoading ? 'Loading roles…' : 'Select role' }}</option>
+                                                <option
+                                                    *ngIf="node.assignment?.role_id && !hasLoadedRole(node.assignment?.role_id)"
+                                                    [value]="node.assignment?.role_id"
+                                                >{{ assignedRoleLabel(node) }}</option>
+                                                <option *ngFor="let role of roles; trackBy: trackRole" [value]="role.role_id">{{ role.role_name }}</option>
+                                            </select>
+                                            <small *ngIf="rolesLoading" class="field-hint">Loading available roles…</small>
+                                        </ng-container>
+                                        <ng-template #readOnlyRole>
+                                            <div class="read-only-value">{{ assignedRoleLabel(node) }}</div>
+                                        </ng-template>
                                     </label>
                                 </div>
 
