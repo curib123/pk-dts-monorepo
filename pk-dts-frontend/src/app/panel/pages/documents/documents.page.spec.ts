@@ -32,6 +32,7 @@ describe('DocumentsPage hardcopy transfer actions', () => {
     beforeEach(async () => {
         documentsService = jasmine.createSpyObj<DocumentsService>('DocumentsService', [
             'listDocuments',
+            'listDocumentsPage',
             'listUsers',
             'listAreas',
             'listAssetNumbers',
@@ -43,7 +44,8 @@ describe('DocumentsPage hardcopy transfer actions', () => {
             'updateDocument',
             'createDocument'
         ]);
-        documentsService.listDocuments.and.returnValue(of([]));
+        documentsService.listDocuments.and.returnValue(of([hardcopyDocument]));
+        documentsService.listDocumentsPage.and.returnValue(of({ items: [hardcopyDocument], meta: { total: 1, page: 1, limit: 10, total_pages: 1 } }));
         documentsService.listUsers.and.returnValue(of([]));
         documentsService.listAreas.and.returnValue(of([]));
         documentsService.listAssetNumbers.and.returnValue(of([]));
