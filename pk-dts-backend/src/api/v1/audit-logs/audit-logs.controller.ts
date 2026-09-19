@@ -24,7 +24,7 @@ export class AuditLogsController {
     @Query('to') to = '',
     @Query('page') page = '1',
     @Query('limit') limit = '20',
-    @Query('include_total') includeTotal = 'false',
+    @Query('include_total') includeTotal = 'true',
   ) {
     return this.service.list(
       search,
