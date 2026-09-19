@@ -37,34 +37,111 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
                     <div class="registration-content">
 
-                <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="form-grid">
-                    <div class="section-label wide"><i class="pi pi-user"></i><span><strong>Personal details</strong><small>Tell us who you are</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('firstname')"><span>First name</span><input formControlName="firstname" autocomplete="given-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('lastname')"><span>Last name</span><input formControlName="lastname" autocomplete="family-name" maxlength="100" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('middlename')"><span>Middle name <small>Optional</small></span><input formControlName="middlename" autocomplete="additional-name" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small></label>
+                <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="registration-form">
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-user" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Personal details</strong>
+                                <small>Tell us who you are</small>
+                            </div>
+                        </div>
 
-                    <div class="section-label wide"><i class="pi pi-briefcase"></i><span><strong>Work and access</strong><small>Help us assign the right permissions</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('username')"><span>Username</span><input formControlName="username" type="text" autocomplete="username" maxlength="150" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('position_title')"><span>Position title <small>Optional</small></span><input formControlName="position_title" autocomplete="organization-title" maxlength="100" /><small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')"><span>Requested role</span><select formControlName="requested_role_id" required>
-                        <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
-                        <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
-                    </select>
-                    <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
-                    <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
-                    <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span></label>
-                    <label class="wide remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')"><span>Remarks <small>Optional</small></span>
-                        <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
-                        <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
-                    </label>
+                        <div class="form-section-fields three-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('firstname')">
+                                <span class="field-label">First name</span>
+                                <input formControlName="firstname" autocomplete="given-name" maxlength="100" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small>
+                            </label>
 
-                    <div class="section-label wide"><i class="pi pi-lock"></i><span><strong>Secure your account</strong><small>Use at least 8 characters</small></span></div>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('password')"><span>Password</span><input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small></label>
-                    <label [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()"><span>Confirm password</span><input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required /><small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small><small class="field-error" *ngIf="!isRegisterFieldInvalid('confirmPassword') && passwordMismatch()">Passwords do not match.</small></label>
-                    <div class="wide error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
-                    <button class="primary wide" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0"><i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</button>
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('lastname')">
+                                <span class="field-label">Last name</span>
+                                <input formControlName="lastname" autocomplete="family-name" maxlength="100" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('middlename')">
+                                <span class="field-label">Middle name <small class="optional-tag">Optional</small></span>
+                                <input formControlName="middlename" autocomplete="additional-name" maxlength="100" />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-briefcase" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Work and access</strong>
+                                <small>Help us assign the right permissions</small>
+                            </div>
+                        </div>
+
+                        <div class="form-section-fields three-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('username')">
+                                <span class="field-label">Username</span>
+                                <input formControlName="username" type="text" autocomplete="username" maxlength="150" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('position_title')">
+                                <span class="field-label">Position title <small class="optional-tag">Optional</small></span>
+                                <input formControlName="position_title" autocomplete="organization-title" maxlength="100" />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')">
+                                <span class="field-label">Requested role</span>
+                                <select formControlName="requested_role_id" required>
+                                    <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
+                                    <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
+                                </select>
+                                <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
+                                <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span>
+                            </label>
+
+                            <label class="form-field full-row remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')">
+                                <span class="field-label">Remarks <small class="optional-tag">Optional</small></span>
+                                <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <div class="form-section-heading">
+                            <i class="pi pi-lock" aria-hidden="true"></i>
+                            <div class="form-section-copy">
+                                <strong>Secure your account</strong>
+                                <small>Use at least 8 characters</small>
+                            </div>
+                        </div>
+
+                        <div class="form-section-fields two-columns">
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('password')">
+                                <span class="field-label">Password</span>
+                                <input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small>
+                            </label>
+
+                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()">
+                                <span class="field-label">Confirm password</span>
+                                <input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                                <small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small>
+                                <small class="field-error" *ngIf="!isRegisterFieldInvalid('confirmPassword') && passwordMismatch()">Passwords do not match.</small>
+                            </label>
+                        </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <div class="error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i><span>{{ errorMessage() }}</span></div>
+                        <button class="primary" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0">
+                            <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+                            <span>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</span>
+                        </button>
+                    </div>
                 </form>
-
                 <section *ngIf="receipt() as result" class="receipt">
                     <i class="pi pi-check-circle"></i><span>Request submitted</span>
                     <h2>Save your private reference code</h2>
