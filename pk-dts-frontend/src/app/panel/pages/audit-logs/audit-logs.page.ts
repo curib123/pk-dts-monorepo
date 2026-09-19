@@ -4,7 +4,7 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 interface AuditItem {
     audit_log_id: string;
@@ -34,7 +34,7 @@ interface AuditListResponse {
 @Component({
     selector: 'app-audit-logs-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule],
+    imports: [WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
     template: `<app-workspace-page>
         <section class="audit-page">
             <div class="workspace-toolbar">
@@ -50,13 +50,7 @@ interface AuditListResponse {
             </div>
 
             <section class="filter-panel" aria-label="Audit log filters">
-                <label class="search-field">
-                    <span>Search</span>
-                    <div>
-                        <i class="pi pi-search"></i>
-                        <input [(ngModel)]="search" (keyup.enter)="apply()" placeholder="Description, path, reason, or user" />
-                    </div>
-                </label>
+                <app-workspace-search [value]="search" (valueChange)="search = $event" (search)="apply()" label="Search" placeholder="Description, path, reason, or user" />
 
                 <label>
                     <span>Module</span>
