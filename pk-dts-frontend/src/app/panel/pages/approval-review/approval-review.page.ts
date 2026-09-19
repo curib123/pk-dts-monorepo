@@ -1,6 +1,6 @@
 import { DocumentDetailDialogComponent } from "../documents/components/document-detail-dialog/document-detail-dialog.component";
 import { DocumentDetail } from "../documents/documents.types";
-import { Subscription } from "rxjs";
+import { Subscription, finalize } from "rxjs";
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +21,7 @@ import { SystemSettingsService } from '@/app/shared/services/system-settings.ser
 @Component({
     selector: 'app-approval-review-page', standalone: true, imports: [DocumentDetailDialogComponent, CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, TableModule, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ConfirmationDialogComponent, LoadingShimmerComponent],
     template: `<app-loading-shimmer *ngIf="loading" label="Loading approval requests" [columns]="6" />
-    <app-document-detail-dialog *ngIf="viewDocumentDetail" [(visible)]="viewVisible" [document]="viewDocumentDetail" [revisions]="viewDocumentDetail.softcopy?.revisions || []" [canAccessFiles]="true" />
+    <app-document-detail-dialog *ngIf="viewDocumentDetail" [(visible)]="viewVisible" [document]="viewDocumentDetail" [loading]="!!viewLoadingId" [revisions]="viewDocumentDetail.softcopy?.revisions || []" [canAccessFiles]="true" />
     <section class="review-page" [style.display]="loading ? 'none' : null">
     <div class="feedback error" *ngIf="errorMessage()">{{errorMessage()}}</div>
     <nav class="workflow-tabs" aria-label="Approval type"><button type="button" [class.active]="activeTab === 'documents'" (click)="activeTab='documents'"><i class="pi pi-file-check"></i> Document Approvals <span>{{requests().length}}</span></button><button *ngIf="canReviewDisposals()" type="button" [class.active]="activeTab === 'disposals'" (click)="activeTab='disposals'"><i class="pi pi-trash"></i> Disposal Approvals <span>{{disposalRequests().length}}</span></button></nav>
@@ -70,13 +70,23 @@ export class ApprovalReviewPage implements OnInit, OnDestroy {
     private viewRequest?: Subscription;
     ngOnDestroy() { this.viewRequest?.unsubscribe(); }
     viewDocument(item: DocumentSummary) {
-        if (this.viewLoadingId === item.document_id) return;
         this.viewRequest?.unsubscribe();
+        this.viewDocumentDetail = item;
+        this.viewVisible = true;
         this.viewLoadingId = item.document_id;
         this.errorMessage.set('');
-        this.viewRequest = this.documents.getApprovalDocument(item.document_id).subscribe({
-            next: detail => { this.viewDocumentDetail = detail; this.viewVisible = true; this.viewLoadingId = ''; },
-            error: error => { this.viewLoadingId = ''; const message = error?.error?.message; this.errorMessage.set(Array.isArray(message) ? message.join(' ') : message || 'Unable to load this approval document.'); }
+        this.viewRequest = this.documents.getApprovalDocument(item.document_id).pipe(
+            finalize(() => {
+                if (this.viewLoadingId === item.document_id) this.viewLoadingId = '';
+            })
+        ).subscribe({
+            next: detail => {
+                if (this.viewLoadingId === item.document_id) this.viewDocumentDetail = detail;
+            },
+            error: error => {
+                const message = error?.error?.message;
+                this.errorMessage.set(Array.isArray(message) ? message.join(' ') : message || 'The approval summary is available, but the full document details could not be loaded.');
+            }
         });
     }
     canApprove=(item: DocumentSummary)=>this.canActOnStep(item); canRequestRevision=(item: DocumentSummary)=>item.workflow_version_id ? this.canActOnStep(item) : this.isAssignedWorkflowStep(item) || this.auth.hasPermission('document-requests.request-revision'); canReject=(item: DocumentSummary)=>item.workflow_version_id ? this.canActOnStep(item) : this.auth.hasPermission('document-requests.reject'); canComplete=()=>this.auth.hasPermission('document-requests.complete');
