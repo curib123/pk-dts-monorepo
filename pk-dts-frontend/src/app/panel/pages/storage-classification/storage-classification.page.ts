@@ -19,7 +19,7 @@ import { RecordCardComponent, RecordGridComponent } from '@/app/shared/component
 import { ResourceViewDialogComponent, ResourceViewDialogData } from '../roles-permissions/components/resource-view-dialog/resource-view-dialog.component';
 import { StorageResourceFormDialogComponent } from './components/storage-resource-form-dialog/storage-resource-form-dialog.component';
 import { StorageClassificationService } from './storage-classification.service';
-import { WorkspacePageComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaDetail,
     AreaSummary,
@@ -56,7 +56,7 @@ interface ResourceOption {
 @Component({
     selector: 'app-storage-classification-page',
     standalone: true,
-    imports: [WorkspacePageComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
+    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading storage classifications" [columns]="6" />
         <section class="storage-page space-y-6" [style.display]="isLoading() ? 'none' : null">
@@ -108,12 +108,12 @@ interface ResourceOption {
             </div>
 
             <article class="surface-card p-5 sm:p-6">
-                <div class="resource-tabs">
+                <app-workspace-tabs ariaLabel="Storage catalog types">
                     <button *ngFor="let option of resourceOptions" type="button" class="resource-tab" [class.active]="activeResource() === option.key" (click)="selectResource(option.key)">
                         <i [class]="option.icon"></i>
                         <span>{{ option.label }}</span>
                     </button>
-                </div>
+                </app-workspace-tabs>
 
                 <div class="section-head mt-5">
                     <div>
