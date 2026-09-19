@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, finalize, map, shareReplay } from 'rxjs';
+import { Observable, finalize, map, shareReplay, timeout } from 'rxjs';
 import { AuthService } from '@/app/auth/auth.service';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
 import { PublishedWorkflowOption, PublishedWorkflowVersion, WorkflowDefinition, WorkflowGraph, WorkflowVersion } from './workflow-builder.types';
 
 type Envelope<T> = T | { data: T };
 const API = `${BACKEND_API_BASE_URL}/workflow-definitions`;
+const WORKFLOW_REQUEST_TIMEOUT_MS = 20_000;
 
 @Injectable({ providedIn: 'root' })
 export class WorkflowBuilderService {
@@ -15,7 +16,17 @@ export class WorkflowBuilderService {
     private pendingDefaults = new Map<string, Observable<PublishedWorkflowOption[]>>();
 
     list(includeInactive = true) {
-        return this.http.get<Envelope<WorkflowDefinition[]>>(API, { params: { include_inactive: includeInactive } }).pipe(map(this.unwrap));
+        return this.http.get<Envelope<WorkflowDefinition[]>>(API, { params: { include_inactive: includeInactive } }).pipe(
+            timeout(WORKFLOW_REQUEST_TIMEOUT_MS),
+            map(this.unwrap)
+        );
+    }
+
+    getVersion(definitionId: string, versionId: string) {
+        return this.http.get<Envelope<WorkflowVersion>>(`${API}/${definitionId}/versions/${versionId}`).pipe(
+            timeout(WORKFLOW_REQUEST_TIMEOUT_MS),
+            map(this.unwrap)
+        );
     }
 
     publishedDefault(documentType: 'SOFTCOPY' | 'HARDCOPY', action: string) {
