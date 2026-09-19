@@ -12,43 +12,50 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, RouterModule],
     template: `
-        <main class="login-shell registration-shell" [style.--registration-cover]="coverImage()">
-            <div class="login-cover registration-cover" aria-hidden="true"></div>
-            <div class="login-overlay registration-overlay"></div>
+        <main class="registration-page" [style.--registration-cover]="coverImage()">
+            <div class="registration-backdrop" aria-hidden="true"></div>
 
-            <div class="login-panel registration-panel">
-                <section class="login-card registration-card">
-                    <div class="registration-content">
-                        <nav class="mode-tabs registration-tabs" aria-label="Registration options">
-                            <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')"><i class="pi pi-user-plus"></i><span>New request</span></button>
-                            <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')"><i class="pi pi-clock"></i><span>Check status</span></button>
-                        </nav>
+            <section class="registration-card">
+                <nav class="registration-tabs" aria-label="Registration options">
+                    <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')">
+                        <i class="pi pi-user-plus" aria-hidden="true"></i>
+                        <span>New request</span>
+                    </button>
+                    <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')">
+                        <i class="pi pi-clock" aria-hidden="true"></i>
+                        <span>Check status</span>
+                    </button>
+                </nav>
 
-                <form *ngIf="mode() === 'register' && !receipt()" [formGroup]="registerForm" (ngSubmit)="submitRegistration()" class="registration-form">
+                <form
+                    *ngIf="mode() === 'register' && !receipt()"
+                    [formGroup]="registerForm"
+                    (ngSubmit)="submitRegistration()"
+                    class="registration-form"
+                >
                     <section class="form-section">
-                        <div class="form-section-heading">
-                            <i class="pi pi-user" aria-hidden="true"></i>
-                            <div class="form-section-copy">
-                                <strong>Personal details</strong>
-                                <small>Tell us who you are</small>
+                        <header class="section-heading">
+                            <div>
+                                <h2>Personal details</h2>
+                                <p>Tell us who you are</p>
                             </div>
-                        </div>
+                        </header>
 
-                        <div class="form-section-fields three-columns">
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('firstname')">
+                        <div class="field-grid field-grid-3">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('firstname')">
                                 <span class="field-label">First name</span>
                                 <input formControlName="firstname" autocomplete="given-name" maxlength="100" required />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('firstname')">{{ registerFieldError('firstname') }}</small>
                             </label>
 
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('lastname')">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('lastname')">
                                 <span class="field-label">Last name</span>
                                 <input formControlName="lastname" autocomplete="family-name" maxlength="100" required />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('lastname')">{{ registerFieldError('lastname') }}</small>
                             </label>
 
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('middlename')">
-                                <span class="field-label">Middle name <small class="optional-tag">Optional</small></span>
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('middlename')">
+                                <span class="field-label">Middle name <small>Optional</small></span>
                                 <input formControlName="middlename" autocomplete="additional-name" maxlength="100" />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('middlename')">{{ registerFieldError('middlename') }}</small>
                             </label>
@@ -56,63 +63,64 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     </section>
 
                     <section class="form-section">
-                        <div class="form-section-heading">
-                            <i class="pi pi-briefcase" aria-hidden="true"></i>
-                            <div class="form-section-copy">
-                                <strong>Work and access</strong>
-                                <small>Help us assign the right permissions</small>
+                        <header class="section-heading">
+                            <div>
+                                <h2>Work and access</h2>
+                                <p>Help us assign the right permissions</p>
                             </div>
-                        </div>
+                        </header>
 
-                        <div class="form-section-fields three-columns">
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('username')">
+                        <div class="field-grid field-grid-3">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('username')">
                                 <span class="field-label">Username</span>
                                 <input formControlName="username" type="text" autocomplete="username" maxlength="150" required />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('username')">{{ registerFieldError('username') }}</small>
                             </label>
 
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('position_title')">
-                                <span class="field-label">Position title <small class="optional-tag">Optional</small></span>
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('position_title')">
+                                <span class="field-label">Position title <small>Optional</small></span>
                                 <input formControlName="position_title" autocomplete="organization-title" maxlength="100" />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('position_title')">{{ registerFieldError('position_title') }}</small>
                             </label>
 
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('requested_role_id')">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('requested_role_id')">
                                 <span class="field-label">Requested role</span>
                                 <select formControlName="requested_role_id" required>
                                     <option value="">{{ rolesLoading() ? 'Loading roles…' : rolesLoadError() ? 'Roles unavailable' : 'Select the access role you need' }}</option>
                                     <option *ngFor="let role of roles()" [value]="role.role_id">{{ role.role_name }}</option>
                                 </select>
-                                <small class="field-note" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
+                                <small class="field-help" *ngIf="!rolesLoadError()">The approver confirms your final role.</small>
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('requested_role_id')">{{ registerFieldError('requested_role_id') }}</small>
-                                <span class="role-load-error" *ngIf="rolesLoadError()"><span>{{ rolesLoadError() }}</span><button type="button" (click)="loadRoles()">Retry</button></span>
+                                <span class="role-error" *ngIf="rolesLoadError()">
+                                    <span>{{ rolesLoadError() }}</span>
+                                    <button type="button" (click)="loadRoles()">Retry</button>
+                                </span>
                             </label>
 
-                            <label class="form-field full-row remarks-field" [class.field-invalid]="isRegisterFieldInvalid('applicant_remarks')">
-                                <span class="field-label">Remarks <small class="optional-tag">Optional</small></span>
-                                <textarea formControlName="applicant_remarks" rows="2" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
+                            <label class="form-field full-row" [class.invalid]="isRegisterFieldInvalid('applicant_remarks')">
+                                <span class="field-label">Remarks <small>Optional</small></span>
+                                <textarea formControlName="applicant_remarks" rows="3" maxlength="1000" placeholder="Optional note for the account manager"></textarea>
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('applicant_remarks')">{{ registerFieldError('applicant_remarks') }}</small>
                             </label>
                         </div>
                     </section>
 
                     <section class="form-section">
-                        <div class="form-section-heading">
-                            <i class="pi pi-lock" aria-hidden="true"></i>
-                            <div class="form-section-copy">
-                                <strong>Secure your account</strong>
-                                <small>Use at least 8 characters</small>
+                        <header class="section-heading">
+                            <div>
+                                <h2>Secure your account</h2>
+                                <p>Use at least 8 characters</p>
                             </div>
-                        </div>
+                        </header>
 
-                        <div class="form-section-fields two-columns">
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('password')">
+                        <div class="field-grid field-grid-2">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('password')">
                                 <span class="field-label">Password</span>
                                 <input formControlName="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('password')">{{ registerFieldError('password') }}</small>
                             </label>
 
-                            <label class="form-field" [class.field-invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()">
+                            <label class="form-field" [class.invalid]="isRegisterFieldInvalid('confirmPassword') || passwordMismatch()">
                                 <span class="field-label">Confirm password</span>
                                 <input formControlName="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
                                 <small class="field-error" *ngIf="isRegisterFieldInvalid('confirmPassword')">{{ registerFieldError('confirmPassword') }}</small>
@@ -122,44 +130,85 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     </section>
 
                     <div class="form-actions">
-                        <div class="error" *ngIf="errorMessage()" aria-live="polite"><i class="pi pi-exclamation-circle"></i><span>{{ errorMessage() }}</span></div>
-                        <button class="primary" type="submit" [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0">
-                            <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+                        <div class="form-error" *ngIf="errorMessage()" aria-live="polite">
+                            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                            <span>{{ errorMessage() }}</span>
+                        </div>
+
+                        <button
+                            class="primary-button"
+                            type="submit"
+                            [disabled]="loading() || rolesLoading() || !!rolesLoadError() || roles().length === 0"
+                        >
+                            <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-send'" aria-hidden="true"></i>
                             <span>{{ loading() ? 'Submitting…' : 'Submit registration request' }}</span>
                         </button>
                     </div>
                 </form>
-                <section *ngIf="receipt() as result" class="receipt">
-                    <i class="pi pi-check-circle"></i><span>Request submitted</span>
-                    <h2>Save your private reference code</h2>
+
+                <section *ngIf="receipt() as result" class="result-panel receipt-panel">
+                    <i class="pi pi-check-circle result-icon" aria-hidden="true"></i>
+                    <h2>Request submitted</h2>
+                    <p>Save your private reference code.</p>
                     <code>{{ result.reference_code }}</code>
                     <p>{{ result.message }}</p>
-                    <button class="primary" type="button" (click)="checkReceipt(result)">Check request status</button>
+                    <button class="primary-button" type="button" (click)="checkReceipt(result)">Check request status</button>
                 </section>
 
-                <form *ngIf="mode() === 'status' && !statusResult()" [formGroup]="statusForm" (ngSubmit)="checkStatus()" class="status-form">
-                    <label><span>Username</span><input formControlName="username" type="text" autocomplete="username" /></label>
-                    <div class="lookup-message" [class.found]="referenceLookupState() === 'found'" [class.missing]="referenceLookupState() === 'missing'" *ngIf="referenceLookupState() !== 'idle'" aria-live="polite">
+                <form
+                    *ngIf="mode() === 'status' && !statusResult()"
+                    [formGroup]="statusForm"
+                    (ngSubmit)="checkStatus()"
+                    class="status-form"
+                >
+                    <div class="status-heading">
+                        <h2>Check registration status</h2>
+                        <p>Enter the username used during registration.</p>
+                    </div>
+
+                    <label class="form-field">
+                        <span class="field-label">Username</span>
+                        <input formControlName="username" type="text" autocomplete="username" />
+                    </label>
+
+                    <div
+                        class="lookup-message"
+                        [class.found]="referenceLookupState() === 'found'"
+                        [class.missing]="referenceLookupState() === 'missing'"
+                        *ngIf="referenceLookupState() !== 'idle'"
+                        aria-live="polite"
+                    >
                         <i class="pi" [ngClass]="referenceLookupState() === 'checking' ? 'pi-spin pi-spinner' : referenceLookupState() === 'found' ? 'pi-check-circle' : 'pi-info-circle'"></i>
                         <span>{{ referenceLookupMessage() }}</span>
                     </div>
-                    <label><span>Reference code</span><input formControlName="reference_code" placeholder="REG-…" autocomplete="off" /></label>
-                    <aside class="status-guide">
-                        <i class="pi pi-lightbulb"></i>
-                        <div>
-                            <strong>How to check your request</strong><span>Enter the same username used during registration. If a request exists, its latest reference code is filled in automatically. Then select <b>Check status</b>.</span>
-                        </div>
-                    </aside>
-                    <div class="error" *ngIf="errorMessage()"><i class="pi pi-exclamation-circle"></i>{{ errorMessage() }}</div>
-                    <button class="primary" type="submit" [disabled]="loading() || referenceLookupState() === 'checking' || statusForm.invalid"><i class="pi pi-search"></i>{{ loading() ? 'Checking…' : 'Check status' }}</button>
+
+                    <label class="form-field">
+                        <span class="field-label">Reference code</span>
+                        <input formControlName="reference_code" placeholder="REG-…" autocomplete="off" />
+                    </label>
+
+                    <div class="form-error" *ngIf="errorMessage()" aria-live="polite">
+                        <i class="pi pi-exclamation-circle"></i>
+                        <span>{{ errorMessage() }}</span>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        type="submit"
+                        [disabled]="loading() || referenceLookupState() === 'checking' || statusForm.invalid"
+                    >
+                        <i class="pi pi-search" aria-hidden="true"></i>
+                        <span>{{ loading() ? 'Checking…' : 'Check status' }}</span>
+                    </button>
                 </form>
 
-                <section *ngIf="statusResult() as result" class="status-result" [attr.data-status]="result.status">
-                    <div class="status-badge"><i class="pi" [ngClass]="result.status === 'APPROVED' ? 'pi-check-circle' : result.status === 'REJECTED' ? 'pi-times-circle' : 'pi-clock'"></i>{{ result.status }}</div>
+                <section *ngIf="statusResult() as result" class="result-panel status-result" [attr.data-status]="result.status">
+                    <div class="status-badge">{{ result.status }}</div>
                     <h2>{{ result.firstname }} {{ result.lastname }}</h2>
-                    <p *ngIf="result.status === 'PENDING'">Your request is waiting for an authorized account manager to review it.</p>
-                    <p *ngIf="result.status === 'APPROVED'">Your account is approved. You can now sign in using the password you registered.</p>
+                    <p *ngIf="result.status === 'PENDING'">Your request is waiting for review.</p>
+                    <p *ngIf="result.status === 'APPROVED'">Your account is approved. You can now sign in.</p>
                     <p *ngIf="result.status === 'REJECTED'">Your request was not approved. Review the note below before submitting another request.</p>
+
                     <dl>
                         <div>
                             <dt>Requested role</dt>
@@ -178,20 +227,17 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                             <dd>{{ result.review_remarks }}</dd>
                         </div>
                     </dl>
-                    <div class="result-actions"><a *ngIf="result.status === 'APPROVED'" routerLink="/auth/login">Go to sign in</a><button type="button" (click)="resetStatus()">Check another request</button></div>
+
+                    <div class="result-actions">
+                        <a *ngIf="result.status === 'APPROVED'" routerLink="/auth/login">Go to sign in</a>
+                        <button type="button" (click)="resetStatus()">Check another request</button>
+                    </div>
                 </section>
 
-                    <footer>Already approved? <a routerLink="/auth/login">Sign in</a></footer>
-                </div>
-
-                </section>
-            </div>
-
-            <footer class="landing-footer">
-                <span>{{ settings().footerText }}</span>
-                <span>Corporate IT - System Programmer I - John Paul Curib</span>
-                <span>Secure records &middot; Clear ownership &middot; Faster retrieval</span>
-            </footer>
+                <footer class="registration-footer">
+                    Already approved? <a routerLink="/auth/login">Sign in</a>
+                </footer>
+            </section>
         </main>
     `,
     styles: [
@@ -200,1208 +246,127 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 display: block;
                 min-height: 100vh;
             }
-            .registration-shell {
-                position: relative;
-                min-height: 100vh;
-                padding: 4rem 1.25rem;
-                display: grid;
-                place-items: center;
-                background:
-                    linear-gradient(135deg, rgba(127, 29, 29, 0.7), rgba(15, 23, 42, 0.56)),
-                    var(--registration-cover) center/cover fixed;
-                color: #172033;
-            }
-            .registration-overlay {
-                position: absolute;
-                inset: 0;
-                background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.18), transparent 34%), linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent);
-            }
-            .back-home {
-                position: absolute;
-                z-index: 2;
-                top: 1.5rem;
-                left: 1.5rem;
-                display: flex;
-                gap: 0.55rem;
-                align-items: center;
-                color: #fff;
-                text-decoration: none;
-                font-weight: 800;
-            }
-            .registration-card {
-                position: relative;
-                z-index: 1;
-                width: min(820px, 100%);
-                border: 1px solid rgba(255, 255, 255, 0.65);
-                border-radius: 2rem;
-                background: rgba(255, 255, 255, 0.96);
-                padding: 2rem;
-                box-shadow: 0 32px 80px rgba(15, 23, 42, 0.28);
-                backdrop-filter: blur(16px);
-            }
-            header {
-                display: flex;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-            header img {
-                width: 4rem;
-                height: 4rem;
-                object-fit: contain;
-                border-radius: 1.2rem;
-                background: var(--brand-soft);
-                padding: 0.45rem;
-            }
-            header span {
-                color: var(--brand-primary-deep);
-                font-size: 0.7rem;
-                font-weight: 900;
-                text-transform: uppercase;
-                letter-spacing: 0.16em;
-            }
-            h1 {
-                margin: 0.25rem 0 0.45rem;
-                font-size: 2rem;
-                letter-spacing: -0.04em;
-            }
-            header p {
-                max-width: 42rem;
-                margin: 0;
-                color: #64748b;
-                line-height: 1.65;
-            }
-            .mode-tabs {
-                margin: 1.5rem 0;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 0.45rem;
-                padding: 0.35rem;
-                border-radius: 1rem;
-                background: #f1f5f9;
-            }
-            .mode-tabs button {
-                border: 0;
-                border-radius: 0.75rem;
-                padding: 0.8rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                color: #64748b;
-                background: transparent;
-                font-weight: 850;
-                cursor: pointer;
-            }
-            .mode-tabs button.active {
-                color: #fff;
-                background: var(--brand-primary-deep);
-                box-shadow: 0 8px 18px rgba(153, 27, 27, 0.18);
-            }
-            .form-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 1rem;
-            }
-            .wide {
-                grid-column: 1/-1;
-            }
-            label {
-                display: flex;
-                flex-direction: column;
-                gap: 0.45rem;
-            }
-            label > span {
-                font-size: 0.79rem;
-                font-weight: 850;
-                color: #334155;
-            }
-            label small {
-                color: #94a3b8;
-                font-weight: 650;
-            }
-            input,
-            select,
-            textarea {
-                width: 100%;
-                min-height: 3rem;
-                border: 1px solid #dbe1e9;
-                border-radius: 0.85rem;
-                background: #fff;
-                padding: 0.7rem 0.85rem;
-                color: #172033;
-                font: inherit;
-                outline: none;
-            }
-            input:focus,
-            select:focus,
-            textarea:focus {
-                border-color: var(--brand-primary);
-                box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
-            }
-            .field-note {
-                color: #7b8495;
-                line-height: 1.5;
-            }
-            .primary {
-                min-height: 3.1rem;
-                border: 0;
-                border-radius: 0.9rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.55rem;
-                color: #fff;
-                background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-deep));
-                font-weight: 850;
-                cursor: pointer;
-            }
-            .primary:disabled {
-                opacity: 0.65;
-            }
-            .error {
-                padding: 0.8rem 1rem;
-                display: flex;
-                gap: 0.55rem;
-                align-items: center;
-                border-radius: 0.8rem;
-                color: var(--brand-primary-deep);
-                background: var(--brand-soft);
-            }
-            .status-form {
-                display: grid;
-                gap: 1rem;
-            }
-            .lookup-message {
-                display: flex;
-                align-items: center;
-                gap: 0.6rem;
-                margin-top: -0.25rem;
-                border-radius: 0.75rem;
-                background: #f1f5f9;
-                padding: 0.7rem 0.85rem;
-                color: #64748b;
-                font-size: 0.78rem;
-                font-weight: 700;
-            }
-            .lookup-message.found {
-                background: #ecfdf5;
-                color: #166534;
-            }
-            .lookup-message.missing {
-                background: #fff7ed;
-                color: #9a3412;
-            }
-            .status-guide {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.75rem;
-                border: 1px solid #fde68a;
-                border-radius: 0.9rem;
-                background: #fffbeb;
-                padding: 0.9rem;
-                color: #854d0e;
-            }
-            .status-guide > i {
-                margin-top: 0.15rem;
-            }
-            .status-guide div {
-                display: grid;
-                gap: 0.25rem;
-            }
-            .status-guide strong {
-                font-size: 0.78rem;
-            }
-            .status-guide span {
-                font-size: 0.74rem;
-                line-height: 1.55;
-            }
-            .receipt,
-            .status-result {
-                text-align: center;
-                padding: 1.5rem;
-                border-radius: 1.25rem;
-                background: #f8fafc;
-            }
-            .receipt > i {
-                font-size: 2.4rem;
-                color: #16a34a;
-            }
-            .receipt > span {
-                display: block;
-                margin-top: 0.6rem;
-                color: #166534;
-                font-weight: 850;
-            }
-            .receipt h2,
-            .status-result h2 {
-                margin: 0.55rem 0;
-            }
-            .receipt code {
-                display: block;
-                margin: 1rem auto;
-                padding: 1rem;
-                border: 1px dashed #ef9a9a;
-                border-radius: 0.85rem;
-                color: var(--brand-primary-deep);
-                background: #fff;
-                font-size: 1.2rem;
-                font-weight: 900;
-                letter-spacing: 0.08em;
-            }
-            .receipt .primary {
-                width: 100%;
-            }
-            .status-badge {
-                width: max-content;
-                margin: auto;
-                padding: 0.5rem 0.75rem;
-                border-radius: 99px;
-                color: #92400e;
-                background: #fef3c7;
-                font-weight: 900;
-            }
-            .status-result[data-status='APPROVED'] .status-badge {
-                color: #166534;
-                background: #dcfce7;
-            }
-            .status-result[data-status='REJECTED'] .status-badge {
-                color: var(--brand-primary-deep);
-                background: var(--brand-soft-strong);
-            }
-            .status-result dl {
-                margin: 1.25rem 0;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 0.75rem;
-                text-align: left;
-            }
-            .status-result dl div {
-                padding: 0.85rem;
-                border-radius: 0.8rem;
-                background: #fff;
-            }
-            .status-result dt {
-                color: #94a3b8;
-                font-size: 0.67rem;
-                font-weight: 850;
-                text-transform: uppercase;
-            }
-            .status-result dd {
-                margin: 0.3rem 0 0;
-                color: #334155;
-                font-weight: 750;
-            }
-            .result-actions {
-                display: flex;
-                gap: 0.75rem;
-                justify-content: center;
-            }
-            .result-actions a,
-            .result-actions button {
-                border: 0;
-                border-radius: 0.75rem;
-                padding: 0.75rem 1rem;
-                color: #fff;
-                background: var(--brand-primary-deep);
-                text-decoration: none;
-                font-weight: 800;
-                cursor: pointer;
-            }
-            .result-actions button {
-                color: #64748b;
-                background: #e2e8f0;
-            }
-            footer {
-                margin-top: 1.4rem;
-                text-align: center;
-                color: #64748b;
-                font-size: 0.85rem;
-            }
-            footer a {
-                color: var(--brand-primary-deep);
-                font-weight: 850;
-                text-decoration: none;
-            }
-            @media (max-width: 620px) {
-                .registration-shell {
-                    padding: 4.5rem 0.75rem 1rem;
-                }
-                .registration-card {
-                    padding: 1.2rem;
-                    border-radius: 1.4rem;
-                }
-                header img {
-                    width: 3.3rem;
-                    height: 3.3rem;
-                }
-                h1 {
-                    font-size: 1.55rem;
-                }
-                .form-grid,
-                .status-result dl {
-                    grid-template-columns: 1fr;
-                }
-                .wide {
-                    grid-column: 1;
-                }
-                .mode-tabs button {
-                    font-size: 0.75rem;
-                }
-                .back-home {
-                    left: 1rem;
-                    top: 1rem;
-                }
-            }
-        `,
-        `
-            :host {
-                --registration-brand: var(--dts-accent, #2563eb);
-                --registration-brand-deep: var(--dts-accent-deep, #1e3a8a);
-                --registration-brand-soft: var(--dts-accent-soft, #dbeafe);
+
+            * {
+                box-sizing: border-box;
             }
 
-            .registration-shell {
+            .registration-page {
                 position: relative;
                 min-height: 100svh;
-                overflow-x: hidden;
-                overflow-y: auto;
-                padding: 7rem clamp(1.25rem, 5vw, 5rem) 4.5rem;
+                padding: 24px;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                background: #080c14;
+                background: var(--registration-cover) center / cover no-repeat fixed;
                 color: #172033;
             }
 
-            .registration-cover {
+            .registration-backdrop {
                 position: absolute;
                 inset: 0;
-                background: var(--registration-cover) center/cover no-repeat;
-            }
-
-            .registration-overlay {
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(90deg, rgba(5, 9, 16, 0.97) 0%, rgba(5, 9, 16, 0.86) 46%, rgba(5, 9, 16, 0.6) 100%), linear-gradient(180deg, rgba(5, 9, 16, 0.25), rgba(5, 9, 16, 0.92));
-                pointer-events: none;
-            }
-
-            .landing-nav {
-                position: absolute;
-                z-index: 3;
-                inset: 0 0 auto;
-                min-height: 5.25rem;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 1rem;
-                padding: 0.9rem clamp(1.25rem, 5vw, 5rem);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-                background: rgba(5, 9, 16, 0.78);
-                backdrop-filter: blur(14px);
-                -webkit-backdrop-filter: blur(14px);
-            }
-
-            .landing-brand,
-            .nav-link {
-                color: #fff;
-                text-decoration: none;
-            }
-
-            .landing-brand {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                min-width: 0;
-            }
-
-            .brand-mark {
-                display: grid;
-                place-items: center;
-                width: 2.8rem;
-                height: 2.8rem;
-                flex: 0 0 auto;
-                border-radius: 0.85rem;
-                background: rgba(255, 255, 255, 0.94);
-            }
-
-            .brand-mark img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-
-            .landing-brand > span:last-child {
-                display: grid;
-                min-width: 0;
-            }
-
-            .landing-brand small {
-                color: rgba(255, 255, 255, 0.68);
-                font-size: 0.62rem;
-                font-weight: 800;
-                letter-spacing: 0.14em;
-                text-transform: uppercase;
-            }
-
-            .landing-brand strong {
-                overflow: hidden;
-                margin-top: 0.15rem;
-                font-size: 0.95rem;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .landing-nav-actions {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-            }
-
-            .nav-link {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.45rem;
-                padding: 0.55rem 0.7rem;
-                border-radius: 0.65rem;
-                color: rgba(255, 255, 255, 0.76);
-                font-size: 0.72rem;
-                font-weight: 800;
-                transition: background 0.2s ease, color 0.2s ease;
-            }
-
-            .nav-link:hover {
-                color: #fff;
-                background: rgba(255, 255, 255, 0.1);
-            }
-
-            .landing-nav-meta {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.5rem;
-                border: 1px solid rgba(255, 255, 255, 0.22);
-                border-radius: 999px;
-                background: rgba(4, 10, 20, 0.45);
-                padding: 0.55rem 0.8rem;
-                color: #fff;
-                font-size: 0.72rem;
-                font-weight: 750;
-            }
-
-            .landing-nav-meta i {
-                color: #93c5fd;
+                background: rgba(15, 23, 42, .56);
             }
 
             .registration-card {
                 position: relative;
                 z-index: 1;
-                width: min(1240px, 100%);
-                min-height: min(720px, calc(100svh - 11rem));
-                display: grid;
-                grid-template-columns: minmax(0, 1.35fr) minmax(390px, 0.95fr);
-                overflow: hidden;
-                border: 1px solid rgba(255, 255, 255, 0.25);
-                border-radius: 1.5rem;
-                background: rgba(15, 23, 42, 0.28);
-                box-shadow: 0 32px 90px rgba(0, 0, 0, 0.35);
-            }
-
-            .registration-intro {
-                position: relative;
-                min-height: 720px;
-                padding: clamp(2rem, 5vw, 4.75rem);
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-                overflow: hidden;
-                color: #fff;
-                background: linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.64));
-            }
-
-            .registration-intro::after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(180deg, transparent 20%, rgba(4, 10, 20, 0.68));
-                pointer-events: none;
-            }
-
-            .registration-intro > header,
-            .intro-copy,
-            .process-list,
-            .privacy-note {
-                position: relative;
-                z-index: 1;
-            }
-
-            .registration-intro > header {
-                position: absolute;
-                top: clamp(2rem, 5vw, 4.75rem);
-                left: clamp(2rem, 5vw, 4.75rem);
-                right: clamp(2rem, 5vw, 4.75rem);
-                display: flex;
-                align-items: center;
-                gap: 0.85rem;
-            }
-
-            .logo-frame {
-                display: grid;
-                place-items: center;
-                width: 3.5rem;
-                height: 3.5rem;
-                flex: 0 0 auto;
-                border-radius: 1rem;
-                background: rgba(255, 255, 255, 0.96);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-            }
-
-            .registration-intro .logo-frame img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-
-            .brand-copy {
-                display: grid;
-                gap: 0.2rem;
-                min-width: 0;
-            }
-
-            .brand-copy strong {
-                line-height: 1.25;
-                font-size: 0.88rem;
-            }
-
-            .brand-copy span {
-                color: rgba(255, 255, 255, 0.66);
-                font-size: 0.67rem;
-                font-weight: 800;
-                letter-spacing: 0.13em;
-                text-transform: uppercase;
-            }
-
-            .intro-copy {
-                max-width: 44rem;
-            }
-
-            .eyebrow {
-                display: inline-flex;
-                align-items: center;
-                padding: 0.45rem 0.9rem;
-                border-radius: 0.55rem;
-                color: #fff;
-                background: var(--registration-brand);
-                font-size: 0.7rem;
-                font-weight: 900;
-                letter-spacing: 0.16em;
-                text-transform: uppercase;
-            }
-
-            .intro-copy h1 {
-                max-width: 46rem;
-                margin: 1.25rem 0 0;
-                color: #fff;
-                font-size: clamp(2.7rem, 4.6vw, 4.8rem);
-                line-height: 1.01;
-                font-weight: 900;
-                letter-spacing: -0.04em;
-            }
-
-            .intro-copy p {
-                max-width: 41rem;
-                margin: 1.5rem 0 0;
-                color: rgba(255, 255, 255, 0.84);
-                font-size: 1.03rem;
-                line-height: 1.8;
-            }
-
-            .process-list {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 0.65rem;
-                margin-top: 2rem;
-            }
-
-            .process-list > div {
-                display: grid;
-                grid-template-columns: 2.25rem minmax(0, 1fr);
-                align-items: center;
-                gap: 0.65rem;
-                border-top: 1px solid rgba(255, 255, 255, 0.32);
-                padding: 0.9rem 0 0;
-            }
-
-            .process-list b {
-                display: grid;
-                place-items: center;
-                width: 2.25rem;
-                height: 2.25rem;
-                border-radius: 0.65rem;
-                color: var(--registration-brand-deep);
-                background: rgba(255, 255, 255, 0.92);
-                font-size: 0.75rem;
-            }
-
-            .process-list span,
-            .privacy-note span {
-                display: grid;
-                gap: 0.16rem;
-            }
-
-            .process-list strong,
-            .privacy-note strong {
-                font-size: 0.75rem;
-            }
-
-            .process-list small,
-            .privacy-note small {
-                color: rgba(255, 255, 255, 0.64);
-                font-size: 0.62rem;
-                line-height: 1.35;
-            }
-
-            .privacy-note {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.45rem;
-                margin-top: 1rem;
-                color: rgba(255, 255, 255, 0.66);
-                font-size: 0.68rem;
-                line-height: 1.5;
-            }
-
-            .privacy-note i {
-                margin-top: 0.08rem;
-                color: #93c5fd;
-            }
-
-            .registration-content {
-                min-width: 0;
-                max-height: calc(100svh - 11rem);
-                overflow-y: auto;
-                padding: clamp(1.75rem, 3vw, 2.75rem);
-                background: rgba(255, 255, 255, 0.97);
-            }
-
-            .content-heading > span {
-                color: var(--registration-brand-deep);
-                font-size: 0.66rem;
-                font-weight: 900;
-                letter-spacing: 0.13em;
-                text-transform: uppercase;
-            }
-
-            .content-heading h2 {
-                margin: 0.3rem 0 0;
-                color: #172033;
-                font-size: 1.65rem;
-                letter-spacing: -0.03em;
-            }
-
-            .content-heading p {
-                margin: 0.45rem 0 0;
-                color: #64748b;
-                font-size: 0.86rem;
-                line-height: 1.6;
-            }
-
-            .mode-tabs {
-                margin: 1.35rem 0 1.5rem;
-                padding: 0.3rem;
-                border-radius: 0.85rem;
-                background: #f3f5f8;
-            }
-
-            .mode-tabs button {
-                min-height: 2.8rem;
-                border-radius: 0.65rem;
-                padding: 0.65rem;
-                transition: background 0.2s ease, color 0.2s ease;
-            }
-
-            .mode-tabs button.active {
-                color: #fff;
-                background: var(--registration-brand-deep);
-                box-shadow: 0 8px 18px color-mix(in srgb, var(--registration-brand-deep) 20%, transparent);
-            }
-
-            .form-grid,
-            .status-form {
-                gap: 0.9rem 1rem;
-            }
-
-            .section-label {
-                margin-top: 0.25rem;
-                padding-top: 0.9rem;
-                border-top-color: #edf0f4;
-            }
-
-            .section-label > i {
-                color: var(--registration-brand-deep);
-                background: var(--registration-brand-soft);
-            }
-
-            .section-label strong {
-                color: #273449;
-            }
-
-            .registration-content label > span {
-                color: #334155;
-                font-size: 0.75rem;
-            }
-
-            .registration-content input,
-            .registration-content select,
-            .registration-content textarea {
-                min-height: 2.85rem;
-                border-color: #dfe4eb;
-                border-radius: 0.72rem;
-                background: #fbfcfd;
-                transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
-            }
-
-            .registration-content input:hover,
-            .registration-content select:hover,
-            .registration-content textarea:hover {
-                border-color: #c4cbd5;
-                background: #fff;
-            }
-
-            .registration-content input:focus,
-            .registration-content select:focus,
-            .registration-content textarea:focus {
-                border-color: var(--registration-brand);
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--registration-brand) 12%, transparent);
-                outline: none;
-            }
-
-            .primary {
-                min-height: 3.2rem;
-                border-radius: 0.75rem;
-                background: linear-gradient(135deg, var(--registration-brand), var(--registration-brand-deep));
-                box-shadow: 0 10px 22px color-mix(in srgb, var(--registration-brand-deep) 22%, transparent);
-                transition: transform 0.16s, box-shadow 0.16s;
-            }
-
-            .primary:not(:disabled):hover {
-                transform: translateY(-1px);
-                box-shadow: 0 13px 28px color-mix(in srgb, var(--registration-brand-deep) 28%, transparent);
-            }
-
-            .registration-content > footer {
-                padding-top: 1rem;
-                border-top: 1px solid #edf0f4;
-                color: #64748b;
-                font-size: 0.8rem;
-            }
-
-            .registration-content > footer a {
-                color: var(--registration-brand-deep);
-                font-weight: 850;
-            }
-
-            @media (max-width: 960px) {
-                .registration-shell {
-                    justify-content: flex-start;
-                    padding: 6.25rem 1rem 1.25rem;
-                }
-
-                .registration-card {
-                    grid-template-columns: 1fr;
-                    min-height: auto;
-                }
-
-                .registration-intro {
-                    min-height: 390px;
-                    padding: 2.5rem 2rem;
-                }
-
-                .registration-intro > header {
-                    top: 2.5rem;
-                    left: 2rem;
-                    right: 2rem;
-                }
-
-                .intro-copy h1 {
-                    font-size: clamp(2.25rem, 7vw, 3.4rem);
-                }
-
-                .registration-content {
-                    max-height: none;
-                }
-            }
-
-            @media (max-width: 640px) {
-                .registration-shell {
-                    padding: 5.75rem 0.75rem 1rem;
-                }
-
-                .landing-nav {
-                    min-height: 5rem;
-                    padding: 0.75rem 1rem;
-                }
-
-                .landing-nav-actions {
-                    gap: 0.35rem;
-                }
-
-                .nav-link span,
-                .landing-nav-meta span {
-                    display: none;
-                }
-
-                .nav-link,
-                .landing-nav-meta {
-                    width: 2.5rem;
-                    height: 2.5rem;
-                    justify-content: center;
-                    padding: 0;
-                }
-
-                .registration-card {
-                    border-radius: 1.1rem;
-                }
-
-                .registration-intro {
-                    min-height: 430px;
-                    padding: 2rem 1.25rem;
-                }
-
-                .registration-intro > header {
-                    top: 2rem;
-                    left: 1.25rem;
-                    right: 1.25rem;
-                }
-
-                .intro-copy h1 {
-                    font-size: 2.35rem;
-                }
-
-                .process-list {
-                    grid-template-columns: 1fr;
-                    gap: 0.5rem;
-                }
-
-                .process-list > div {
-                    grid-template-columns: 2rem minmax(0, 1fr);
-                    padding-top: 0.55rem;
-                }
-
-                .process-list b {
-                    width: 2rem;
-                    height: 2rem;
-                }
-
-                .process-list small {
-                    display: none;
-                }
-
-                .registration-content {
-                    padding: 1.5rem 1.15rem;
-                }
-
-                .content-heading h2 {
-                    font-size: 1.5rem;
-                }
-
-                .form-section-fields.three-columns,
-                .form-section-fields.two-columns,
-                .form-grid,
-                .status-result dl {
-                    grid-template-columns: 1fr;
-                }
-
-                .form-field.full-row {
-                    grid-column: 1;
-                }
-
-                .form-section-heading {
-                    align-items: flex-start;
-                }
-
-                .wide {
-                    grid-column: 1;
-                }
-            }
-
-            /* The supplied PK mark is a compact icon; retain the adjacent system identity copy. */
-            .landing-brand .brand-mark { width: 4.2rem; height: 2.8rem; padding: 0; overflow: hidden; background: #070707; }
-            .landing-brand > span:last-child { display: grid; }
-            .registration-intro .logo-frame { width: 4.5rem; height: 3rem; padding: 0; overflow: hidden; border-radius: .7rem; background: #070707; }
-            .registration-intro .brand-copy { display: grid; }
-            :host-context(.app-dark) .landing-brand .brand-mark,
-            :host-context(.app-dark) .registration-intro .logo-frame { background: #070707; }
-
-            @media (max-width: 640px) {
-                .landing-brand .brand-mark { width: 3.75rem; height: 2.5rem; }
-                .registration-intro .logo-frame { width: 4.05rem; height: 2.7rem; }
-            }
-        `
-        ,`
-            /* Keep registration visually aligned with the focused login shell. */
-            .registration-shell {
-                min-height: 100svh;
-                padding: 7rem clamp(1.25rem, 5vw, 5rem) 4.5rem;
-                background: #080c14;
-            }
-
-            .registration-cover {
-                inset: 0;
-                width: auto;
-                background-position: center;
-                opacity: 1;
-            }
-
-            .registration-overlay {
-                inset: 0;
-                width: auto;
-                background:
-                    linear-gradient(90deg, rgba(5, 9, 16, 0.97) 0%, rgba(5, 9, 16, 0.88) 46%, rgba(5, 9, 16, 0.62) 100%),
-                    linear-gradient(180deg, rgba(5, 9, 16, 0.28) 0%, rgba(5, 9, 16, 0.24) 55%, rgba(5, 9, 16, 0.92) 100%);
-            }
-
-            .registration-card {
-                width: min(1120px, 100%);
-                min-height: 620px;
-                display: grid;
-                grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-                padding: 0;
-                overflow: hidden;
-                border: 1px solid rgba(255, 255, 255, 0.8);
-                border-radius: 1.65rem;
-                background: transparent;
-                box-shadow: 0 26px 70px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
-                backdrop-filter: none;
-            }
-
-            .registration-intro {
-                min-height: 620px;
-                padding: clamp(2rem, 5vw, 4rem);
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-                background: linear-gradient(160deg, rgba(15, 23, 42, 0.34), rgba(15, 23, 42, 0.9));
-            }
-
-            .intro-copy { max-width: 30rem; margin: 0; padding: 0; }
-            .intro-copy .eyebrow { border-radius: 0.55rem; background: rgba(255, 255, 255, 0.14); }
-            .intro-copy h1 { max-width: 27rem; margin-top: 1.1rem; font-size: clamp(2.4rem, 4vw, 4rem); line-height: 1.02; }
-            .intro-copy p { max-width: 27rem; color: rgba(255, 255, 255, 0.78); font-size: 0.96rem; line-height: 1.7; }
-
-            .registration-content {
-                min-width: 0;
-                padding: clamp(2rem, 4vw, 3.3rem);
-                background: #fff;
-            }
-
-            .content-heading > span { display: none; }
-            .content-heading h2 { margin-top: 0; color: #172033; font-size: 1.75rem; letter-spacing: -0.035em; }
-            .content-heading p { color: #7b8495; font-size: 0.86rem; line-height: 1.6; }
-            .mode-tabs { margin: 1.35rem 0 1.65rem; border: 1px solid #e6eaf0; border-radius: 0.8rem; background: #f8fafc; padding: 0.25rem; }
-            .mode-tabs button { min-height: 2.7rem; border-radius: 0.58rem; color: #7b8495; font-size: 0.78rem; }
-            .mode-tabs button.active { color: #fff; background: var(--registration-brand-deep); box-shadow: 0 8px 16px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent); }
-
-            .form-grid { gap: 0.85rem; }
-            .section-label { margin-top: 0.55rem; border-top-color: #edf0f4; padding-top: 0.9rem; }
-            .section-label strong { color: #334155; font-size: 0.78rem; }
-            .section-label small { color: #94a3b8; font-size: 0.68rem; }
-            .form-grid input, .form-grid select, .form-grid textarea, .status-form input {
-                min-height: 2.95rem;
-                border: 1px solid #dbe1e9;
-                border-radius: 0.7rem;
-                background: #fbfcfe;
-                box-shadow: none;
-            }
-            .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus, .status-form input:focus { border-color: color-mix(in srgb, var(--registration-brand) 58%, #cbd5e1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--registration-brand) 12%, transparent); }
-            .primary { min-height: 3.1rem; border-radius: 0.7rem; background: var(--registration-brand-deep); box-shadow: 0 12px 24px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent); }
-            .primary:hover { background: var(--registration-brand); }
-            .error { border: 1px solid #fee2e2; border-radius: 0.75rem; background: #fff5f5; color: #b91c1c; }
-            .status-guide { border-color: #dbeafe; border-radius: 0.8rem; background: #eff6ff; color: #1e40af; }
-            .receipt, .status-result { border: 1px solid #e6eaf0; border-radius: 1rem; background: #f8fafc; }
-            .status-result dl div { border: 1px solid #edf0f4; background: #fff; }
-            .registration-content > footer { border-top: 1px solid #edf0f4; padding-top: 1rem; }
-
-            @media (max-width: 900px) {
-                .registration-cover, .registration-overlay { inset: 0; width: auto; height: auto; }
-                .registration-card { grid-template-columns: 1fr; width: min(700px, 100%); }
-                .registration-intro { min-height: 300px; padding: 2.4rem 2rem; }
-                .registration-content { padding: 2rem; }
-            }
-
-            @media (max-width: 620px) {
-                .registration-shell { padding: 1rem 0.75rem; }
-                .registration-card { border-radius: 1.15rem; }
-                .registration-intro { min-height: 260px; padding: 2rem 1.25rem; }
-                .intro-copy h1 { font-size: 2.15rem; }
-                .registration-content { padding: 1.55rem 1.15rem; }
-                .form-grid { grid-template-columns: 1fr; }
-                .wide { grid-column: 1; }
-                .status-result dl { grid-template-columns: 1fr; }
-                .result-actions { flex-direction: column; }
-            }
-        `
-        ,`
-            /* Full-screen registration: wide on desktop, compact and scroll-safe on smaller screens. */
-            :host {
-                min-height: 100svh;
-            }
-
-            .registration-shell {
-                min-height: 100svh;
-                padding: clamp(.75rem, 1.6vh, 1.25rem);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow-x: hidden;
-                overflow-y: auto;
-                background: #080c14;
-            }
-
-            .registration-cover,
-            .registration-overlay {
-                inset: 0;
-                width: auto;
-                height: auto;
-            }
-
-            .registration-overlay {
-                background:
-                    linear-gradient(90deg, rgba(5, 9, 16, .95) 0%, rgba(5, 9, 16, .82) 52%, rgba(5, 9, 16, .62) 100%),
-                    linear-gradient(180deg, rgba(5, 9, 16, .25), rgba(5, 9, 16, .86));
-            }
-
-            .registration-panel {
-                position: relative;
-                z-index: 1;
-                width: min(1380px, calc(100vw - 2rem));
-                display: block;
-            }
-
-            .registration-card {
-                width: 100%;
-                max-height: calc(100svh - 1.5rem);
-                overflow-y: auto;
-                padding: clamp(1.15rem, 1.8vw, 1.75rem);
+                width: min(1180px, 100%);
+                padding: 28px 32px;
                 border: 1px solid rgba(255, 255, 255, .72);
-                border-radius: 1.15rem;
+                border-radius: 18px;
                 background: rgba(255, 255, 255, .98);
-                box-shadow: 0 24px 64px rgba(0, 0, 0, .34);
-                scrollbar-gutter: stable;
+                box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
             }
 
             .registration-tabs {
-                width: min(420px, 100%);
-                margin: 0 0 .9rem;
-            }
-
-            .mode-tabs {
-                margin: 0;
+                width: min(360px, 100%);
+                margin: 0 0 22px;
+                padding: 4px;
                 display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: .3rem;
-                padding: .25rem;
-                border: 1px solid #e3e8ef;
-                border-radius: .7rem;
-                background: #f8fafc;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+                border: 1px solid #dfe5ec;
+                border-radius: 10px;
+                background: #f7f9fc;
             }
 
-            .mode-tabs button {
-                min-height: 2.45rem;
-                border-radius: .5rem;
-                padding: .5rem .7rem;
-                font-size: .75rem;
-            }
-
-            .mode-tabs button.active {
-                color: #fff;
-                background: var(--registration-brand-deep);
-                box-shadow: none;
-            }
-
-            .registration-content {
-                min-width: 0;
-                padding: 0;
+            .registration-tabs button {
+                min-height: 40px;
+                border: 0;
+                border-radius: 7px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 14px;
+                color: #5f6b7a;
                 background: transparent;
+                font: inherit;
+                font-size: 13px;
+                font-weight: 700;
+                white-space: nowrap;
+                cursor: pointer;
+            }
+
+            .registration-tabs button.active {
+                color: #fff;
+                background: var(--brand-primary-deep);
             }
 
             .registration-form {
                 display: grid;
-                gap: 1rem;
-                min-width: 0;
+                gap: 24px;
             }
 
             .form-section {
                 display: grid;
-                gap: .7rem;
-                min-width: 0;
-                padding-top: .85rem;
-                border-top: 1px solid #e8edf3;
+                gap: 14px;
             }
 
-            .form-section:first-child {
-                padding-top: 0;
-                border-top: 0;
+            .form-section + .form-section {
+                padding-top: 22px;
+                border-top: 1px solid #e7ebf0;
             }
 
-            .form-section-heading {
-                display: flex;
-                align-items: center;
-                gap: .65rem;
-                min-width: 0;
+            .section-heading {
+                margin: 0;
             }
 
-            .form-section-heading > i {
-                width: 1.9rem;
-                height: 1.9rem;
-                display: grid;
-                place-items: center;
-                flex: 0 0 auto;
-                border-radius: .5rem;
-                color: var(--registration-brand-deep);
-                background: var(--registration-brand-soft);
-                font-size: .82rem;
-            }
-
-            .form-section-copy {
-                display: grid;
-                gap: .08rem;
-                min-width: 0;
-            }
-
-            .form-section-copy strong {
-                display: block;
-                color: #26354a;
-                font-size: .8rem;
-                line-height: 1.25;
-            }
-
-            .form-section-copy small {
-                display: block;
-                color: #8793a5;
-                font-size: .66rem;
+            .section-heading h2,
+            .status-heading h2 {
+                margin: 0;
+                color: #1f2937;
+                font-size: 16px;
+                font-weight: 800;
                 line-height: 1.3;
             }
 
-            .form-section-fields {
-                display: grid;
-                gap: .7rem .85rem;
-                min-width: 0;
+            .section-heading p,
+            .status-heading p {
+                margin: 3px 0 0;
+                color: #7a8697;
+                font-size: 12px;
+                line-height: 1.4;
             }
 
-            .form-section-fields.three-columns {
+            .field-grid {
+                display: grid;
+                gap: 16px;
+            }
+
+            .field-grid-3 {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
-            .form-section-fields.two-columns {
+            .field-grid-2 {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
             .form-field {
-                display: grid;
-                align-content: start;
-                gap: .32rem;
                 min-width: 0;
+                display: grid;
+                gap: 7px;
             }
 
             .form-field.full-row {
@@ -1409,432 +374,333 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
             }
 
             .field-label {
-                display: flex !important;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: .35rem;
-                min-height: 1rem;
-                color: #334155 !important;
-                font-size: .72rem !important;
-                font-weight: 800 !important;
-                line-height: 1.3;
-            }
-
-            .optional-tag {
-                display: inline-flex;
-                align-items: center;
-                width: max-content;
-                border-radius: 999px;
-                background: #f1f5f9;
-                padding: .08rem .38rem;
-                color: #8490a1 !important;
-                font-size: .58rem !important;
-                font-weight: 750 !important;
+                color: #344054;
+                font-size: 13px;
+                font-weight: 700;
                 line-height: 1.35;
             }
 
-            .form-field .field-note,
-            .form-field .field-error {
-                display: block;
-                margin: 0;
+            .field-label small {
+                margin-left: 5px;
+                color: #8a94a3;
+                font-size: 11px;
+                font-weight: 600;
+            }
+
+            .form-field input,
+            .form-field select,
+            .form-field textarea {
+                width: 100%;
+                min-width: 0;
+                border: 1px solid #cfd6df;
+                border-radius: 8px;
+                background: #fff;
+                color: #172033;
+                font: inherit;
+                font-size: 14px;
+                outline: none;
+                transition: border-color .15s ease, box-shadow .15s ease;
+            }
+
+            .form-field input,
+            .form-field select {
+                height: 44px;
+                padding: 0 12px;
+            }
+
+            .form-field textarea {
+                min-height: 82px;
+                padding: 11px 12px;
+                resize: vertical;
+            }
+
+            .form-field input:focus,
+            .form-field select:focus,
+            .form-field textarea:focus {
+                border-color: var(--brand-primary);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 12%, transparent);
+            }
+
+            .form-field.invalid input,
+            .form-field.invalid select,
+            .form-field.invalid textarea {
+                border-color: #dc2626;
+            }
+
+            .field-help {
+                color: #7a8697;
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            .field-error {
+                color: #b42318;
+                font-size: 11px;
+                font-weight: 650;
+                line-height: 1.35;
+            }
+
+            .role-error {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                color: #b42318;
+                font-size: 11px;
+                font-weight: 650;
+            }
+
+            .role-error button {
+                border: 1px solid #fecaca;
+                border-radius: 6px;
+                padding: 4px 8px;
+                color: #991b1b;
+                background: #fff5f5;
+                font: inherit;
+                font-weight: 700;
+                cursor: pointer;
             }
 
             .form-actions {
                 display: grid;
-                gap: .65rem;
-                padding-top: .1rem;
+                gap: 10px;
+                padding-top: 2px;
             }
 
-            .form-actions .error {
+            .form-error {
                 display: flex;
                 align-items: center;
-                gap: .5rem;
-            }
-
-            .form-actions .primary {
-                width: 100%;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: .5rem;
-            }
-
-            .registration-tabs {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: .45rem;
-            }
-
-            .registration-tabs button {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: .45rem;
-                border: 1px solid transparent;
-                white-space: nowrap;
-            }
-
-            .registration-tabs button:not(.active) {
-                border-color: #e3e8ef;
-                background: #fff;
-            }
-
-            .registration-content > footer {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: .35rem;
-            }
-
-            .form-grid {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: .7rem .85rem;
-            }
-
-            .wide {
-                grid-column: 1 / -1;
-            }
-
-            .section-label {
-                min-height: 2rem;
-                margin: .05rem 0 0;
-                padding: .45rem 0 .25rem;
-                display: flex;
-                align-items: center;
-                gap: .55rem;
-                border-top: 1px solid #eef2f6;
-            }
-
-            .section-label:first-child {
-                padding-top: 0;
-                border-top: 0;
-            }
-
-            .section-label > i {
-                width: 1.7rem;
-                height: 1.7rem;
-                display: grid;
-                place-items: center;
-                flex: 0 0 auto;
-                border-radius: .45rem;
-                color: var(--registration-brand-deep);
-                background: var(--registration-brand-soft);
-                font-size: .78rem;
-            }
-
-            .section-label > span {
-                display: flex;
-                align-items: baseline;
-                gap: .5rem;
-                min-width: 0;
-            }
-
-            .section-label strong {
-                color: #334155;
-                font-size: .75rem;
-            }
-
-            .section-label small {
-                color: #94a3b8;
-                font-size: .64rem;
-                font-weight: 650;
-            }
-
-            .registration-content label {
-                gap: .3rem;
-            }
-
-            .registration-content label > span {
-                color: #334155;
-                font-size: .72rem;
-                font-weight: 800;
-            }
-
-            .registration-content input,
-            .registration-content select,
-            .registration-content textarea {
-                min-height: 2.55rem;
-                border: 1px solid #dbe1e9;
-                border-radius: .62rem;
-                background: #fbfcfe;
-                padding: .55rem .7rem;
-                font-size: .82rem;
-                box-shadow: none;
-            }
-
-            .registration-content textarea {
-                min-height: 3.35rem;
-                resize: vertical;
-            }
-
-            .registration-content input:hover,
-            .registration-content select:hover,
-            .registration-content textarea:hover {
-                border-color: #c4cbd5;
-                background: #fff;
-            }
-
-            .registration-content input:focus,
-            .registration-content select:focus,
-            .registration-content textarea:focus {
-                border-color: var(--registration-brand);
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--registration-brand) 11%, transparent);
-                outline: none;
-            }
-
-            .field-note {
-                color: #8490a1;
-                font-size: .64rem;
-                line-height: 1.3;
-            }
-
-            .remarks-field textarea {
-                min-height: 3.2rem;
-            }
-
-            .primary {
-                min-height: 2.8rem;
-                border-radius: .65rem;
-                background: var(--registration-brand-deep);
-                box-shadow: 0 8px 18px color-mix(in srgb, var(--registration-brand-deep) 18%, transparent);
-            }
-
-            .primary:not(:disabled):hover {
-                transform: none;
-                background: var(--registration-brand);
-            }
-
-            .error {
-                padding: .65rem .8rem;
-                border: 1px solid #fee2e2;
-                border-radius: .65rem;
+                gap: 8px;
+                padding: 10px 12px;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                color: #b42318;
                 background: #fff5f5;
-                color: #b91c1c;
-                font-size: .76rem;
+                font-size: 12px;
             }
 
-            .field-invalid input,
-            .field-invalid select,
-            .field-invalid textarea {
-                border-color: #dc2626;
-                background: #fffafa;
-            }
-
-            .field-invalid input:focus,
-            .field-invalid select:focus,
-            .field-invalid textarea:focus {
-                border-color: #dc2626;
-                box-shadow: 0 0 0 3px rgba(220, 38, 38, .1);
-            }
-
-            .field-error {
-                color: #b91c1c !important;
-                font-size: .64rem;
-                font-weight: 700 !important;
-                line-height: 1.25;
-            }
-
-            .role-load-error {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: .5rem;
-                color: #b91c1c;
-                font-size: .64rem;
-                font-weight: 700;
-            }
-
-            .role-load-error button {
+            .primary-button {
+                width: 100%;
+                min-height: 44px;
                 border: 0;
-                border-radius: .4rem;
-                background: #fee2e2;
-                padding: .25rem .5rem;
-                color: #991b1b;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 10px 16px;
+                color: #fff;
+                background: var(--brand-primary-deep);
                 font: inherit;
-                font-weight: 800;
+                font-size: 14px;
+                font-weight: 750;
                 cursor: pointer;
             }
 
+            .primary-button:disabled {
+                opacity: .58;
+                cursor: not-allowed;
+            }
+
+            .status-form,
+            .result-panel {
+                width: min(680px, 100%);
+                margin: 0 auto;
+            }
+
             .status-form {
-                width: min(720px, 100%);
-                margin-inline: auto;
                 display: grid;
-                gap: .8rem;
+                gap: 16px;
             }
 
-            .receipt,
-            .status-result {
-                width: min(760px, 100%);
-                margin-inline: auto;
+            .status-heading {
+                margin-bottom: 2px;
             }
 
-            .registration-content > footer {
-                margin-top: .8rem;
-                padding-top: .7rem;
-                border-top: 1px solid #eef2f6;
-                font-size: .75rem;
+            .lookup-message {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 12px;
+                border-radius: 8px;
+                color: #475467;
+                background: #f2f4f7;
+                font-size: 12px;
             }
 
-            /* The registration form is the primary task; decorative footer copy should not consume viewport height. */
-            .landing-footer {
-                display: none;
+            .lookup-message.found {
+                color: #166534;
+                background: #ecfdf3;
             }
 
-            @media (min-width: 961px) and (max-height: 760px) {
-                .registration-shell {
+            .lookup-message.missing {
+                color: #9a3412;
+                background: #fff7ed;
+            }
+
+            .result-panel {
+                padding: 24px;
+                border: 1px solid #e4e7ec;
+                border-radius: 12px;
+                background: #f9fafb;
+                text-align: center;
+            }
+
+            .result-panel h2 {
+                margin: 10px 0 6px;
+                color: #1f2937;
+            }
+
+            .result-panel p {
+                color: #667085;
+            }
+
+            .result-icon {
+                color: #16a34a;
+                font-size: 36px;
+            }
+
+            .receipt-panel code {
+                display: block;
+                margin: 16px 0;
+                padding: 12px;
+                border: 1px dashed #d0d5dd;
+                border-radius: 8px;
+                background: #fff;
+                font-size: 16px;
+                font-weight: 800;
+                overflow-wrap: anywhere;
+            }
+
+            .status-badge {
+                width: max-content;
+                margin: 0 auto 8px;
+                padding: 5px 10px;
+                border-radius: 999px;
+                background: #fef3c7;
+                color: #92400e;
+                font-size: 12px;
+                font-weight: 800;
+            }
+
+            .status-result[data-status='APPROVED'] .status-badge {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-result[data-status='REJECTED'] .status-badge {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .status-result dl {
+                margin: 18px 0;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                text-align: left;
+            }
+
+            .status-result dl div {
+                padding: 12px;
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .status-result dt {
+                color: #8a94a3;
+                font-size: 11px;
+                font-weight: 700;
+            }
+
+            .status-result dd {
+                margin: 4px 0 0;
+                color: #344054;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .result-actions {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .result-actions a,
+            .result-actions button {
+                min-height: 40px;
+                border: 1px solid #d0d5dd;
+                border-radius: 8px;
+                padding: 8px 14px;
+                color: #344054;
+                background: #fff;
+                font: inherit;
+                font-size: 13px;
+                font-weight: 700;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .registration-footer {
+                margin-top: 20px;
+                padding-top: 16px;
+                border-top: 1px solid #e7ebf0;
+                color: #667085;
+                font-size: 12px;
+                text-align: center;
+            }
+
+            .registration-footer a {
+                color: var(--brand-primary-deep);
+                font-weight: 750;
+                text-decoration: none;
+            }
+
+            @media (max-width: 900px) {
+                .registration-page {
                     align-items: flex-start;
-                    padding: .55rem;
-                }
-
-                .registration-panel {
-                    width: min(1400px, calc(100vw - 1.1rem));
                 }
 
                 .registration-card {
-                    max-height: calc(100svh - 1.1rem);
-                    padding: .85rem 1.1rem;
-                    border-radius: .9rem;
+                    padding: 24px;
                 }
 
-                .registration-tabs {
-                    margin-bottom: .55rem;
-                }
-
-                .mode-tabs button {
-                    min-height: 2.15rem;
-                    padding: .38rem .6rem;
-                }
-
-                .registration-form {
-                    gap: .65rem;
-                }
-
-                .form-section {
-                    gap: .45rem;
-                    padding-top: .55rem;
-                }
-
-                .form-section-fields {
-                    gap: .5rem .7rem;
-                }
-
-                .form-section-heading > i {
-                    width: 1.65rem;
-                    height: 1.65rem;
-                }
-
-                .form-grid {
-                    gap: .5rem .7rem;
-                }
-
-                .section-label {
-                    min-height: 1.65rem;
-                    padding: .25rem 0 .1rem;
-                }
-
-                .registration-content input,
-                .registration-content select {
-                    min-height: 2.25rem;
-                    padding: .42rem .62rem;
-                }
-
-                .registration-content textarea,
-                .remarks-field textarea {
-                    min-height: 2.7rem;
-                }
-
-                .primary {
-                    min-height: 2.45rem;
-                }
-
-                .registration-content > footer {
-                    margin-top: .55rem;
-                    padding-top: .5rem;
+                .field-grid-3 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
             }
 
-            @media (max-width: 1100px) {
-                .registration-panel {
-                    width: min(920px, calc(100vw - 2rem));
-                }
-
-                .form-section-fields.three-columns {
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
-                }
-
-                .form-grid {
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
-                }
-
-                .wide {
-                    grid-column: 1 / -1;
-                }
-            }
-
-            @media (max-width: 760px) {
-                .registration-shell {
-                    align-items: flex-start;
-                    padding: .65rem;
-                }
-
-                .registration-panel {
-                    width: 100%;
+            @media (max-width: 640px) {
+                .registration-page {
+                    padding: 12px;
                 }
 
                 .registration-card {
-                    max-height: none;
-                    overflow: visible;
-                    padding: 1rem;
-                    border-radius: .9rem;
+                    padding: 18px 16px;
+                    border-radius: 12px;
                 }
 
                 .registration-tabs {
                     width: 100%;
-                    margin-bottom: .75rem;
+                    margin-bottom: 18px;
                 }
 
-                .form-grid,
+                .field-grid-3,
+                .field-grid-2,
                 .status-result dl {
                     grid-template-columns: 1fr;
                 }
 
-                .wide {
+                .form-field.full-row {
                     grid-column: 1;
-                }
-
-                .section-label > span {
-                    display: grid;
-                    gap: .05rem;
-                }
-
-                .result-actions {
-                    flex-direction: column;
-                }
-            }
-
-            @media (max-width: 420px) {
-                .registration-shell {
-                    padding: .4rem;
-                }
-
-                .registration-card {
-                    padding: .85rem .8rem;
-                }
-
-                .registration-tabs {
-                    margin-bottom: .65rem;
-                }
-
-                .mode-tabs button {
-                    font-size: .7rem;
-                    padding-inline: .4rem;
                 }
             }
 
             @media (prefers-reduced-motion: reduce) {
-                .primary {
+                .form-field input,
+                .form-field select,
+                .form-field textarea {
                     transition: none;
                 }
             }
