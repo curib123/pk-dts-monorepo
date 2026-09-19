@@ -35,5 +35,9 @@ jobs:
           cache: npm
           cache-dependency-path: pk-dts-backend/package-lock.json
       - run: npm ci
+      - name: Generate PostgreSQL Prisma client
+        run: node scripts/prisma-env.js generate
+        env:
+          PRISMA_SCHEMA_PATH: prisma/schema.postgresql.prisma
       - run: npm run build
       - run: npm test
