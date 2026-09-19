@@ -18,22 +18,17 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
 
             <div class="login-panel registration-panel">
                 <section class="login-card registration-card">
-                    <div class="register-topbar">
-                        <div class="login-card-header">
-                            <div class="login-logo">
-                                <img class="dts-brand-logo" [src]="settings().logoUrl" [alt]="settings().systemTitle + ' logo'" />
-                            </div>
-                            <div class="login-heading-copy">
-                                <div class="login-title">{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</div>
-                                <div class="login-subtitle">{{ mode() === 'register' ? 'Complete the form below for account review and access approval.' : 'Enter the username used when you registered to track the latest decision.' }}</div>
-                            </div>
-                        </div>
-
+                    <header class="register-header">
                         <nav class="mode-tabs" aria-label="Registration options">
                             <button type="button" [class.active]="mode() === 'register'" (click)="setMode('register')"><i class="pi pi-user-plus"></i><span>New request</span></button>
                             <button type="button" [class.active]="mode() === 'status'" (click)="setMode('status')"><i class="pi pi-clock"></i><span>Check status</span></button>
                         </nav>
-                    </div>
+
+                        <div class="register-heading">
+                            <h1>{{ mode() === 'register' ? 'Request an account' : 'Check registration status' }}</h1>
+                            <p>{{ mode() === 'register' ? 'Complete the form below for account review and access approval.' : 'Enter the username used when you registered to track the latest decision.' }}</p>
+                        </div>
+                    </header>
 
                     <div class="registration-content">
 
@@ -1303,58 +1298,35 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 scrollbar-gutter: stable;
             }
 
-            .register-topbar {
+            .register-header {
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-                align-items: center;
-                gap: 1.25rem;
+                gap: .9rem;
                 margin-bottom: 1rem;
                 padding-bottom: .9rem;
                 border-bottom: 1px solid #e8edf3;
             }
 
-            .login-card-header {
-                min-width: 0;
-                display: flex;
-                align-items: center;
-                gap: .8rem;
-                margin: 0;
-            }
-
-            .login-logo {
-                width: 2.65rem;
-                height: 2.65rem;
-                flex: 0 0 auto;
+            .register-heading {
                 display: grid;
-                place-items: center;
-                overflow: hidden;
-                border-radius: .65rem;
-                background: #070707;
-            }
-
-            .login-logo img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-
-            .login-heading-copy {
+                gap: .2rem;
                 min-width: 0;
             }
 
-            .login-title {
+            .register-heading h1 {
+                margin: 0;
                 color: #0f172a;
-                font-size: clamp(1.3rem, 2vw, 1.65rem);
+                font-size: clamp(1.35rem, 2vw, 1.7rem);
                 font-weight: 850;
                 line-height: 1.15;
                 letter-spacing: -.025em;
             }
 
-            .login-subtitle {
-                margin-top: .2rem;
+            .register-heading p {
+                max-width: 52rem;
+                margin: 0;
                 color: #64748b;
                 font-size: .78rem;
-                line-height: 1.4;
+                line-height: 1.45;
             }
 
             .mode-tabs {
@@ -1521,11 +1493,13 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 gap: .5rem;
             }
 
-            .register-topbar .mode-tabs {
+            .register-header .mode-tabs {
+                width: min(420px, 100%);
+                justify-self: start;
                 gap: .45rem;
             }
 
-            .register-topbar .mode-tabs button {
+            .register-header .mode-tabs button {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
@@ -1534,7 +1508,7 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                 white-space: nowrap;
             }
 
-            .register-topbar .mode-tabs button:not(.active) {
+            .register-header .mode-tabs button:not(.active) {
                 border-color: #e3e8ef;
                 background: #fff;
             }
@@ -1758,21 +1732,17 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     border-radius: .9rem;
                 }
 
-                .register-topbar {
+                .register-header {
+                    gap: .55rem;
                     margin-bottom: .65rem;
                     padding-bottom: .6rem;
                 }
 
-                .login-logo {
-                    width: 2.3rem;
-                    height: 2.3rem;
-                }
-
-                .login-title {
+                .register-heading h1 {
                     font-size: 1.25rem;
                 }
 
-                .login-subtitle {
+                .register-heading p {
                     font-size: .7rem;
                 }
 
@@ -1864,12 +1834,11 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     border-radius: .9rem;
                 }
 
-                .register-topbar {
-                    grid-template-columns: 1fr;
-                    gap: .8rem;
+                .register-header {
+                    gap: .75rem;
                 }
 
-                .mode-tabs {
+                .register-header .mode-tabs {
                     width: 100%;
                 }
 
@@ -1901,16 +1870,11 @@ import { RegistrationReceipt, RegistrationRole, RegistrationService, Registratio
                     padding: .85rem .8rem;
                 }
 
-                .login-logo {
-                    width: 2.35rem;
-                    height: 2.35rem;
-                }
-
-                .login-title {
+                .register-heading h1 {
                     font-size: 1.18rem;
                 }
 
-                .login-subtitle {
+                .register-heading p {
                     font-size: .7rem;
                 }
 
