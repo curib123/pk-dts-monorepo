@@ -90,6 +90,19 @@ describe('DocumentsPage hardcopy transfer actions', () => {
         }).compileComponents();
     });
 
+    it('loads only the visible server page for list view', () => {
+        const fixture = TestBed.createComponent(DocumentsPage);
+        fixture.detectChanges();
+
+        expect(documentsService.listDocumentsPage).toHaveBeenCalledWith(
+            jasmine.objectContaining({
+                page: 1,
+                limit: 10,
+                document_type: 'HARDCOPY'
+            })
+        );
+    });
+
     it('renders exactly one hardcopy transfer action in list, grid, and folder views', () => {
         const fixture = TestBed.createComponent(DocumentsPage);
         fixture.detectChanges();
