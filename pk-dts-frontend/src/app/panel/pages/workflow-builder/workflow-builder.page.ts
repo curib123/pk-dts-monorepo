@@ -48,12 +48,14 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     private loadSequence = 0;
     private listRequest?: Subscription;
     private versionRequest?: Subscription;
+    private versionReadyTimer: ReturnType<typeof setTimeout> | null = null;
     private referenceDataTimer: ReturnType<typeof setTimeout> | null = null;
 
     ngOnInit() { this.load(); }
     ngOnDestroy() {
         this.listRequest?.unsubscribe();
         this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
         if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
     }
 
@@ -72,6 +74,10 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
         const sequence = ++this.loadSequence;
         this.listRequest?.unsubscribe();
         this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) {
+            clearTimeout(this.versionReadyTimer);
+            this.versionReadyTimer = null;
+        }
         if (this.referenceDataTimer) {
             clearTimeout(this.referenceDataTimer);
             this.referenceDataTimer = null;
@@ -113,6 +119,10 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
     selectVersion(version?: WorkflowVersionSummary) {
         if (this.dirty && !confirm('Discard unsaved workflow changes?')) return;
         this.versionRequest?.unsubscribe();
+        if (this.versionReadyTimer) {
+            clearTimeout(this.versionReadyTimer);
+            this.versionReadyTimer = null;
+        }
         if (this.referenceDataTimer) {
             clearTimeout(this.referenceDataTimer);
             this.referenceDataTimer = null;
@@ -304,10 +314,25 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
 
         this.versionRequest = this.workflowsApi.getVersion(definitionId, versionId).pipe(
             finalize(() => {
-                if (this.selectedDefinition?.workflow_definition_id === definitionId
-                    && this.selectedVersion?.workflow_version_id === versionId) {
+                if (this.versionReadyTimer) clearTimeout(this.versionReadyTimer);
+                this.versionReadyTimer = setTimeout(() => {
+                    this.versionReadyTimer = null;
+                    if (this.selectedDefinition?.workflow_definition_id !== definitionId
+                        || this.selectedVersion?.workflow_version_id !== versionId) return;
+
                     this.versionLoading = false;
-                }
+
+                    if (!this.versionLoadError && this.canConfigure) {
+                        if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
+                        this.referenceDataTimer = setTimeout(() => {
+                            this.referenceDataTimer = null;
+                            if (this.selectedDefinition?.workflow_definition_id === definitionId
+                                && this.selectedVersion?.workflow_version_id === versionId) {
+                                this.loadReferenceData();
+                            }
+                        }, 0);
+                    }
+                }, 0);
             })
         ).subscribe({
             next: (version) => {
@@ -316,16 +341,6 @@ export class WorkflowBuilderPage implements OnInit, OnDestroy {
 
                 this.graph = this.prepareSequentialGraph(version.graph);
                 if (this.referenceDataLoaded && !this.legacyComplex) this.normalizeLegacyAssignments();
-                if (this.canConfigure) {
-                    if (this.referenceDataTimer) clearTimeout(this.referenceDataTimer);
-                    this.referenceDataTimer = setTimeout(() => {
-                        this.referenceDataTimer = null;
-                        if (this.selectedDefinition?.workflow_definition_id === definitionId
-                            && this.selectedVersion?.workflow_version_id === versionId) {
-                            this.loadReferenceData();
-                        }
-                    }, 0);
-                }
             },
             error: (error) => {
                 if (this.selectedDefinition?.workflow_definition_id !== definitionId
