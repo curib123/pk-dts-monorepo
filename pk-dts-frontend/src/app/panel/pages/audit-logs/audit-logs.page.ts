@@ -4,7 +4,7 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { BACKEND_API_BASE_URL } from '@/app/config/api-config';
-import { WorkspacePageComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceSearchComponent, WorkspaceToolbarComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 
 interface AuditItem {
     audit_log_id: string;
@@ -34,20 +34,22 @@ interface AuditListResponse {
 @Component({
     selector: 'app-audit-logs-page',
     standalone: true,
-    imports: [WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
+    imports: [WorkspaceToolbarComponent, WorkspaceSearchComponent, WorkspacePageComponent, CommonModule, FormsModule],
     template: `<app-workspace-page>
         <section class="audit-page">
-            <div class="workspace-toolbar">
-                <div class="workspace-summary">
-                    <span>Recent system activity</span>
-                    <strong>{{ loading() ? 'Loading activity…' : items().length + ' actions on this page' }}</strong>
-                    <small>Only display fields are loaded; large audit snapshots stay on the server.</small>
+            <app-workspace-toolbar>
+                <div class="workspace-context">
+                    <span class="workspace-context-icon"><i class="pi pi-history"></i></span>
+                    <div>
+                        <strong>{{ loading() ? 'Loading activity…' : items().length + ' actions on this page' }}</strong>
+                        <span>Newest authenticated system activity with lightweight audit payloads.</span>
+                    </div>
                 </div>
-                <button type="button" class="refresh-button" (click)="load()" [disabled]="loading()">
+                <button workspace-actions type="button" class="refresh-button" (click)="load()" [disabled]="loading()">
                     <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
                     <span>{{ loading() ? 'Refreshing' : 'Refresh' }}</span>
                 </button>
-            </div>
+            </app-workspace-toolbar>
 
             <section class="filter-panel" aria-label="Audit log filters">
                 <app-workspace-search [value]="search" (valueChange)="search = $event" (search)="apply()" label="Search" placeholder="Description, path, reason, or user" />
