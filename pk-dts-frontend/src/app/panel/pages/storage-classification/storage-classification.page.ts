@@ -19,7 +19,7 @@ import { RecordCardComponent, RecordGridComponent } from '@/app/shared/component
 import { ResourceViewDialogComponent, ResourceViewDialogData } from '../roles-permissions/components/resource-view-dialog/resource-view-dialog.component';
 import { StorageResourceFormDialogComponent } from './components/storage-resource-form-dialog/storage-resource-form-dialog.component';
 import { StorageClassificationService } from './storage-classification.service';
-import { WorkspacePageComponent, WorkspaceTabsComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
+import { WorkspacePageComponent, WorkspaceTabsComponent, WorkspaceSearchComponent } from '@/app/shared/components/workspace-ui/workspace-ui.component';
 import {
     AreaDetail,
     AreaSummary,
@@ -56,7 +56,7 @@ interface ResourceOption {
 @Component({
     selector: 'app-storage-classification-page',
     standalone: true,
-    imports: [WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
+    imports: [WorkspaceSearchComponent, WorkspacePageComponent, WorkspaceTabsComponent, CommonModule, FormsModule, ButtonModule, AlertModalComponent, ConfirmationDialogComponent, LoadingShimmerComponent, PaginationComponent, TableShellComponent, DataViewSwitchComponent, RecordGridComponent, RecordCardComponent, ResourceViewDialogComponent, StorageResourceFormDialogComponent],
     template: `<app-workspace-page>
         <app-loading-shimmer *ngIf="isLoading()" label="Loading storage classifications" [columns]="6" />
         <section class="storage-page space-y-6" [style.display]="isLoading() ? 'none' : null">
@@ -123,11 +123,7 @@ interface ResourceOption {
                     <p-button *ngIf="canCreateActiveResource()" [label]="'Create ' + activeResourceLabel()" icon="pi pi-plus" (onClick)="openFormDialog()" />
                 </div>
 
-                <div class="catalog-search">
-                    <i class="pi pi-search"></i>
-                    <input [(ngModel)]="searchTerm" (ngModelChange)="first = 0" type="search" [placeholder]="'Search all ' + activeResourceLabel().toLowerCase() + ' records'" aria-label="Search all storage and classification records" />
-                    <button *ngIf="searchTerm" type="button" aria-label="Clear search" (click)="searchTerm = ''; first = 0"><i class="pi pi-times"></i></button>
-                </div>
+                <app-workspace-search [value]="searchTerm" (valueChange)="searchTerm = $event; first = 0" [placeholder]="'Search all ' + activeResourceLabel().toLowerCase() + ' records'" ariaLabel="Search storage and classification records" />
 
                 <app-data-view-switch [(mode)]="viewMode" [title]="activeResourceLabel() + ' results'" />
 
