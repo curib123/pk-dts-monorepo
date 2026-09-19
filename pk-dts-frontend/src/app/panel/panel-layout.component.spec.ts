@@ -1,5 +1,5 @@
 import { EMPTY, of } from 'rxjs';
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { AuthService } from '@/app/auth/auth.service';
 import { SystemSettingsService } from '@/app/shared/services/system-settings.service';
@@ -8,7 +8,7 @@ import { NotificationsService } from './notifications.service';
 import { PanelLayoutComponent } from './panel-layout.component';
 
 describe('PanelLayoutComponent', () => {
-    it('waits before starting notification polling so the panel can render first', (done) => {
+    it('waits before starting notification polling so the panel can render first', fakeAsync(() => {
         const auth = {
             refreshProfile: jasmine.createSpy().and.returnValue(of(null)),
             user: jasmine.createSpy().and.returnValue({ firstname: 'Test', lastname: 'User', role: { role_name: 'Staff', permissions: [] } })
@@ -38,18 +38,16 @@ describe('PanelLayoutComponent', () => {
         expect(dashboard.getNavigationCounts).not.toHaveBeenCalled();
         expect(notifications.list).not.toHaveBeenCalled();
 
-        setTimeout(() => {
-            expect(dashboard.getNavigationCounts).not.toHaveBeenCalled();
-            expect(notifications.list).not.toHaveBeenCalled();
+        tick(1_499);
+        expect(dashboard.getNavigationCounts).not.toHaveBeenCalled();
+        expect(notifications.list).not.toHaveBeenCalled();
 
-            setTimeout(() => {
-                expect(dashboard.getNavigationCounts).toHaveBeenCalledTimes(1);
-                expect(notifications.list).toHaveBeenCalledTimes(1);
-                fixture.destroy();
-                done();
-            }, 220);
-        }, 50);
-    });
+        tick(1);
+        expect(dashboard.getNavigationCounts).toHaveBeenCalledTimes(1);
+        expect(notifications.list).toHaveBeenCalledTimes(1);
+
+        fixture.destroy();
+    }));
     it('shows aggregate notification counts on My Work and Tasks dropdowns', () => {
         const auth = {
             refreshProfile: jasmine.createSpy().and.returnValue(of(null)),
