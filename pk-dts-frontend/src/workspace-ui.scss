@@ -385,6 +385,54 @@
 .workspace-page-shell .error-panel {
     border-radius: .8rem !important;
 }
+.workspace-page-shell :is(
+    .primary,
+    .secondary,
+    .quiet,
+    .outline,
+    .danger,
+    .refresh,
+    .search-button,
+    .clear-button,
+    .advanced-filter-button
+) {
+    min-height: var(--workspace-control-height);
+    border-radius: .65rem !important;
+    font-weight: 800 !important;
+}
+
+.workspace-page-shell :is(.field, .review-field, .form-field) > label,
+.workspace-page-shell :is(.field, .review-field, .form-field) > span {
+    color: var(--app-text-muted);
+}
+
+.workspace-page-shell .p-button {
+    min-height: var(--workspace-control-height);
+    border-radius: .65rem;
+}
+
+.searchable-dropdown-panel {
+    border: 1px solid var(--app-border) !important;
+    border-radius: .8rem !important;
+    background: var(--app-surface) !important;
+    box-shadow: var(--app-shadow-lg) !important;
+}
+.searchable-dropdown-panel .p-select-filter {
+    min-height: var(--workspace-control-height);
+    border-color: var(--app-border-strong) !important;
+    border-radius: .65rem !important;
+}
+.searchable-dropdown-panel .p-select-option {
+    min-height: 2.45rem;
+    border-radius: .5rem;
+    margin: .15rem .25rem;
+    font-size: .75rem;
+}
+.searchable-dropdown-panel .p-select-option.p-select-option-selected {
+    background: var(--brand-soft) !important;
+    color: var(--brand-primary-deep) !important;
+}
+
 
 @media (max-width: 760px) {
     .workspace-toolbar-shell,
