@@ -29,6 +29,7 @@ import { RequirePermissions } from "../../../common/auth/require-permissions.dec
 import { CurrentUser } from "../../../common/auth/current-user.decorator";
 import { AuthenticatedUser } from "../../../common/auth/authenticated-user.interface";
 import { PaginationQueryDto } from "../../../common/dto/pagination-query.dto";
+import { DocumentListQueryDto } from "./dto/document-list-query.dto";
 import { diskStorage, memoryStorage } from "multer";
 import {
   attachmentUploadsRoot,
@@ -86,7 +87,7 @@ export class DocumentsController {
   )
   @ApiOperation({ summary: "List documents" })
   @ApiOkResponse({ description: "Documents retrieved successfully." })
-  findAll(@Query() query: PaginationQueryDto, @CurrentUser() user?: AuthenticatedUser) {
+  findAll(@Query() query: DocumentListQueryDto, @CurrentUser() user?: AuthenticatedUser) {
     return this.documentsService.findAll(
       query,
       [DocumentStatus.Approved, DocumentStatus.Completed],
@@ -98,7 +99,7 @@ export class DocumentsController {
   @RequirePermissions("document-disposal.view")
   @ApiOperation({ summary: "List disposed documents" })
   @ApiOkResponse({ description: "Disposed documents retrieved successfully." })
-  findDisposed(@Query() query: PaginationQueryDto, @CurrentUser() user?: AuthenticatedUser) {
+  findDisposed(@Query() query: DocumentListQueryDto, @CurrentUser() user?: AuthenticatedUser) {
     return this.documentsService.findAll(query, [DocumentStatus.Disposed], user!);
   }
 
