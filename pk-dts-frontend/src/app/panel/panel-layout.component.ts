@@ -199,24 +199,19 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
             });
         this.syncPageMeta();
         this.openActiveCategory();
-        timer(PANEL_BACKGROUND_POLL_DELAY_MS, 30_000)
+        timer(PANEL_BACKGROUND_POLL_DELAY_MS, 60_000)
             .pipe(
                 filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
-                switchMap(() =>
-                    forkJoin({
-                        counts: this.dashboardService.getNavigationCounts().pipe(catchError(() => of(null))),
-                        feed: this.notificationsService.list().pipe(catchError(() => of(null)))
-                    })
-                ),
                 takeUntil(this.destroy$)
             )
-            .subscribe(({ counts, feed }) => {
-                if (counts) this.notificationCounts.set(counts);
-                if (feed) {
-                    this.notifications.set(feed.items);
-                    this.unreadCount.set(feed.unread_count);
-                }
-            });
+            .subscribe(() => this.refreshPanelIndicators());
+
+        this.notificationsService.watchInvalidations()
+            .pipe(
+                filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
+                takeUntil(this.destroy$)
+            )
+            .subscribe(() => this.refreshPanelIndicators());
 
         this.router.events
             .pipe(
@@ -233,6 +228,19 @@ export class PanelLayoutComponent implements OnInit, OnDestroy {
     ngOnDestroy() {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    private refreshPanelIndicators() {
+        forkJoin({
+            counts: this.dashboardService.getNavigationCounts().pipe(catchError(() => of(null))),
+            feed: this.notificationsService.list().pipe(catchError(() => of(null)))
+        }).subscribe(({ counts, feed }) => {
+            if (counts) this.notificationCounts.set(counts);
+            if (feed) {
+                this.notifications.set(feed.items);
+                this.unreadCount.set(feed.unread_count);
+            }
+        });
     }
 
     openLogoutConfirm() {
