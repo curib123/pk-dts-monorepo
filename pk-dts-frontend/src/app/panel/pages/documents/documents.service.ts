@@ -13,6 +13,7 @@ import {
     DocumentAssistantResponse,
     DocumentAssistantMode,
     DocumentDetail,
+    DocumentListQuery,
     DisposalRequestSummary,
     DocumentFormValue,
     DocumentSummary,
@@ -45,9 +46,23 @@ type ApiResponse<T> = ApiResponseEnvelope<T> | T;
 export class DocumentsService {
     private http = inject(HttpClient);
     private listCache = new Map<string, { expiresAt: number; request: Observable<unknown[]> }>();
+    private referenceCache = new Map<string, { value: unknown[]; fetchedAt: number }>();
+    private referenceRefreshes = new Map<string, Observable<unknown[]>>();
+    private readonly referenceFreshMs = 60_000;
 
     listDocuments() {
         return this.fetchAllPages<DocumentSummary>(DOCUMENTS_API);
+    }
+
+    listDocumentsPage(query: DocumentListQuery) {
+        const params = Object.fromEntries(
+            Object.entries(query)
+                .filter(([, value]) => value !== undefined && value !== null && value !== '')
+                .map(([key, value]) => [key, String(value)])
+        );
+        return this.http
+            .get<ApiResponse<PaginatedResponse<DocumentSummary>>>(DOCUMENTS_API, { params })
+            .pipe(map((response) => this.unwrap(response)));
     }
 
     listDisposedDocuments() {
@@ -349,39 +364,51 @@ export class DocumentsService {
     }
 
     listUsers() {
-        return this.fetchAllPages<DocumentUserSummary>(USERS_API);
+        return this.fetchReferenceList<DocumentUserSummary>(USERS_API);
     }
 
     listAreas() {
-        return this.fetchAllPages<AreaReference>(AREAS_API);
+        return this.fetchReferenceList<AreaReference>(AREAS_API);
     }
 
     listAssetNumbers() {
-        return this.fetchAllPages<AssetReference>(ASSET_NUMBERS_API);
+        return this.fetchReferenceList<AssetReference>(ASSET_NUMBERS_API);
     }
 
     listSpecifics() {
-        return this.fetchAllPages<SpecificReference>(SPECIFICS_API);
+        return this.fetchReferenceList<SpecificReference>(SPECIFICS_API);
     }
 
     listLocations() {
-        return this.fetchAllPages<LocationReference>(LOCATIONS_API);
+        return this.fetchReferenceList<LocationReference>(LOCATIONS_API);
     }
 
     listSequences() {
-        return this.fetchAllPages<SequenceReference>(SEQUENCES_API);
+        return this.fetchReferenceList<SequenceReference>(SEQUENCES_API);
     }
 
     listSoftcopyCategories() {
-        return this.fetchAllPages<SoftcopyCategoryReference>(SOFTCOPY_CATEGORIES_API);
+        return this.fetchReferenceList<SoftcopyCategoryReference>(SOFTCOPY_CATEGORIES_API);
     }
 
     createSoftcopyCategory(payload: { category_name: string; parent_category_id?: string }) {
-        return this.http.post<ApiResponse<SoftcopyCategoryReference>>(SOFTCOPY_CATEGORIES_API, payload).pipe(map((response) => this.unwrap(response)), tap(() => this.invalidateListCache()));
+        return this.http.post<ApiResponse<SoftcopyCategoryReference>>(SOFTCOPY_CATEGORIES_API, payload).pipe(
+            map((response) => this.unwrap(response)),
+            tap(() => {
+                this.invalidateListCache();
+                this.invalidateReference(SOFTCOPY_CATEGORIES_API);
+            })
+        );
     }
 
     updateSoftcopyCategory(id: string, payload: { category_name?: string; parent_category_id?: string }) {
-        return this.http.patch<ApiResponse<SoftcopyCategoryReference>>(`${SOFTCOPY_CATEGORIES_API}/${id}`, payload).pipe(map((response) => this.unwrap(response)), tap(() => this.invalidateListCache()));
+        return this.http.patch<ApiResponse<SoftcopyCategoryReference>>(`${SOFTCOPY_CATEGORIES_API}/${id}`, payload).pipe(
+            map((response) => this.unwrap(response)),
+            tap(() => {
+                this.invalidateListCache();
+                this.invalidateReference(SOFTCOPY_CATEGORIES_API);
+            })
+        );
     }
 
     private cleanDocumentPayload(payload: DocumentFormValue, createdBy: string, isUpdate: boolean) {
@@ -506,6 +533,33 @@ export class DocumentsService {
 
         this.listCache.set(url, { expiresAt: Date.now() + LIST_CACHE_TTL_MS, request: request as Observable<unknown[]> });
         return request;
+    }
+
+    private fetchReferenceList<T>(url: string): Observable<T[]> {
+        const cached = this.referenceCache.get(url);
+        const age = cached ? Date.now() - cached.fetchedAt : Number.POSITIVE_INFINITY;
+
+        if (cached) {
+            if (age > this.referenceFreshMs && !this.referenceRefreshes.has(url)) {
+                const refresh = this.fetchAllPages<T>(url).pipe(
+                    tap((value) => this.referenceCache.set(url, { value, fetchedAt: Date.now() })),
+                    catchError(() => of(cached.value as T[])),
+                    shareReplay({ bufferSize: 1, refCount: false })
+                );
+                this.referenceRefreshes.set(url, refresh as Observable<unknown[]>);
+                refresh.subscribe({ complete: () => this.referenceRefreshes.delete(url) });
+            }
+            return of(cached.value as T[]);
+        }
+
+        return this.fetchAllPages<T>(url).pipe(
+            tap((value) => this.referenceCache.set(url, { value, fetchedAt: Date.now() }))
+        );
+    }
+
+    private invalidateReference(url: string) {
+        this.referenceCache.delete(url);
+        this.referenceRefreshes.delete(url);
     }
 
     private fetchPage<T>(url: string, page: number, limit = LIST_LIMIT): Observable<PaginatedResponse<T>> {
