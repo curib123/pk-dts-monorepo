@@ -1,14 +1,22 @@
+
 <?php
-declare(strict_types=1);
 
-require __DIR__ . '/bootstrap/env.php';
-dts_load_env(__DIR__ . '/.env');
+/*
+|--------------------------------------------------------------------------
+| Application Environment
+|--------------------------------------------------------------------------
+| No .env file is used.
+| Configure the environment directly here or in application/config/config.php.
+*/
 
-$appEnvironment = strtolower((string) dts_env('APP_ENV', 'development'));
+$appEnvironment = 'production';
+
 $allowedEnvironments = ['development', 'testing', 'production'];
+
 if (!in_array($appEnvironment, $allowedEnvironments, true)) {
     $appEnvironment = 'production';
 }
+
 define('ENVIRONMENT', $appEnvironment);
 
 switch (ENVIRONMENT) {
@@ -16,10 +24,17 @@ switch (ENVIRONMENT) {
         error_reporting(-1);
         ini_set('display_errors', '1');
         break;
+
     case 'testing':
     case 'production':
         ini_set('display_errors', '0');
-        error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE & ~E_DEPRECATED);
+        error_reporting(
+            E_ALL
+            & ~E_NOTICE
+            & ~E_STRICT
+            & ~E_USER_NOTICE
+            & ~E_DEPRECATED
+        );
         break;
 }
 
@@ -46,11 +61,17 @@ define('SYSDIR', basename(BASEPATH));
 if (is_dir($application_folder)) {
     $application_folder = realpath($application_folder) ?: $application_folder;
 }
-define('APPPATH', rtrim($application_folder, '/\\') . DIRECTORY_SEPARATOR);
 
-define('VIEWPATH', $view_folder !== ''
-    ? rtrim((realpath($view_folder) ?: $view_folder), '/\\') . DIRECTORY_SEPARATOR
-    : APPPATH . 'views' . DIRECTORY_SEPARATOR
+define(
+    'APPPATH',
+    rtrim($application_folder, '/\\') . DIRECTORY_SEPARATOR
+);
+
+define(
+    'VIEWPATH',
+    $view_folder !== ''
+        ? rtrim((realpath($view_folder) ?: $view_folder), '/\\') . DIRECTORY_SEPARATOR
+        : APPPATH . 'views' . DIRECTORY_SEPARATOR
 );
 
 require_once BASEPATH . 'core/CodeIgniter.php';

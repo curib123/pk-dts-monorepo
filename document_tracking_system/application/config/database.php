@@ -1,3 +1,4 @@
+
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
@@ -6,12 +7,12 @@ $query_builder = TRUE;
 
 $db['default'] = array(
     'dsn'      => '',
-    'hostname' => (string) dts_env('DB_HOST', '127.0.0.1'),
-    'port'     => (string) dts_env('DB_PORT', '5432'),
-    'username' => (string) dts_env('DB_USER', 'postgres'),
-    'password' => (string) dts_env('DB_PASSWORD', ''),
-    'database' => (string) dts_env('DB_NAME', 'pk_dts'),
-    'dbdriver' => (string) dts_env('DB_DRIVER', 'postgre'),
+    'hostname' => '127.0.0.1',
+    'port'     => '5432',
+    'username' => 'root',
+    'password' => '',
+    'database' => 'document_tracking',
+    'dbdriver' => 'mysql',
     'dbprefix' => '',
     'pconnect' => FALSE,
     'db_debug' => (defined('ENVIRONMENT') && ENVIRONMENT !== 'production'),
@@ -26,3 +27,4 @@ $db['default'] = array(
     'failover' => array(),
     'save_queries' => TRUE,
 );
+
