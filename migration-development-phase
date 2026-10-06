@@ -1,23 +1,33 @@
 # CodeIgniter 3 – Document Tracking System
 
-## Project Objective
+## 1. Project Objective
 
-Migrate and develop the **Document Tracking System** using **CodeIgniter 3** with a structured MVC architecture, service-based business logic, role-based permissions, document lifecycle management, hardcopy/softcopy document tracking, configurable approval workflows, audit logging, and document access control.
+Migrate and develop the **Document Tracking System** using **CodeIgniter 3** with a structured MVC architecture, service-based business logic, role-based permissions, document lifecycle management, hardcopy/softcopy document tracking, configurable approval workflows, audit logging, notifications, and document access control.
 
-The system will support two primary document types:
+The system supports two separate document domains:
 
-* **Softcopy / Electronic Documents**
-* **Hardcopy / Physical Documents**
+1. **Softcopy / Electronic Documents**
+2. **Hardcopy / Physical Documents**
 
-Each document type will have its own business rules and workflow while sharing common authentication, authorization, workflow, auditing, and document-tracking infrastructure.
+Softcopy and hardcopy documents have different business rules and data structures but share common infrastructure such as:
+
+* Authentication
+* Authorization
+* Roles and permissions
+* Workflow execution
+* Audit logging
+* Notifications
+* Document assignment
+* Access control
+* Status history
 
 ---
 
-# Phase 1 – CodeIgniter 3 Setup and Architecture
+# 2. Phase 1 – CodeIgniter 3 Setup and Architecture
 
-## 1. MVC Architecture
+## 2.1 MVC Architecture
 
-Implement the system using the CodeIgniter 3 MVC architecture:
+The application will use the CodeIgniter 3 MVC architecture:
 
 * Controllers
 * Models
@@ -25,45 +35,68 @@ Implement the system using the CodeIgniter 3 MVC architecture:
 * Libraries
 * Helpers
 * Services
-* Repositories/data-access layer where appropriate
+* Repositories/Data Access Layer where appropriate
 
-Controllers should primarily handle:
+Controllers should remain thin and should primarily handle:
 
-* Request validation
-* Authentication/authorization checks
+* HTTP request handling
+* Input validation
+* Authentication checks
+* Authorization checks
 * Calling application services
-* Returning views or responses
+* Returning views or API responses
 
-Business rules should be implemented in dedicated services rather than placed directly inside controllers.
+Business rules must be implemented in application/domain services rather than being placed directly inside controllers.
 
-## 2. Core Services
+## 2.2 Core Services
 
-Create reusable services for major system processes, including:
+The application should provide dedicated services for major business processes:
 
 * Authentication Service
 * User Management Service
+* Role Service
 * Permission Service
-* Document Service
 * Softcopy Document Service
 * Hardcopy Document Service
 * Document Revision Service
-* Document Transfer Service
+* Hardcopy Transfer Service
 * Document Access Service
 * Document Disposal Service
 * Workflow Service
 * Notification Service
 * Audit Log Service
-* Sequence/Reference Number Service
 
 ---
 
-# Phase 2 – Authentication, Roles and Permissions
+# 3. Phase 2 – Authentication, Roles and Permissions
 
-## 1. User Roles
+## 3.1 Authentication
+
+The system provides internal user authentication.
+
+There is **no public user registration**.
+
+Users cannot create their own accounts.
+
+User accounts are created and managed by authorized administrators.
+
+The authentication system must support:
+
+* Username/password login
+* Logout
+* Password change
+* Forced password change
+* Password hashing
+* Session management
+* Login auditing
+
+---
+
+# 4. Roles
 
 The system must support configurable roles.
 
-Initial roles include:
+Initial roles:
 
 * Plant Manager
 * Document Control Officer
@@ -71,17 +104,24 @@ Initial roles include:
 * Administrator
 * Staff
 
-Roles must not be hardcoded into the application wherever possible. The administrator should be able to create and manage roles.
+Roles must not be hardcoded into the application wherever possible.
+
+Administrators should be able to:
+
+* Create roles
+* Edit roles
+* Activate/deactivate roles
+* Assign permissions to roles
 
 ---
 
-## 2. Role-Based Permissions
+# 5. Role-Based Permissions
 
-Each role can have permissions based on:
+Permissions are structured as:
 
 **Module → Action**
 
-Supported actions include:
+Supported actions initially include:
 
 * View
 * Add
@@ -90,112 +130,110 @@ Supported actions include:
 * Request
 * Approve
 
-Additional actions may be added as the system evolves.
+Additional actions can be added later.
 
 Each permission contains:
 
-* Permission name
-* Module key
-* Module label
-* Action key
-* Action label
+* Permission Name
+* Module Key
+* Module Label
+* Action Key
+* Action Label
 * Description
 
-A role can have multiple permissions, and a permission can belong to multiple roles.
+Relationship:
+
+```text
+Role
+  ↓
+Role Permission
+  ↓
+Permission
+```
+
+A role can have many permissions.
+
+A permission can be assigned to many roles.
 
 ---
 
-# Phase 3 – User Management
+# 6. Phase 3 – User Management
 
-## 1. User Account
+## 6.1 User Account
 
 Each user contains:
 
+* User ID
 * Username
 * First Name
 * Middle Name
 * Last Name
 * Position Title
 * Role
-* Password
+* Password Hash
 * Require Password Change
 * Leader/Supervisor
 * Created At
 * Updated At
 
-Users may also have a relationship with another user through the **Leader/Supervisor** hierarchy.
+Users may have a leader/supervisor relationship:
 
-This allows the system to identify organizational relationships between users.
+```text
+User
+  ↓
+Leader/Supervisor
+  ↓
+Another User
+```
+
+This supports organizational hierarchy.
 
 ---
 
-## 2. Password Management
+# 7. User Creation
 
-When creating a user:
+Only authorized users, initially administrators, can create user accounts.
 
-1. Generate an initial password.
-2. Store only the hashed password.
-3. Set `require_password_change = true`.
-4. Provide the generated password to the user through the appropriate secure process.
-5. Require the user to change the password during first login.
+There is no:
 
-The change-password form must contain:
+* Public registration
+* Account registration request
+* Self-registration approval
+* Registration workflow
+
+When an administrator creates a user:
+
+1. System generates an initial password.
+2. System hashes the password.
+3. Plain-text password is not stored.
+4. `require_password_change` is set to `true`.
+5. Administrator securely provides the initial password to the user.
+6. User logs in.
+7. User is required to change the password.
+
+---
+
+# 8. Password Management
+
+The change-password screen contains:
 
 * Current Password
 * New Password
 * Confirm New Password
 
-Passwords must never be stored as plain text.
+Passwords must always be stored as secure password hashes.
+
+Plain-text passwords must never be stored in the database.
+
+Password-related operations should be audited.
 
 ---
 
-# Phase 4 – Account Registration
+# 9. Phase 4 – Organizational and Location Management
 
-The system will support an **Account Registration Request** process.
+The system maintains organizational and physical-location information required for hardcopy tracking.
 
-A registration request contains:
-
-* Reference Code
-* First Name
-* Middle Name
-* Last Name
-* Username
-* Position Title
-* Requested Role
-* Applicant Remarks
-* Password Hash
-* Status
-* Review Remarks
-* Assigned Role
-* Reviewer
-* Review Date
-* Created At
-* Updated At
-
-## Registration Workflow
-
-The registration request can have the following statuses:
-
-* Pending
-* Approved
-* Rejected
-
-An authorized user can review the registration request and:
-
-* Approve
-* Reject
-* Add review remarks
-* Assign the final role
-
-Once approved, the system can create the actual user account.
-
----
-
-# Phase 5 – Organizational and Location Management
-
-The system must support organizational and physical-location information required for hardcopy document tracking.
-
-## 1. Areas
+## 9.1 Area
 
 An Area represents a major organizational or physical grouping.
 
@@ -206,136 +244,137 @@ Examples:
 * Warehouse
 * Administration
 
-An Area can contain multiple Specific locations.
+Relationship:
+
+```text
+Area
+ └── Specific
+```
+
+One Area may have many Specific records.
 
 ---
 
-## 2. Specific
+# 10. Specific
 
 A Specific represents a subdivision of an Area.
 
 Relationship:
 
-**Area → Specific**
+```text
+Area 1 ──── N Specific
+```
 
-Specific locations may be associated with:
+Specific records may be used by:
 
 * Hardcopy documents
 * Assets
 * Physical locations
+* Transfer requests
 
 ---
 
-## 3. Physical Locations
+# 11. Location
 
-The system must maintain physical document locations.
+A Location represents the actual physical location where a hardcopy document is stored.
 
-Each location contains:
+Location contains:
 
+* Location ID
 * Location Name
 * Location Code
-* Active/Inactive status
+* Active/Inactive Status
 * Archive Date
 * Specific
 * Asset
 * Created At
 * Updated At
 
+For hardcopy document tracking, the relationship is:
+
+```text
+HardcopyDocument 1 ──── 1 Location
+```
+
+A hardcopy document has **one current physical Location**.
+
+A Location belongs to one current HardcopyDocument.
+
+The location is therefore a dedicated physical storage record for the hardcopy.
+
+Historical movements are preserved through the transfer history rather than by storing multiple current locations on the hardcopy record.
+
 ---
 
-## 4. Asset Numbers
+# 12. Asset Numbers
 
-Physical assets can be registered in the system.
+Physical assets can be registered.
 
 Each asset contains:
 
+* Asset ID
 * Asset Number
 * Specific
 * Created At
 
-Assets can be associated with hardcopy documents and transfer requests.
+Assets may be associated with hardcopy documents.
 
 ---
 
-# Phase 6 – Document Management
+# 13. Phase 5 – Document Architecture
 
-The system manages two document types:
+Softcopy and hardcopy documents are intentionally separated.
 
-### 1. Softcopy
+They must **not share a single large document table containing unrelated fields**.
 
-Electronic documents stored and controlled through the system.
+The system uses separate domain models:
 
-### 2. Hardcopy
+```text
+SoftcopyDocument
+      │
+      ├── Category
+      ├── Revisions
+      ├── Attachments
+      └── Artifacts
 
-Physical documents whose location, ownership, movement, and transfer are tracked.
 
-The common `Document` record contains information such as:
+HardcopyDocument
+      │
+      ├── Area
+      ├── Specific
+      ├── Asset Number
+      ├── Location
+      ├── Optional Sequence
+      ├── Retention
+      └── Physical Attachments
+```
 
-* Document Title
-* Document Type
-* Status
-* Request Date
-* Department
-* Business Document Type
-* Requested Action
-* From Party
-* To Party
-* Reason for Change
-* Brief Description
-* Proposed Change
-* Revision Level
-* Effective Dates
-* Date Received
-* Date Released
-* Approval Date
-* Requester
-* Creator
-* Reviewer
-* Creation Source
-* Creation Reason
-* Disposal Information
+Common request/workflow infrastructure may reference the appropriate document entity.
 
 ---
 
-# Phase 7 – Document Request and Creation
+# 14. Softcopy Document Management
 
-The system must distinguish between:
+A SoftcopyDocument represents an electronic/controlled document.
 
-## A. Request-Based Document Creation
+Softcopy information includes:
 
-A user submits a request to create, revise, or cancel a document.
-
-The request goes through the configured approval workflow.
-
-## B. Direct Document Creation
-
-Authorized users may directly create or update documents without submitting the standard request form.
-
-Initially, direct creation/update is restricted to:
-
-* Administrator
-* Document Control Officer
-
-The system should record that the document was created directly.
-
-The `creation_source` and `creation_reason` fields should be used to identify why/how the document was created.
-
----
-
-# Phase 8 – Softcopy Document Management
-
-Softcopy documents contain:
-
+* Document ID
 * Document Number
 * Series Number
+* Document Title
 * Document Category
 * Current Revision
 * Revision History
 * Attachments
 
-## Softcopy Categories
+Softcopy documents are managed through document control and revision processes.
 
-Categories support hierarchical organization.
+---
+
+# 15. Softcopy Categories
+
+Softcopy categories support hierarchical organization.
 
 Example:
 
@@ -346,24 +385,32 @@ Quality
 └── Work Instructions
 ```
 
-Categories can have:
+Each category contains:
 
-* Parent Category
-* Subcategories
+* Category Name
 * Folder Name
 * Description
 * Active/Inactive Status
+* Parent Category
 * Creator
 * Created At
 * Updated At
 
+Relationship:
+
+```text
+Parent Category
+      │
+      └── Subcategory
+```
+
 ---
 
-# Phase 9 – Softcopy Document Revisions
+# 16. Softcopy Revisions
 
-The system must maintain complete revision history.
+Every softcopy revision must be preserved.
 
-Each revision contains:
+A revision contains:
 
 * Revision Number
 * Reason for Revision
@@ -379,107 +426,315 @@ Each revision contains:
 * Date Released
 * Approval Date
 * Current/Historical Status
-* Uploaded File
+* File Name
+* File Path
+* File Size
+* MIME Type
 * Uploaded By
 * Approved By
-* Approval Date
+* Approved At
 
-Only the appropriate revision should be marked as the current revision.
+Only one revision should be the current revision.
 
-Previous revisions must remain available as historical records.
+Previous revisions remain historical records.
 
 ---
 
-# Phase 10 – Softcopy Attachments and Artifacts
+# 17. Softcopy Attachments
 
-Softcopy files must support attachment approval.
+Softcopy attachments support approval.
 
-Attachment statuses:
+Statuses:
 
 * Pending Approval
 * Approved
 * Rejected
 * Cancelled
 
-The system must record:
+Attachment information:
 
 * File Name
 * File Path
 * File Size
 * MIME Type
-* Uploader
-* Approver
-* Approval Date
-* Rejector
-* Rejection Date
+* Uploaded By
+* Approved By
+* Approved At
+* Rejected By
+* Rejected At
 * Rejection Reason
+* Created At
 
-## Revision Artifacts
+---
 
-The system may generate controlled and uncontrolled document artifacts.
+# 18. Softcopy Revision Artifacts
 
-Supported artifact types:
+The system may generate controlled and uncontrolled artifacts.
+
+Artifact types:
 
 * Controlled
 * Uncontrolled
 
-Each artifact should maintain:
+Each artifact records:
 
+* Revision
+* Artifact Type
+* File Name
+* File Path
+* File Size
+* MIME Type
 * Source Fingerprint
 * Generator Version
-* File Information
-* Creation Date
-* Update Date
+* Created At
+* Updated At
 
-This allows the system to track which generated artifact belongs to a particular revision.
+This provides traceability between generated files and their source revision.
 
 ---
 
-# Phase 11 – Hardcopy Document Management
+# 19. Phase 6 – Hardcopy Document Management
 
-Hardcopy documents maintain physical information including:
+Hardcopy documents are physical documents.
 
+A HardcopyDocument contains only information relevant to the physical document.
+
+Required fields:
+
+* Hardcopy ID
+* Document Title
 * Area
 * Specific
-* Location
 * Asset Number
-* Sequence Number
-* Retention Information
-* Physical Attachments
+* Location
 
-Hardcopy documents must support retention management:
+Optional:
+
+* Sequence Number
+
+Additional physical-management fields:
 
 * Retention Enabled
 * Retention Start Date
 * Retention End Date
 
+Attachments may also be associated with the hardcopy.
+
 ---
 
-# Phase 12 – Hardcopy Transfer Management
+# 20. Hardcopy Document Structure
 
-The system must support a dedicated:
+The hardcopy relationship is:
 
-**Hardcopy Transfer Request**
+```text
+HardcopyDocument
+      │
+      ├── Document Title
+      │
+      ├── Area
+      │
+      ├── Specific
+      │
+      ├── Asset Number
+      │
+      ├── Location
+      │
+      └── Optional Sequence
+```
 
-A transfer request records:
+The primary physical-location relationship is:
 
-### Current Location
+```text
+HardcopyDocument 1 ──── 1 Location
+```
+
+The sequence is optional:
+
+```text
+HardcopyDocument 1 ──── 0..1 Sequence
+```
+
+The Area is required.
+
+Specific, Asset Number, and Location relationships should follow the actual operational requirement and database constraints.
+
+---
+
+# 21. Hardcopy Creation
+
+Hardcopy creation is separate from softcopy document creation.
+
+A hardcopy creation request contains the physical-document information required to register the hardcopy.
+
+Initial fields:
+
+* Document Title
+* Area
+* Specific
+* Asset Number
+* Location
+* Optional Sequence
+* Retention Information where applicable
+
+Hardcopy creation must follow its own workflow.
+
+---
+
+# 22. Hardcopy Update
+
+Hardcopy physical information can be updated through the appropriate request process.
+
+Updates may include:
 
 * Area
 * Specific
-* Asset
+* Asset Number
 * Location
 * Sequence
+* Retention Information
 
-### Destination
+Changes must be audited.
+
+---
+
+# 23. Phase 7 – Request Management
+
+The system separates **requests** from **actual document records**.
+
+A request represents an action that must be processed.
+
+The resulting document represents the actual controlled document.
+
+---
+
+# 24. Core Request Types
+
+The system supports:
+
+## 24.1 Softcopy Document Control Request
+
+Used for:
+
+* Create
+* Revise
+* Cancel
+
+## 24.2 Hardcopy Create/Update Request
+
+Used for:
+
+* Create hardcopy
+* Update hardcopy
+
+## 24.3 Hardcopy Transfer Request
+
+Used for:
+
+* Transfer physical document
+* Change physical location
+* Assign physical document to another recipient
+
+## 24.4 Softcopy Document Assignment Request
+
+Used to assign a softcopy document to a user.
+
+## 24.5 Document Access Request
+
+Used to request controlled access.
+
+## 24.6 Document Disposal Request
+
+Used to request document disposal.
+
+---
+
+# 25. Request-Based Creation
+
+Normal users submit requests.
+
+Example:
+
+```text
+Staff
+   │
+   ▼
+Request
+   │
+   ▼
+Workflow
+   │
+   ▼
+Approvers
+   │
+   ▼
+Document Controller
+   │
+   ▼
+Document Creation/Update
+```
+
+The request and resulting document must remain traceable to each other.
+
+---
+
+# 26. Direct Creation
+
+Direct creation/update is separate from request-based creation.
+
+Initially, direct creation is restricted to:
+
+* Administrator
+* Document Control Officer
+
+Direct creation must:
+
+* Bypass the normal request form where authorized
+* Still perform all required validation
+* Create the document directly
+* Record the creation source
+* Record the creation reason
+* Create audit records
+
+Example:
+
+```text
+Administrator
+      │
+      ▼
+Direct Document Creation
+      │
+      ▼
+Document
+      │
+      ▼
+Audit Log
+```
+
+---
+
+# 27. Phase 8 – Hardcopy Transfer Management
+
+Hardcopy transfers use a dedicated transfer request.
+
+A transfer request contains:
+
+## Current Information
 
 * Area
 * Specific
-* Asset
+* Asset Number
 * Location
 * Sequence
 
-### Transfer Information
+## Destination Information
+
+* Area
+* Specific
+* Asset Number
+* Location
+* Sequence
+
+## Transfer Information
 
 * Document Copy Number
 * Current Holder
@@ -492,11 +747,9 @@ A transfer request records:
 
 ---
 
-# Phase 13 – Hardcopy Transfer Workflow
+# 28. Hardcopy Transfer Workflow
 
-Hardcopy transfers have their own workflow because physical document movement has additional requirements.
-
-Transfer statuses include:
+Transfer status:
 
 * Draft
 * For Approval
@@ -509,17 +762,15 @@ Transfer statuses include:
 * Rejected
 * Cancelled
 
-## Recipient Acceptance
+After physical transfer, the recipient must confirm receipt.
 
-After a physical document is transferred, the assigned recipient must confirm receipt.
-
-Recipient statuses:
+Recipient status:
 
 * Pending
 * Accepted
 * Refused
 
-The system must record:
+The system records:
 
 * Recipient
 * Accepted By
@@ -528,13 +779,51 @@ The system must record:
 
 ---
 
-# Phase 14 – Document Access Requests
+# 29. Hardcopy Location Updates After Transfer
 
-The system must control access to documents where required.
+After a successful transfer and acceptance, the HardcopyDocument's current Location is updated.
 
-A user can submit a **Document Access Request**.
+Example:
 
-The request contains:
+```text
+Before Transfer
+
+Hardcopy
+   ↓
+Location A
+
+
+Transfer
+   ↓
+Approval
+   ↓
+Physical Movement
+   ↓
+Recipient Acceptance
+   ↓
+
+
+After Transfer
+
+Hardcopy
+   ↓
+Location B
+```
+
+The transfer history preserves the previous location.
+
+Therefore:
+
+* HardcopyDocument = current location
+* TransferHistory = historical movement
+
+---
+
+# 30. Phase 9 – Document Access Requests
+
+Users may request access to controlled documents.
+
+An access request contains:
 
 * Document
 * Requester
@@ -543,12 +832,12 @@ The request contains:
 * Reviewer
 * Approver
 * Approval Stage
-* Approval/Review Remarks
+* Reviewer Remarks
 * Granted Date
 * Revoked Date
 * Expiration Date
 
-Supported statuses include:
+Statuses:
 
 * Pending
 * For Access Approval
@@ -560,15 +849,15 @@ Supported statuses include:
 * Revoked
 * Expired
 
-Every access request must maintain a history of actions and status changes.
+Every access request maintains a complete history.
 
 ---
 
-# Phase 15 – Document Disposal
+# 31. Phase 10 – Document Disposal
 
-The system must support document disposal requests.
+The system supports disposal requests.
 
-A disposal request contains:
+Disposal request information:
 
 * Document
 * Requester
@@ -579,22 +868,22 @@ A disposal request contains:
 * Review Date
 * Status
 
-Supported disposal actions include:
+Disposal actions:
 
 * Shred
 * Scratch
 * Reuse
 * Other
 
-Disposal request statuses:
+Statuses:
 
 * Pending
 * Approved
 * Rejected
 
-The original document status should be preserved before disposal.
+Before disposal, the system must preserve the previous document status.
 
-The system must record:
+The system records:
 
 * Disposal Date
 * Disposed By
@@ -603,65 +892,82 @@ The system must record:
 
 ---
 
-# Phase 16 – Document Assignment
+# 32. Phase 11 – Document Assignment
 
 Documents can be assigned to users.
 
-An assignment contains:
+Assignment contains:
 
 * Document
 * Assigned User
 * Assigned By
-* Assignment Date
+* Assigned Date
 
-Users can therefore have documents specifically assigned to them.
+Assignment is separate from workflow approval.
 
-This functionality is separate from workflow approval.
+A user may therefore have:
+
+* Assigned Documents
+* Approval Tasks
+* Submitted Requests
+
+These are separate concepts.
 
 ---
 
-# Phase 17 – Workflow Builder
+# 33. Phase 12 – Workflow Builder
 
-The system must provide a configurable **Workflow Builder**.
+The system provides a configurable Workflow Builder.
 
-The workflow builder is used for document and request approval processes.
+The Workflow Builder is used by authorized administrators to create approval processes.
 
-It must support:
+It supports:
 
-* Workflow definitions
-* Workflow versions
-* Draft workflows
-* Published workflows
-* Archived workflows
-* Workflow nodes
-* Approval stages
-* Assigned users
-* Assigned roles
+* Workflow Definitions
+* Workflow Versions
+* Draft Workflows
+* Published Workflows
+* Archived Workflows
+* Workflow Nodes
+* Approval Stages
+* User Assignment
+* Role Assignment
+* Permission-Based Assignment
 * Conditions
-* Approval paths
-* Rejection paths
-* Return paths
+* Approval Paths
+* Rejection Paths
+* Return Paths
 
 ---
 
-# Phase 18 – Workflow Definition and Versioning
+# 34. Workflow Definition
 
-A workflow consists of:
-
-**Workflow Definition → Workflow Version → Workflow Graph**
-
-Each workflow definition contains:
+A workflow definition contains:
 
 * Workflow Key
 * Name
 * Description
 * Document Type
 * Active Status
-* Creator
+* Created By
 * Created At
 * Updated At
 
-Each workflow can have multiple versions.
+Structure:
+
+```text
+Workflow Definition
+        │
+        ├── Version 1
+        ├── Version 2
+        └── Version 3
+```
+
+---
+
+# 35. Workflow Versioning
+
+Each workflow can contain multiple versions.
 
 Example:
 
@@ -674,33 +980,33 @@ Version 3 – Published
 Version 4 – Draft
 ```
 
-Workflow versions have the following statuses:
+Statuses:
 
 * Draft
 * Published
 * Archived
 
-Only published workflows should be used for new production requests.
+Only published versions are used for new production requests.
 
 ---
 
-# Phase 19 – Workflow Execution
+# 36. Workflow Execution
 
 When a request is submitted:
 
 1. Identify the applicable workflow.
 2. Load the published workflow version.
-3. Create a workflow snapshot for the request.
-4. Generate the required workflow steps.
-5. Assign each step to the appropriate user or role.
+3. Create a workflow snapshot.
+4. Generate workflow steps.
+5. Assign steps to users or roles.
 6. Set the current workflow step.
 7. Notify the assigned approver.
-8. Wait for the required action.
+8. Wait for action.
 9. Process the decision.
-10. Move to the next workflow node.
-11. Continue until the workflow is completed.
+10. Move to the next node.
+11. Continue until completion.
 
-The workflow must support:
+Supported decisions:
 
 * Approve
 * Reject
@@ -709,30 +1015,30 @@ The workflow must support:
 
 ---
 
-# Phase 20 – Workflow Assignment
+# 37. Workflow Assignment
 
-A workflow step may be assigned based on:
+Workflow steps may be assigned using:
 
 * Specific User
 * Role
 * Permission
-* Workflow configuration
+* Workflow Configuration
 * Other configurable assignment rules
 
-The system should save a snapshot of the assigned user's:
+The system stores snapshots of:
 
-* Name
+* Assigned User Name
 * Position Title
 
-This prevents historical workflow records from changing when a user's profile changes later.
+This ensures historical records remain accurate even if the user's profile changes.
 
 ---
 
-# Phase 21 – Workflow Assignment History
+# 38. Workflow Assignment History
 
-If an administrator changes the assigned approver, the system must preserve the assignment history.
+When an administrator changes an assigned approver, the system preserves the previous assignment.
 
-The history should record:
+History records:
 
 * Previous User
 * New User
@@ -743,17 +1049,13 @@ The history should record:
 * Reason
 * Change Date
 
-This provides accountability for changes made to workflow assignments.
-
 ---
 
-# Phase 22 – Document Workflow History
+# 39. Workflow Step History
 
-Each workflow action must be traceable.
+Workflow steps record:
 
-Workflow steps should record:
-
-* Current Status
+* Status
 * Decision
 * Comments
 * Assigned User
@@ -761,15 +1063,15 @@ Workflow steps should record:
 * Assignment Time
 * Action Time
 * Acting User Name Snapshot
-* Acting Position Title Snapshot
+* Acting Position Snapshot
 
-This provides a complete approval trail.
+This creates a complete approval trail.
 
 ---
 
-# Phase 23 – Document-Specific Approver Configuration
+# 40. Document-Specific Approvers
 
-The system must support document-specific approver configuration when required.
+The system supports document-specific approver configuration.
 
 Possible approvers include:
 
@@ -780,7 +1082,7 @@ Possible approvers include:
 * Access Approver
 * Document Owner
 
-The configuration may also contain:
+Configuration can contain:
 
 * Workflow Name
 * Workflow Version
@@ -789,15 +1091,15 @@ The configuration may also contain:
 * Created At
 * Updated At
 
-This allows specific documents to use configured approvers while still supporting the general workflow engine.
+This provides flexibility for documents requiring specific approval participants.
 
 ---
 
-# Phase 24 – My Requests
+# 41. My Requests
 
-**My Requests** displays requests submitted by the logged-in user.
+**My Requests** displays requests submitted by the current user.
 
-The user should be able to see:
+Information includes:
 
 * Request Reference
 * Document
@@ -810,7 +1112,7 @@ The user should be able to see:
 * Comments
 * Final Result
 
-Example statuses:
+Typical statuses:
 
 * Draft
 * Pending Approval
@@ -822,11 +1124,11 @@ Example statuses:
 
 ---
 
-# Phase 25 – My Tasks
+# 42. My Tasks
 
-**My Tasks** displays workflow actions assigned to the logged-in user.
+**My Tasks** displays workflow actions assigned to the current user.
 
-A task may be generated because the user was selected as:
+A task may exist because the user was selected as:
 
 * Approver
 * Reviewer
@@ -835,9 +1137,9 @@ A task may be generated because the user was selected as:
 * Document Controller
 * Access Approver
 * Hardcopy Approver
-* Other workflow participant
+* Other Workflow Participant
 
-Each task should show:
+Task information includes:
 
 * Request
 * Document
@@ -851,11 +1153,11 @@ Available actions depend on the user's permissions and workflow configuration.
 
 ---
 
-# Phase 26 – Audit Logging
+# 43. Audit Logging
 
-The system must maintain an **Audit Log** for important system actions.
+The system maintains an immutable audit log for important operations.
 
-Audit records should contain:
+Audit records contain:
 
 * User
 * Username
@@ -875,16 +1177,16 @@ Audit records should contain:
 * User Agent
 * Created At
 
-Audit logs should be immutable from normal application interfaces.
-
-Examples of audited actions:
+Audited actions include:
 
 * Login
 * Logout
 * User Creation
 * User Update
+* Password Change
 * Permission Change
 * Document Creation
+* Document Update
 * Document Revision
 * Document Approval
 * Document Rejection
@@ -895,13 +1197,15 @@ Examples of audited actions:
 * Access Grant
 * Access Revocation
 
+Audit logs cannot be edited through normal application interfaces.
+
 ---
 
-# Phase 27 – Document Status History
+# 44. Document Status History
 
 Every important document status change must be recorded.
 
-The history should contain:
+History contains:
 
 * Previous Status
 * New Status
@@ -910,13 +1214,13 @@ The history should contain:
 * Remarks
 * Date
 
-This allows users and auditors to reconstruct the complete lifecycle of a document.
+This allows auditors to reconstruct the document lifecycle.
 
 ---
 
-# Phase 28 – Notifications
+# 45. Notifications
 
-The system should notify users when actions are required.
+The system provides notifications for important events.
 
 Examples:
 
@@ -928,174 +1232,101 @@ Examples:
 * Document assigned
 * Access approved
 * Access revoked
-* Transfer request submitted
+* Transfer submitted
 * Transfer approved
 * Recipient acceptance required
 
-The system should maintain notification-read information per user.
+The system tracks notification-read status per user.
 
 ---
 
-# Phase 29 – Reference and Sequence Management
+# 46. Sequence Management
 
-The system must support controlled reference/sequence generation.
+The system must provide centralized sequence generation.
 
-The sequence system should prevent duplicate reference numbers when multiple users create records simultaneously.
+Sequence generation must prevent duplicate numbers during concurrent transactions.
 
 Sequences may be used for:
 
-* Document numbers
-* Hardcopy sequence numbers
-* Transfer references
-* Request references
-* Other system-generated identifiers
+* Document Numbers
+* Request References
+* Hardcopy Sequence Numbers
+* Transfer References
+* Other system identifiers
+
+The sequence service should handle concurrency safely.
 
 ---
 
-# Phase 30 – System Appearance
+# 47. System Appearance
 
-The system should support configurable appearance settings.
+The system supports centralized appearance settings.
 
 Settings include:
 
 * Theme Scope
 * Color Mode
 * Color Theme
-* Additional UI settings
+* Additional UI Settings
 
-Supported color modes may include:
+Color modes:
 
 * Light
 * Dark
 * System/Device
 
-Appearance settings should be stored centrally and applied to the application interface.
+Settings are stored centrally and applied to the application interface.
 
 ---
 
-# Core Request Types
-
-The system should support the following major request types:
-
-### 1. Softcopy Document Control Request
-
-Used for:
-
-* Create document
-* Revise document
-* Cancel document
-
-### 2. Hardcopy Create/Update Request
-
-Used for:
-
-* Create hardcopy
-* Update hardcopy
-
-### 3. Hardcopy Transfer Request
-
-Used for:
-
-* Transfer physical document
-* Change physical document location
-* Assign physical document to another recipient
-
-### 4. Softcopy Document Assignment Request
-
-Used for assigning documents to users.
-
-### 5. Document Access Request
-
-Used when a user needs controlled access to a document.
-
-### 6. Document Disposal Request
-
-Used when a document reaches the end of its retention/lifecycle period and requires disposal.
-
----
-
-# Request vs. Direct Creation
-
-The system must maintain a clear distinction between:
-
-## Request
-
-A request is submitted by a user and processed through an approval workflow.
-
-Examples:
+# 48. High-Level Architecture
 
 ```text
-Staff
-  ↓
-Softcopy Document Request
-  ↓
-Workflow
-  ↓
-Approver
-  ↓
-Document Controller
-  ↓
-Document Created/Updated
-```
-
-## Direct Creation
-
-Authorized users can directly create or update documents.
-
-Initially:
-
-```text
-Administrator
-Document Control Officer
-```
-
-Direct actions must still be audited and must record the creation source and reason.
-
----
-
-# Overall System Architecture
-
-The system can be viewed as the following layers:
-
-```text
-                    ┌──────────────────────┐
-                    │      Web Interface   │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │    CodeIgniter MVC   │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │ Application Services │
-                    ├──────────────────────┤
-                    │ Authentication       │
-                    │ Authorization        │
-                    │ Document              │
-                    │ Softcopy             │
-                    │ Hardcopy             │
-                    │ Transfer              │
-                    │ Access                │
-                    │ Disposal              │
-                    │ Workflow              │
-                    │ Notification          │
-                    │ Audit                 │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │    Data / Models     │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │       MySQL          │
-                    └──────────────────────┘
+                         WEB INTERFACE
+                              │
+                              ▼
+                    CODEIGNITER 3 MVC
+                              │
+                              ▼
+                    APPLICATION SERVICES
+                              │
+       ┌──────────────────────┼──────────────────────┐
+       │                      │                      │
+       ▼                      ▼                      ▼
+ Authentication        Authorization             Workflow
+       │                      │                      │
+       ├──────────────┐       │       ┌──────────────┤
+       ▼              ▼       ▼       ▼              ▼
+    Users          Roles   Permissions   Requests   Tasks
+                              │
+                              ▼
+                    DOCUMENT SERVICES
+                              │
+              ┌───────────────┴────────────────┐
+              │                                │
+              ▼                                ▼
+        SOFTCOPY DOMAIN                  HARDCOPY DOMAIN
+              │                                │
+        ┌─────┼─────┐                    ┌─────┼─────┐
+        ▼     ▼     ▼                    ▼     ▼     ▼
+    Category Revision Files            Area  Location Transfer
+              │                                │
+              └──────────────┬─────────────────┘
+                             ▼
+                      SHARED SERVICES
+                             │
+        ┌────────────────────┼─────────────────────┐
+        ▼                    ▼                     ▼
+      Audit             Notification            Access
+        │                    │                     │
+        └────────────────────┼─────────────────────┘
+                             ▼
+                           MySQL
 ```
 
 ---
 
-# High-Level Document Lifecycle
-
-## Softcopy
+# 49. Softcopy Lifecycle
 
 ```text
 Request
@@ -1106,7 +1337,9 @@ Review / Approval
    ↓
 Document Controller
    ↓
-Revision / File Processing
+Document Creation / Revision
+   ↓
+File Processing
    ↓
 Approval
    ↓
@@ -1121,7 +1354,9 @@ Historical Revision
 Disposal
 ```
 
-## Hardcopy
+---
+
+# 50. Hardcopy Lifecycle
 
 ```text
 Creation Request
@@ -1151,23 +1386,210 @@ Disposal
 
 ---
 
-# Important Design Principle
+# 51. Request vs Direct Creation
 
-The system should **not treat the workflow as merely a list of approvers**.
+The system must maintain a strict distinction between request-based processing and direct document creation.
 
-The workflow should be a reusable process engine where each request gets a snapshot of the workflow that was active when the request was submitted.
+## Request
 
-This is important because workflows may change later.
+A normal user submits a request.
 
-For example:
- 
+```text
+User
+  ↓
+Request Form
+  ↓
+Workflow
+  ↓
+Approval
+  ↓
+Document Processing
+  ↓
+Document
+```
+
+## Direct Creation
+
+An authorized administrator or Document Control Officer directly creates or updates the document.
+
+```text
+Administrator / Document Control Officer
+              ↓
+       Direct Creation
+              ↓
+           Document
+              ↓
+          Audit Log
+```
+
+Direct creation must still:
+
+* Validate data
+* Enforce permissions
+* Record the creator
+* Record creation source
+* Record creation reason
+* Generate audit records
+
+---
+
+# 52. Important Domain Separation
+
+The application must not force softcopy and hardcopy documents into the same business model.
+
+## Softcopy focuses on:
+
+* Document control
+* Categories
+* Document numbers
+* Revisions
+* Files
+* Controlled artifacts
+* Electronic document lifecycle
+
+## Hardcopy focuses on:
+
+* Physical document identity
+* Area
+* Specific
+* Asset Number
+* Location
+* Optional Sequence
+* Physical transfer
+* Recipient acceptance
+* Retention
+* Physical disposal
+
+Both domains can use the shared:
+
+* Authentication
+* Authorization
+* Workflow
+* Audit
+* Notification
+* Assignment
+* Access control
+
+---
+
+# 53. Final Architectural Principle
+
+The system should treat the workflow as a **reusable workflow engine**, not merely a list of approvers.
+
+Every submitted request receives the workflow version that was active at the time of submission.
+
+Example:
+
+```text
 Request #001
-uses Workflow Version 2
+    ↓
+Workflow Version 2
+    ↓
+Workflow Snapshot
+
 
 Request #002
-uses Workflow Version 3
+    ↓
+Workflow Version 3
+    ↓
+Workflow Snapshot
+```
 
+If Workflow Version 3 becomes the current workflow, Request #001 must continue using its original Workflow Version 2 snapshot.
 
-Even if Version 3 becomes the current workflow, Request #001 must continue to use its original workflow snapshot.
+This guarantees:
 
-This ensures historical requests remain accurate and auditable.
+* Historical accuracy
+* Workflow traceability
+* Auditability
+* Reproducibility
+* Protection against future workflow changes
+
+---
+
+# 54. Final Core Modules
+
+The completed system consists of the following major modules:
+
+1. Authentication
+2. User Management
+3. Role Management
+4. Permission Management
+5. Area Management
+6. Specific Management
+7. Location Management
+8. Asset Management
+9. Softcopy Document Management
+10. Softcopy Category Management
+11. Softcopy Revision Management
+12. Softcopy Attachment Management
+13. Softcopy Artifact Management
+14. Hardcopy Document Management
+15. Hardcopy Transfer Management
+16. Document Assignment
+17. Document Access Management
+18. Document Disposal Management
+19. Request Management
+20. Workflow Builder
+21. Workflow Execution
+22. My Requests
+23. My Tasks
+24. Notification Management
+25. Audit Logging
+26. Document Status History
+27. Sequence Management
+28. System Appearance
+
+---
+
+# 55. Final User Account Rule
+
+There is **no user registration module**.
+
+The final user-account lifecycle is:
+
+```text
+Administrator
+      ↓
+Create User
+      ↓
+Generate Initial Password
+      ↓
+Hash Password
+      ↓
+Require Password Change
+      ↓
+User Login
+      ↓
+Change Password
+      ↓
+Normal System Access
+```
+
+Users cannot independently register accounts.
+
+---
+
+# 56. Final Document Architecture
+
+```text
+                    DOCUMENT TRACKING SYSTEM
+                              │
+                 ┌────────────┴────────────┐
+                 │                         │
+                 ▼                         ▼
+             SOFTCOPY                  HARDCOPY
+                 │                         │
+        ┌────────┼────────┐         ┌──────┼──────────┐
+        │        │        │         │      │          │
+        ▼        ▼        ▼         ▼      ▼          ▼
+     Category Revision Attachments Area Location   Asset
+                 │                         │
+                 ▼                         ▼
+             Artifacts                 Sequence
+                                           │
+                                           ▼
+                                       Transfers
+```
+
+This separation is the final domain model direction for the Document Tracking System.
